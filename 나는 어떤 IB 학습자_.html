@@ -1,0 +1,540 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>나는 어떤 IB 학습자?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap">
+<style>
+/* Layout: one-screen booth kiosk, deliberately single light pastel theme — start (mascot parade) → 14 questions → "두근두근" reveal → collectible result card */
+:root{
+  color-scheme:light;
+  --bg:#FBF3FF; --dot:#EBD9F7; --surface:#FFFFFF; --ink:#3B2E4A; --muted:#7B6C8C; --line:#EADCF3;
+  --accent:#FF7FAF; --accent-2:#FFCF4A; --focus:#6A5CFF;
+  --display:"Jua","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --body:"Gowun Dodum","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{background:var(--bg) radial-gradient(var(--dot) 1.6px,transparent 1.7px) 0 0/22px 22px;color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.65}
+.wrap{max-width:760px;margin:0 auto;padding-inline:16px;padding-block:20px 48px;min-height:100%;display:flex;flex-direction:column}
+h1,h2,h3,.disp{font-family:var(--display);font-weight:400;line-height:1.25;text-wrap:balance;margin:0}
+p{margin:0}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,summary:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+.pill{display:inline-block;font-family:var(--display);font-size:.95rem;padding:4px 14px;border-radius:999px;background:var(--surface);border:2px solid var(--ink)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:3px solid var(--ink);border-radius:999px;padding:14px 34px;font-family:var(--display);font-size:1.45rem;background:var(--accent);color:var(--ink);box-shadow:0 5px 0 var(--ink);transition:transform .12s,box-shadow .12s}
+.btn:hover{transform:translateY(-2px);box-shadow:0 7px 0 var(--ink)}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink)}
+.btn.sub{background:var(--surface);font-size:1.1rem;padding:10px 22px}
+.muted{color:var(--muted)}
+
+/* mascots */
+.m{display:block}
+.bob{animation:bob 2.4s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes hop{0%,100%{transform:translateY(0) scale(1,1)}30%{transform:translateY(-22px) scale(.95,1.05)}60%{transform:translateY(0) scale(1.08,.92)}}
+
+/* ---------- start ---------- */
+.start{display:flex;flex-direction:column;align-items:center;text-align:center;gap:22px;flex:1;justify-content:center}
+.start h1{font-size:clamp(2.3rem,8vw,3.8rem)}
+.start h1 .hl{background:linear-gradient(transparent 58%,var(--accent-2) 58%);padding-inline:4px}
+.parade{display:grid;grid-template-columns:repeat(5,1fr);gap:4px 6px;width:100%;max-width:560px}
+.parade figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:0}
+.parade figcaption{font-family:var(--display);font-size:.82rem;color:var(--muted);line-height:1.2}
+.lead{max-width:30em}
+.tally{width:100%;max-width:560px;background:var(--surface);border:2px dashed var(--line);border-radius:22px;padding:14px 18px;display:flex;flex-direction:column;gap:10px;margin-top:10px}
+.tally-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;font-family:var(--display)}
+.tally-bars{display:grid;grid-template-columns:repeat(10,1fr);gap:6px;align-items:end;height:60px}
+.tally-bars div{border-radius:6px 6px 2px 2px;min-height:4px;border:2px solid var(--ink);border-bottom-width:2px}
+.tally-labels{display:grid;grid-template-columns:repeat(10,1fr);gap:6px;font-size:.75rem;color:var(--muted);text-align:center;font-variant-numeric:tabular-nums;line-height:1.3}
+.linkbtn{background:none;border:0;color:var(--muted);text-decoration:underline;font-size:.85rem;padding:4px}
+.confirm{display:inline-flex;gap:6px;align-items:center;font-size:.85rem;font-family:var(--body)}
+.confirm button{border:2px solid var(--ink);background:var(--surface);border-radius:999px;padding:2px 10px;font-size:.85rem}
+
+/* ---------- quiz ---------- */
+.quiz{display:flex;flex-direction:column;gap:22px;flex:1}
+.top{display:flex;align-items:center;gap:12px}
+.back{background:var(--surface);border:2px solid var(--ink);border-radius:999px;padding:4px 14px;font-family:var(--display)}
+.back:disabled{opacity:.3;cursor:default}
+.track{flex:1;height:18px;border-radius:999px;background:var(--surface);border:2px solid var(--ink);overflow:hidden;position:relative}
+.track span{display:block;height:100%;background:repeating-linear-gradient(-45deg,var(--accent) 0 10px,#FF9DC2 10px 20px);transition:width .35s}
+.count{font-family:var(--display);min-width:3.6em;text-align:right;font-variant-numeric:tabular-nums}
+.qcard{background:var(--surface);border:3px solid var(--ink);border-radius:28px;padding:24px 22px;display:flex;gap:16px;align-items:center;box-shadow:0 6px 0 var(--ink)}
+.qcard .who{flex:none}
+.qnum{font-family:var(--display);color:var(--accent);font-size:1.1rem}
+.qtext{font-size:clamp(1.45rem,4.6vw,2rem)}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.choice{display:flex;flex-direction:column;align-items:flex-start;gap:10px;text-align:left;background:var(--surface);border:3px solid var(--ink);border-radius:24px;padding:20px;min-height:150px;font-size:1.12rem;line-height:1.5;box-shadow:0 5px 0 var(--ink);transition:transform .12s,background .12s,box-shadow .12s}
+.choice:hover{transform:translateY(-3px);box-shadow:0 8px 0 var(--ink)}
+.choice.a:hover,.choice.a.picked{background:#FFE3EE}
+.choice.b:hover,.choice.b.picked{background:#E2F1FF}
+.choice.picked{transform:translateY(3px) scale(.98);box-shadow:0 2px 0 var(--ink)}
+.key{font-family:var(--display);font-size:1.15rem;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;border:2px solid var(--ink)}
+.choice.a .key{background:var(--accent)}
+.choice.b .key{background:#7CC4FF}
+.hint{color:var(--muted);font-size:.9rem;text-align:center}
+
+/* ---------- loading ---------- */
+.loading{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center}
+.hoppers{display:flex;gap:6px}
+.hoppers svg{animation:hop .9s ease-in-out infinite}
+.loading h2{font-size:2rem}
+
+/* ---------- result ---------- */
+.result{display:flex;flex-direction:column;gap:18px}
+.card{position:relative;background:var(--surface);border:3px solid var(--ink);border-radius:32px;overflow:hidden;box-shadow:0 8px 0 var(--ink);animation:pop .7s cubic-bezier(.2,1.4,.4,1) both}
+@keyframes pop{0%{transform:scale(.6) rotate(-6deg);opacity:0}100%{transform:none;opacity:1}}
+.card-top{background:var(--pc);padding:20px 20px 0;display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;position:relative}
+.card-top::before{content:"";position:absolute;inset:0;background:radial-gradient(rgba(255,255,255,.45) 2px,transparent 2.5px) 0 0/18px 18px}
+.card-top>*{position:relative}
+.ribbon{font-family:var(--display);background:var(--surface);border:2px solid var(--ink);border-radius:999px;padding:3px 14px;font-size:.95rem}
+.big{width:min(220px,60vw);height:auto}
+.burst{position:absolute;inset:auto;width:min(300px,80vw);aspect-ratio:1;top:30px;left:50%;transform:translateX(-50%);background:repeating-conic-gradient(rgba(255,255,255,.35) 0 10deg,transparent 10deg 20deg);border-radius:50%;animation:spin 18s linear infinite}
+@keyframes spin{to{transform:translateX(-50%) rotate(360deg)}}
+.card-name{padding:16px 20px 20px;text-align:center;display:flex;flex-direction:column;gap:6px;align-items:center;border-top:3px solid var(--ink)}
+.nick{font-size:clamp(2rem,7vw,2.8rem)}
+.official{font-family:var(--display);font-size:1.15rem}
+.official small{font-family:var(--body);color:var(--muted);font-size:.85rem;letter-spacing:.05em}
+.match{display:flex;align-items:center;gap:10px;font-family:var(--display);font-size:1.1rem}
+.match .stars{color:var(--accent-2);-webkit-text-stroke:1px var(--ink);letter-spacing:2px;font-size:1.3rem}
+.tags{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
+.tag{font-size:.9rem;padding:2px 10px;border-radius:999px;background:var(--pcl);border:2px solid var(--ink);font-family:var(--display)}
+.bubble{position:relative;background:var(--surface);border:3px solid var(--ink);border-radius:22px;padding:14px 18px;font-family:var(--display);font-size:1.2rem;text-align:center;margin-inline:auto;max-width:30em}
+.bubble::after{content:"";position:absolute;top:-14px;left:50%;width:22px;height:22px;background:var(--surface);border-left:3px solid var(--ink);border-top:3px solid var(--ink);transform:translateX(-50%) rotate(45deg)}
+.panel{background:var(--surface);border:3px solid var(--ink);border-radius:24px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.panel h3{font-size:1.3rem;display:flex;align-items:center;gap:8px}
+.ic{width:30px;height:30px;border-radius:50%;display:inline-grid;place-items:center;border:2px solid var(--ink);font-size:1rem;flex:none;background:var(--pcl)}
+.panel ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px}
+.panel li{display:flex;gap:10px;align-items:flex-start}
+.panel li::before{content:"★";color:var(--pc);-webkit-text-stroke:1px var(--ink);flex:none;line-height:1.6}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+details{border-top:2px dashed var(--line);padding-top:10px}
+summary{cursor:pointer;font-family:var(--display);color:var(--muted)}
+.quote{margin-top:8px;padding:12px 14px;background:var(--bg);border-radius:14px;font-size:.95rem}
+.src{font-size:.82rem;color:var(--muted);margin-top:6px}
+.radar-wrap{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:12px;align-items:center}
+.radar{width:100%;height:auto;max-width:340px;justify-self:center}
+.rank{display:flex;flex-direction:column;gap:8px;font-variant-numeric:tabular-nums}
+.rank .row{display:grid;grid-template-columns:1.6em 1fr auto;gap:8px;align-items:center;font-family:var(--display)}
+.rank .medal{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;border:2px solid var(--ink);font-size:.85rem}
+.friend{display:flex;gap:12px;align-items:center}
+.friend svg{flex:none}
+.friend b{font-family:var(--display);font-weight:400;font-size:1.15rem}
+.combo{font-family:var(--display);font-size:1rem;background:var(--bg);border-radius:999px;padding:2px 10px;display:inline-block;margin-top:2px}
+.mission{background:var(--accent-2);border:3px solid var(--ink);border-radius:24px;padding:18px 20px;display:flex;gap:14px;align-items:center}
+.mission .stamp{flex:none;width:64px;height:64px;border-radius:50%;border:3px dashed var(--ink);display:grid;place-items:center;font-family:var(--display);font-size:.9rem;text-align:center;line-height:1.1;transform:rotate(-12deg);background:var(--surface)}
+.mission h3{font-size:1.25rem}
+.actions{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:6px}
+.note{color:var(--muted);font-size:.88rem;text-align:center}
+#confetti{position:fixed;inset:0;pointer-events:none;z-index:50;width:100%;height:100%}
+
+@media (max-width:620px){
+  body{font-size:16px}
+  .choices,.two,.radar-wrap{grid-template-columns:1fr}
+  .choice{min-height:0;flex-direction:row;align-items:center;padding:16px}
+  .qcard{padding:18px 16px}
+  .qcard .who svg{width:60px;height:60px}
+  .parade figcaption{font-size:.72rem}
+}
+@media (prefers-reduced-motion:reduce){*,*::before{animation:none!important;transition:none!important}}
+</style>
+
+<canvas id="confetti" hidden></canvas>
+<div class="wrap" id="app">
+
+  <section class="start" id="start">
+    <span class="pill">IB 학습자상 체험 부스</span>
+    <h1>나는 어떤<br><span class="hl">IB 학습자</span>일까?</h1>
+    <div class="parade" id="parade"></div>
+    <p class="lead">14가지 상황에서 <b>나랑 더 비슷한 쪽</b>을 골라 보세요. 정답은 없어요! 10명의 IB 친구들 중 누가 나랑 제일 닮았는지 알려 줄게요.</p>
+    <button class="btn" id="go">시작하기!</button>
+    <p class="muted" style="font-size:.9rem">약 2분 · 키보드 1, 2로도 고를 수 있어요</p>
+
+    <div class="tally">
+      <div class="tally-head">
+        <span>오늘 부스 결과 · <span id="tcount">0</span>명 참여</span>
+        <span id="tctrl"></span>
+      </div>
+      <div class="tally-bars" id="tbars"></div>
+      <div class="tally-labels" id="tlabels"></div>
+    </div>
+  </section>
+
+  <section class="quiz" id="quiz" hidden>
+    <div class="top">
+      <button class="back" id="back">이전</button>
+      <div class="track"><span id="bar"></span></div>
+      <div class="count" id="count">1/14</div>
+    </div>
+    <div class="qcard">
+      <div class="who" id="who"></div>
+      <div style="display:flex;flex-direction:column;gap:4px;min-width:0">
+        <div class="qnum" id="qnum">Q1</div>
+        <h2 class="qtext" id="qtext"></h2>
+      </div>
+    </div>
+    <div class="choices">
+      <button class="choice a" id="optA"><span class="key">1</span><span id="optAt"></span></button>
+      <button class="choice b" id="optB"><span class="key">2</span><span id="optBt"></span></button>
+    </div>
+    <p class="hint">둘 다 나 같다면? 조금이라도 더 나다운 쪽으로 골라요!</p>
+  </section>
+
+  <section class="loading" id="loading" hidden>
+    <div class="hoppers" id="hoppers"></div>
+    <h2>두근두근… 결과 분석 중!</h2>
+    <p class="muted">나와 닮은 IB 친구를 찾고 있어요</p>
+  </section>
+
+  <section class="result" id="result" hidden></section>
+</div>
+
+<script>
+/* ===== 10 IB 학습자상 =====
+   공식 명칭·정의: IB 학습자상(IB learner profile), 국제 바칼로레아 기구(IBO)
+   한국어 공식 문서 「IB 교육이란 무엇인가?」(ibo.org) 기준 */
+const ORDER=["inq","kno","thi","com","pri","ope","car","ris","bal","ref"];
+const COL={inq:"#FF9B5E",kno:"#5AA9F2",thi:"#FFCF4A",com:"#5ED39A",pri:"#9A86F5",ope:"#A6D85B",car:"#FF85B3",ris:"#FF6464",bal:"#40C9C0",ref:"#D38BE8"};
+const LIGHT={inq:"#FFE6D6",kno:"#DCEEFF",thi:"#FFF3C9",com:"#D7F6E6",pri:"#E9E4FF",ope:"#ECF7D9",car:"#FFE1EC",ris:"#FFDCDC",bal:"#D3F4F1",ref:"#F6E2FB"};
+const P={
+ inq:{ko:"탐구하는 사람",en:"Inquirers",short:"탐구",nick:"호기심 탐험가",word:"호기심",
+  easy:"궁금한 게 생기면 그냥 넘어가지 않아요. 혼자서도, 친구와 함께도 끝까지 알아내는 걸 즐기는 사람이에요.",
+  official:"우리는 호기심을 키워 탐구하고 연구하는 능력을 향상시킵니다. 우리는 독립적으로 또 다른 사람과 함께 배우는 법을 압니다. 우리는 열정을 가지고 배움에 임하며, 학습에 대한 열의를 늘 잃지 않습니다.",
+  tags:["왜요왜요","검색왕","궁금하면못참아"],say:"이건 왜 이렇게 되는 거지? 한번 알아보자!",
+  powers:["궁금한 걸 질문으로 잘 만들어요","스스로 찾아보고 조사하는 힘이 있어요","배우는 걸 진짜로 즐겨요"],
+  watch:"궁금한 게 너무 많아서, 하나를 끝내기 전에 다른 데로 관심이 옮겨 갈 수 있어요.",
+  mission:"‘궁금 노트’에 질문 3개를 적고, 그중 하나를 직접 조사해서 친구에게 알려 주기"},
+ kno:{ko:"지식이 풍부한 사람",en:"Knowledgeable",short:"지식",nick:"척척 지식 박사",word:"지식",
+  easy:"여러 과목을 넘나들며 배우고, 우리 동네와 세계에서 일어나는 일에도 관심을 갖는 사람이에요.",
+  official:"우리는 개념적 이해를 통한 성장을 지향하며, 다양한 학문의 지식을 탐구합니다. 우리는 지역적이고 세계적으로 중요한 사안들과 의견에 관심을 기울입니다.",
+  tags:["척척박사","아는게힘","뉴스도챙겨봄"],say:"아, 그거 과학 시간에 배운 거랑 연결돼!",
+  powers:["배운 내용을 차곡차곡 정리해요","서로 다른 과목의 지식을 연결해요","세상 소식에 관심이 많아요"],
+  watch:"아는 걸 말하다 보면 다른 사람 생각을 들을 틈을 놓칠 수 있어요.",
+  mission:"뉴스 하나를 골라, 그 일이 우리 동네와 어떻게 연결되는지 한 문장으로 써 보기"},
+ thi:{ko:"사고하는 사람",en:"Thinkers",short:"사고",nick:"번뜩 문제 해결사",word:"생각하는 힘",
+  easy:"꼼꼼히 따져 보고 새롭게도 생각해서 어려운 문제를 풀고, 옳은 쪽으로 결정하는 사람이에요.",
+  official:"우리는 비판적이고 창의적인 사고력으로 복잡한 문제를 분석하며 책임 있게 행동합니다. 우리는 합리적이고 윤리적인 의사결정을 주도합니다.",
+  tags:["논리왕","계획표장인","근거가뭐야"],say:"잠깐, 이렇게 하면 더 좋지 않을까?",
+  powers:["어려운 문제를 작게 나눠서 풀어요","근거를 바탕으로 결정해요","새로운 해결 방법을 떠올려요"],
+  watch:"너무 오래 고민하다가 시작이 늦어질 수 있어요.",
+  mission:"기술 시간 과제에서 해결 방법을 2가지 이상 떠올리고 장단점을 비교해 보기"},
+ com:{ko:"소통하는 사람",en:"Communicators",short:"소통",nick:"마음 잇는 이야기꾼",word:"표현력",
+  easy:"말, 글, 그림 등 여러 방법으로 내 생각을 자신 있게 표현하고, 친구 이야기도 잘 들으며 함께 일하는 사람이에요.",
+  official:"우리는 하나 이상의 언어와 다양한 방법으로 창의적이고 자신 있게 우리 자신을 표현합니다. 우리는 다른 개인과 집단의 의견을 경청하며 효과적으로 협력합니다.",
+  tags:["분위기메이커","발표환영","경청요정"],say:"우리 같이 얘기해 보자! 너는 어떻게 생각해?",
+  powers:["내 생각을 또렷하게 전해요","친구 말에 귀 기울여요","모둠 활동을 매끄럽게 이끌어요"],
+  watch:"이야기하는 게 즐거워서 내가 말하는 시간이 길어질 수 있어요.",
+  mission:"모둠 활동에서 말수가 적은 친구에게 먼저 의견을 물어보기"},
+ pri:{ko:"원칙을 지키는 사람",en:"Principled",short:"원칙",nick:"정직한 약속 지킴이",word:"정직함",
+  easy:"정직하고 공정하게 행동하고, 모든 사람을 존중하며, 내가 한 행동에 책임지는 사람이에요.",
+  official:"우리는 공정성과 정의감을 바탕으로 인간의 존엄성 및 권리를 존중하며, 성실하고 정직하게 행동합니다. 우리는 우리 자신의 행동과 그 결과에 따른 책임을 집니다.",
+  tags:["약속은지킨다","공정왕","믿음직"],say:"규칙은 모두에게 똑같이 지켜야 공평하지!",
+  powers:["거짓말 없이 솔직해요","누구에게나 공평하게 대해요","내가 한 일에 끝까지 책임져요"],
+  watch:"규칙을 너무 딱딱하게 생각하면 친구의 사정을 놓칠 수 있어요.",
+  mission:"나와의 약속 하나를 정해서 7일 동안 지켜 보기"},
+ ope:{ko:"열린 마음을 지닌 사람",en:"Open-minded",short:"열린 마음",nick:"다양함 수집가",word:"열린 마음",
+  easy:"내 문화도 소중히 여기고, 나와 다른 생각과 문화도 존중하며 받아들이는 사람이에요.",
+  official:"우리는 비판적인 사고를 통해 우리 고유의 문화와 역사를 바라보고 타인의 가치관과 전통을 수용합니다. 우리는 다양한 관점을 추구하고 평가하며, 경험을 통해 성장합니다.",
+  tags:["다름환영","그럴수있지","세계여행꿈나무"],say:"오, 그렇게 생각할 수도 있구나!",
+  powers:["다른 의견도 끝까지 들어요","새로운 문화를 즐겁게 배워요","여러 방향에서 바라봐요"],
+  watch:"모두의 의견을 존중하다가 정작 내 생각은 말하지 못할 때가 있어요.",
+  mission:"다른 나라의 명절이나 음식을 하나 찾아보고, 우리 문화와 닮은 점·다른 점 찾기"},
+ car:{ko:"배려하는 사람",en:"Caring",short:"배려",nick:"따뜻한 마음 지킴이",word:"따뜻함",
+  easy:"다른 사람의 마음에 공감하고 응원하며, 친구와 동네, 환경을 위해 좋은 변화를 만드는 사람이에요.",
+  official:"우리는 서로 공감하고 격려하며 존중합니다. 우리는 봉사 정신을 갖고, 타인의 삶과 지역 사회에 긍정적인 변화를 도모합니다.",
+  tags:["공감요정","응원단장","지구지킴이"],say:"괜찮아? 내가 도와줄게!",
+  powers:["친구 기분을 금방 알아채요","힘든 친구를 먼저 응원해요","주변을 위해 행동으로 옮겨요"],
+  watch:"남을 챙기느라 내 마음과 내 할 일을 미룰 수 있어요.",
+  mission:"친구 한 명에게 진심 담은 칭찬하기 + 교실 쓰레기 3개 줍기"},
+ ris:{ko:"도전하는 사람",en:"Risk-takers",short:"도전",nick:"용감한 도전 로켓",word:"용기",
+  easy:"낯설고 결과를 모르는 일도 미리 계획하고 용기 있게 도전하며, 새로운 아이디어를 시도하는 사람이에요.",
+  official:"우리는 철저하게 계획하고 의사결정을 내려 불확실성에 도전하며, 독립적으로 또 협력을 통해 새로운 아이디어와 혁신적인 전략을 모색합니다. 우리는 도전과 변화에 맞서 굴복하지 않고 슬기롭게 대처해 나갑니다.",
+  tags:["일단해봄","실패도경험","용기100"],say:"안 해 봤으니까 더 해 보고 싶어!",
+  powers:["새로운 일에 먼저 손을 들어요","실패해도 다시 일어나요","새로운 방법을 시도해요"],
+  watch:"서두르다 계획 없이 뛰어들면 실수가 생길 수 있어요. 공식 정의에도 ‘철저한 계획’이 들어 있답니다!",
+  mission:"안 해 본 일 하나에 도전하기 전에 ‘작전 계획’ 3줄을 쓰고 실행하기"},
+ bal:{ko:"균형잡힌 사람",en:"Balanced",short:"균형",nick:"밸런스 마스터",word:"균형 감각",
+  easy:"공부, 몸, 마음의 균형을 잘 맞춰서 나와 다른 사람 모두 행복하게 지내도록 하는 사람이에요.",
+  official:"우리는 자신과 타인의 행복을 위해 삶의 지적, 물리적, 정서적 균형을 이루는 것이 중요하다는 것을 알고 있습니다. 우리는 타인뿐 아니라 우리가 살아가는 세상과도 상호 의존함을 인지하고 있습니다.",
+  tags:["공부도놀이도","꿀잠필수","몸마음건강"],say:"열심히 했으니 이제 좀 쉬어 볼까?",
+  powers:["공부와 휴식을 골고루 챙겨요","몸과 마음의 건강을 지켜요","여러 활동을 고르게 즐겨요"],
+  watch:"골고루 하려다 보니 한 가지에 깊이 빠져 보는 경험이 적을 수 있어요.",
+  mission:"일주일 시간표에 공부·운동·쉼·친구 시간을 색깔별로 칠해 보고 균형 확인하기"},
+ ref:{ko:"성찰하는 사람",en:"Reflective",short:"성찰",nick:"곰곰 성찰 일기 작가",word:"돌아보는 힘",
+  easy:"세상과 내 생각, 내 경험을 깊이 돌아보고, 나의 강점과 약점을 알아서 더 성장하는 사람이에요.",
+  official:"우리는 세상과 자기 생각 및 경험에 대해 깊게 생각합니다. 우리는 개인의 학습과 성장에 도움이 되도록 우리 자신의 강점과 약점을 이해하려고 노력합니다.",
+  tags:["곰곰이","오늘의돌아보기","성장중"],say:"오늘 나는 뭘 잘했고, 뭘 더 잘할 수 있을까?",
+  powers:["내 행동을 차분히 돌아봐요","나의 강점과 약점을 알아요","경험에서 배워서 다음엔 더 잘해요"],
+  watch:"지나간 일을 너무 오래 곱씹으면 마음이 무거워질 수 있어요.",
+  mission:"자기 전에 ‘잘한 일 1개, 아쉬운 일 1개, 내일 해 볼 일 1개’ 적기"}
+};
+const PAIR={inq:"ref",kno:"com",thi:"car",com:"ope",pri:"bal",ope:"thi",car:"pri",ris:"thi",bal:"inq",ref:"ris"};
+
+/* ===== 질문: 각 선택지는 공식 정의 속 핵심 행동과 연결 ===== */
+const Q=[
+ {q:"처음 만난 친구들과 모둠 활동을 시작할 때 나는?",
+  a:["먼저 인사하고 역할을 나누자고 말한다",["com","ris"]],
+  b:["친구들 이야기를 먼저 들어 본다",["ope","car"]]},
+ {q:"수업 중에 이해가 안 되는 내용이 나오면?",
+  a:["바로 손을 들고 질문한다",["inq","ris"]],
+  b:["집에서 찾아보고 내 말로 정리한다",["kno","ref"]]},
+ {q:"시험이 끝난 날, 나는?",
+  a:["틀린 문제를 다시 보며 왜 틀렸는지 생각한다",["ref","thi"]],
+  b:["친구들과 운동하며 서로 수고했다고 응원한다",["bal","car"]]},
+ {q:"모둠 과제에서 한 친구가 거의 참여하지 않는다면?",
+  a:["역할을 다시 공평하게 나누자고 한다",["pri","thi"]],
+  b:["혹시 무슨 일이 있는지 먼저 조용히 물어본다",["car","com"]]},
+ {q:"처음 들어 보는 나라의 축제가 TV에 나오면?",
+  a:["그 나라의 위치와 역사를 찾아본다",["kno","inq"]],
+  b:["우리 명절과 비교하며 어떤 점이 다른지 생각해 본다",["ope","ref"]]},
+ {q:"기술 시간에 작품을 만들 때 나는?",
+  a:["설계도를 꼼꼼히 그리고 계획대로 만든다",["thi","pri"]],
+  b:["일단 만들어 보면서 고쳐 나간다",["ris","inq"]]},
+ {q:"토론에서 내 생각과 반대 의견이 나오면?",
+  a:["근거를 들어 내 생각을 차근차근 설명한다",["thi","com"]],
+  b:["상대 말에도 맞는 부분이 있는지 생각해 본다",["ope","ref"]]},
+ {q:"자유로운 주말이 생긴다면?",
+  a:["공부, 운동, 휴식을 골고루 넣어 계획을 짠다",["bal","pri"]],
+  b:["한 번도 안 해 본 활동에 도전한다",["ris","inq"]]},
+ {q:"푹 빠진 관심사가 생기면?",
+  a:["책과 영상을 찾아보며 깊이 파고든다",["kno","inq"]],
+  b:["다른 취미와 일상도 함께 챙기며 즐긴다",["bal","ope"]]},
+ {q:"친구가 고민을 털어놓으면?",
+  a:["끝까지 들어 주고 마음에 공감해 준다",["car","com"]],
+  b:["상황을 정리해서 해결 방법을 같이 찾는다",["thi","kno"]]},
+ {q:"하루를 마무리하며 잠들기 전에 나는?",
+  a:["오늘 잘한 일과 아쉬운 일을 떠올린다",["ref","bal"]],
+  b:["내일 해 볼 새로운 일을 생각하며 설렌다",["ris","ope"]]},
+ {q:"반 대표로 발표를 맡게 되었다면?",
+  a:["그림, 영상까지 활용해 재미있게 전하고 싶다",["com","ris"]],
+  b:["정확한 자료를 준비해 실수 없이 하고 싶다",["kno","pri"]]},
+ {q:"학교 앞에 쓰레기가 많아졌다면?",
+  a:["친구들과 걸으며 쓰레기 줍는 캠페인을 열자고 한다",["car","bal"]],
+  b:["쓰레기가 왜 많아졌는지 원인부터 조사한다",["inq","thi"]]},
+ {q:"게임 규칙을 잘 모르는 친구가 함께하게 되면?",
+  a:["규칙을 정확히 알려 주고 모두 똑같이 지키자고 한다",["pri","com"]],
+  b:["친구가 익숙해질 때까지 규칙을 살짝 바꿔 같이 즐긴다",["car","ope"]]}
+];
+const MAX=Object.fromEntries(ORDER.map(k=>[k,Q.filter(x=>x.a[1].includes(k)||x.b[1].includes(k)).length]));
+
+/* ===== 마스코트 (SVG) ===== */
+const INK="#3B2E4A";
+function acc(k){
+ const s=`stroke="${INK}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"`;
+ switch(k){
+  case"inq":return `<line x1="88" y1="62" x2="78" y2="74" stroke="${INK}" stroke-width="6" stroke-linecap="round"/><circle cx="97" cy="52" r="12" fill="#E3F4FF" ${s}/><path d="M91 48 q3 -4 8 -3" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/>`;
+  case"kno":return `<rect x="38" y="18" width="44" height="12" rx="3" fill="#fff" ${s}/><rect x="44" y="7" width="34" height="11" rx="3" fill="#FFCF4A" ${s}/><circle cx="48" cy="66" r="8" fill="none" ${s}/><circle cx="72" cy="66" r="8" fill="none" ${s}/><line x1="56" y1="66" x2="64" y2="66" ${s}/>`;
+  case"thi":return `<circle cx="92" cy="20" r="11" fill="#FFF3A6" ${s}/><rect x="87" y="30" width="10" height="7" rx="2" fill="#fff" ${s}/><path d="M92 4 v-2 M106 12 l3 -2 M78 12 l-3 -2 M108 24 h3" ${s}/>`;
+  case"com":return `<path d="M80 8 h30 a8 8 0 0 1 8 8 v10 a8 8 0 0 1 -8 8 h-18 l-8 7 v-7 h-4 a8 8 0 0 1 -8 -8 v-10 a8 8 0 0 1 8 -8z" fill="#fff" ${s}/><circle cx="87" cy="21" r="2.2" fill="${INK}"/><circle cx="95" cy="21" r="2.2" fill="${INK}"/><circle cx="103" cy="21" r="2.2" fill="${INK}"/>`;
+  case"pri":return `<path d="M98 40 l14 5 v11 c0 10 -7 15 -14 18 c-7 -3 -14 -8 -14 -18 v-11z" fill="#fff" ${s}/><path d="M92 56 l5 5 l8 -9" fill="none" ${s}/>`;
+  case"ope":return `<circle cx="98" cy="50" r="13" fill="#CFEFFF" ${s}/><ellipse cx="98" cy="50" rx="6" ry="13" fill="none" stroke="${INK}" stroke-width="2"/><line x1="85" y1="50" x2="111" y2="50" stroke="${INK}" stroke-width="2"/><path d="M28 26 l3 6 6 1 -5 4 2 6 -6 -3 -6 3 2 -6 -5 -4 6 -1z" fill="#FFCF4A" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>`;
+  case"car":return `<path d="M98 66 c-10 -7 -16 -12 -16 -19 a7 7 0 0 1 16 -3 a7 7 0 0 1 16 3 c0 7 -6 12 -16 19z" fill="#FF5C93" ${s}/><path d="M89 45 q2 -3 5 -2" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>`;
+  case"ris":return `<line x1="70" y1="34" x2="78" y2="2" ${s}/><path d="M78 3 L101 9 L77 17 Z" fill="#FFCF4A" ${s}/><path d="M24 22 l2 5 5 1 -4 3 1 5 -4 -3 -4 3 1 -5 -4 -3 5 -1z" fill="#fff" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>`;
+  case"bal":return `<ellipse cx="60" cy="25" rx="17" ry="6" fill="#E8E1F5" ${s}/><ellipse cx="60" cy="15" rx="12" ry="5" fill="#FFE1EC" ${s}/><ellipse cx="60" cy="6" rx="7" ry="4" fill="#FFF3A6" ${s}/>`;
+  case"ref":return `<path d="M96 6 a13 13 0 1 0 10 22 a10 10 0 1 1 -10 -22z" fill="#FFF3A6" ${s}/><path d="M78 12 l1.5 3.5 3.5 .5 -2.5 2.5 .7 3.5 -3.2 -1.8 -3.2 1.8 .7 -3.5 -2.5 -2.5 3.5 -.5z" fill="#fff" stroke="${INK}" stroke-width="1.8" stroke-linejoin="round"/>`;
+ }
+}
+function mascot(k,size=80,cls=""){
+ const c=COL[k];
+ const eyes=k==="ref"
+  ? `<path d="M43 67 q5 4 10 0 M67 67 q5 4 10 0" fill="none" stroke="${INK}" stroke-width="3" stroke-linecap="round"/>`
+  : `<circle cx="48" cy="66" r="5" fill="${INK}"/><circle cx="72" cy="66" r="5" fill="${INK}"/><circle cx="49.7" cy="64.3" r="1.7" fill="#fff"/><circle cx="73.7" cy="64.3" r="1.7" fill="#fff"/>`;
+ const mouth=k==="ris"||k==="com"
+  ? `<path d="M53 76 q7 10 14 0 z" fill="#C2405F" stroke="${INK}" stroke-width="2.5" stroke-linejoin="round"/>`
+  : `<path d="M54 77 q6 6 12 0" fill="none" stroke="${INK}" stroke-width="3" stroke-linecap="round"/>`;
+ return `<svg class="m ${cls}" width="${size}" height="${size}" viewBox="0 0 120 120" aria-hidden="true">
+  <ellipse cx="60" cy="113" rx="30" ry="5" fill="${INK}" opacity=".12"/>
+  <ellipse cx="46" cy="106" rx="9" ry="5" fill="${c}" stroke="${INK}" stroke-width="3"/>
+  <ellipse cx="74" cy="106" rx="9" ry="5" fill="${c}" stroke="${INK}" stroke-width="3"/>
+  <path d="M60 32 C88 32 98 54 98 76 C98 98 82 106 60 106 C38 106 22 98 22 76 C22 54 32 32 60 32Z" fill="${c}" stroke="${INK}" stroke-width="3"/>
+  <ellipse cx="60" cy="90" rx="20" ry="12" fill="#fff" opacity=".45"/>
+  <path d="M36 48 q6 -8 14 -10" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".7"/>
+  ${eyes}
+  <ellipse cx="40" cy="76" rx="5.5" ry="3.2" fill="#FF6F9C" opacity=".5"/><ellipse cx="80" cy="76" rx="5.5" ry="3.2" fill="#FF6F9C" opacity=".5"/>
+  ${mouth}${acc(k)}
+ </svg>`;
+}
+
+/* ===== helpers ===== */
+const $=id=>document.getElementById(id);
+let answers=[],idx=0,locked=false;
+
+$("parade").innerHTML=ORDER.map((k,i)=>`<figure>${mascot(k,82,"bob").replace('class="m bob"',`class="m bob" style="animation-delay:${i*.18}s"`)}<figcaption>${P[k].ko}</figcaption></figure>`).join("");
+$("hoppers").innerHTML=["inq","com","car","ris","ref"].map((k,i)=>mascot(k,64).replace("<svg ",`<svg style="animation-delay:${i*.12}s" `)).join("");
+
+function loadTally(){try{return JSON.parse(localStorage.getItem("ibTally2")||"{}")}catch(e){return {}}}
+function saveTally(t){try{localStorage.setItem("ibTally2",JSON.stringify(t))}catch(e){}}
+function renderTally(){
+ const t=loadTally(),total=ORDER.reduce((s,k)=>s+(t[k]||0),0),mx=Math.max(1,...ORDER.map(k=>t[k]||0));
+ $("tcount").textContent=total;
+ $("tbars").innerHTML=ORDER.map(k=>`<div title="${P[k].ko} ${t[k]||0}명" style="background:${COL[k]};height:${Math.max(6,(t[k]||0)/mx*100)}%"></div>`).join("");
+ $("tlabels").innerHTML=ORDER.map(k=>`<span>${P[k].short}<br>${t[k]||0}</span>`).join("");
+}
+function tallyCtrl(){
+ $("tctrl").innerHTML='<button class="linkbtn" id="treset">집계 지우기</button>';
+ $("treset").onclick=()=>{
+  $("tctrl").innerHTML='<span class="confirm">정말 지울까요? <button id="tyes">지우기</button><button id="tno">취소</button></span>';
+  $("tyes").onclick=()=>{saveTally({});renderTally();tallyCtrl();};
+  $("tno").onclick=tallyCtrl;
+ };
+}
+renderTally();tallyCtrl();
+
+function show(id){["start","quiz","loading","result"].forEach(s=>$(s).hidden=s!==id);window.scrollTo(0,0);}
+function start(){answers=[];idx=0;show("quiz");renderQ();}
+function renderQ(){
+ const x=Q[idx];
+ $("who").innerHTML=mascot(ORDER[idx%10],78,"bob");
+ $("qnum").textContent=`Q${idx+1}`;
+ $("qtext").textContent=x.q;
+ $("optAt").textContent=x.a[0];
+ $("optBt").textContent=x.b[0];
+ $("count").textContent=`${idx+1}/${Q.length}`;
+ $("bar").style.width=`${idx/Q.length*100}%`;
+ $("back").disabled=idx===0;
+ $("optA").classList.toggle("picked",answers[idx]==="a");
+ $("optB").classList.toggle("picked",answers[idx]==="b");
+ locked=false;
+}
+function pick(c){
+ if(locked)return;locked=true;
+ answers[idx]=c;
+ $(c==="a"?"optA":"optB").classList.add("picked");
+ setTimeout(()=>{if(idx<Q.length-1){idx++;renderQ();}else{$("bar").style.width="100%";show("loading");setTimeout(finish,1700);}},280);
+}
+function back(){if(idx>0){idx--;renderQ();}}
+
+/* ===== radar chart ===== */
+function radar(pct,top){
+ const cx=170,cy=165,R=105,n=ORDER.length;
+ const pt=(i,r)=>{const a=-Math.PI/2+i*2*Math.PI/n;return [cx+r*Math.cos(a),cy+r*Math.sin(a)];};
+ let g="";
+ [.25,.5,.75,1].forEach(f=>{g+=`<polygon points="${ORDER.map((_,i)=>pt(i,R*f).join(",")).join(" ")}" fill="${f===1?LIGHT[top]:"none"}" stroke="#D9C9E6" stroke-width="1.5"/>`;});
+ ORDER.forEach((_,i)=>{const [x,y]=pt(i,R);g+=`<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="#D9C9E6" stroke-width="1.5"/>`;});
+ const poly=ORDER.map((k,i)=>pt(i,R*Math.max(.06,pct[k]/100)).join(",")).join(" ");
+ g+=`<polygon points="${poly}" fill="${COL[top]}" fill-opacity=".55" stroke="${INK}" stroke-width="2.5" stroke-linejoin="round"/>`;
+ ORDER.forEach((k,i)=>{const [x,y]=pt(i,R*Math.max(.06,pct[k]/100));g+=`<circle cx="${x}" cy="${y}" r="${k===top?6:4}" fill="${COL[k]}" stroke="${INK}" stroke-width="2"/>`;});
+ ORDER.forEach((k,i)=>{const [x,y]=pt(i,R+24);const anc=Math.abs(x-cx)<8?"middle":(x>cx?"start":"end");
+  g+=`<text x="${x}" y="${y+5}" text-anchor="${anc}" font-family="Jua, sans-serif" font-size="14" fill="${k===top?INK:"#7B6C8C"}">${P[k].short}</text>`;});
+ return `<svg class="radar" viewBox="0 0 340 330" role="img" aria-label="10가지 학습자상 점수 그래프">${g}</svg>`;
+}
+
+/* ===== result ===== */
+function finish(){
+ const raw=Object.fromEntries(ORDER.map(k=>[k,0]));
+ answers.forEach((c,i)=>Q[i][c][1].forEach(k=>raw[k]++));
+ const pct=Object.fromEntries(ORDER.map(k=>[k,Math.round(raw[k]/MAX[k]*100)]));
+ const rank=[...ORDER].sort((a,b)=>pct[b]-pct[a]||raw[b]-raw[a]||ORDER.indexOf(a)-ORDER.indexOf(b));
+ const k1=rank[0],k2=rank[1],low=rank[rank.length-1],p=P[k1],pr=PAIR[k1];
+ const t=loadTally();t[k1]=(t[k1]||0)+1;saveTally(t);
+ const stars="★★★★★".slice(0,Math.max(1,Math.round(pct[k1]/20)))+"☆☆☆☆☆".slice(0,5-Math.max(1,Math.round(pct[k1]/20)));
+ const medals=["1","2","3"],mcol=["#FFCF4A","#E3E3EE","#F2B48A"];
+
+ const r=$("result");
+ r.style.setProperty("--pc",COL[k1]);r.style.setProperty("--pcl",LIGHT[k1]);
+ r.innerHTML=`
+ <div class="card">
+  <div class="card-top">
+   <div class="burst"></div>
+   <span class="ribbon">나의 IB 학습자 유형은?</span>
+   ${mascot(k1,220,"big bob")}
+  </div>
+  <div class="card-name">
+   <h2 class="nick">${p.nick}</h2>
+   <div class="official">${p.ko} <small>${p.en.toUpperCase()}</small></div>
+   <div class="match">닮은 정도 <span class="stars">${stars}</span> ${pct[k1]}%</div>
+   <div class="tags">${p.tags.map(x=>`<span class="tag">#${x}</span>`).join("")}</div>
+  </div>
+ </div>
+
+ <div class="bubble">“${p.say}”</div>
+
+ <div class="panel">
+  <h3><span class="ic">?</span>${p.ko}은 어떤 사람?</h3>
+  <p>${p.easy}</p>
+  <details><summary>IB 공식 정의 원문 보기</summary>
+   <div class="quote">${p.official}</div>
+   <p class="src">출처: IB 학습자상, 국제 바칼로레아 기구(IBO) 「IB 교육이란 무엇인가?」 한국어판</p>
+  </details>
+ </div>
+
+ <div class="two">
+  <div class="panel"><h3><span class="ic">+</span>나의 슈퍼파워</h3><ul>${p.powers.map(x=>`<li>${x}</li>`).join("")}</ul></div>
+  <div class="panel"><h3><span class="ic">!</span>살짝 조심!</h3><p>${p.watch}</p></div>
+ </div>
+
+ <div class="panel">
+  <h3><span class="ic">%</span>나의 학습자 능력치</h3>
+  <div class="radar-wrap">
+   ${radar(pct,k1)}
+   <div class="rank">${rank.slice(0,3).map((k,i)=>`<div class="row"><span class="medal" style="background:${mcol[i]}">${medals[i]}</span><span>${P[k].ko}</span><span>${pct[k]}%</span></div>`).join("")}
+    <p class="muted" style="font-size:.88rem;margin-top:4px">점수는 내가 고른 답에서 그 학습자상이 나온 비율이에요.</p>
+   </div>
+  </div>
+ </div>
+
+ <div class="two">
+  <div class="panel">
+   <h3><span class="ic">♥</span>찰떡 짝꿍</h3>
+   <div class="friend">${mascot(pr,64)}<div><b>${P[pr].nick}</b><br><span class="muted">${P[pr].ko}</span><br><span class="combo">${p.word} + ${P[pr].word} = 최강 콤비</span></div></div>
+  </div>
+  <div class="panel">
+   <h3><span class="ic">↑</span>숨은 모습</h3>
+   <div class="friend">${mascot(k2,64)}<div><b>${P[k2].nick}</b><br><span class="muted">${P[k2].ko} · ${pct[k2]}%</span><br><span class="combo">내 안의 두 번째 모습</span></div></div>
+  </div>
+ </div>
+
+ <div class="panel">
+  <h3><span class="ic">*</span>다음에 키워 볼 힘</h3>
+  <div class="friend">${mascot(low,64)}<div><b>${P[low].word}</b> <span class="muted">(${P[low].ko})</span><br><span>${P[low].easy}</span></div></div>
+ </div>
+
+ <div class="mission">
+  <div class="stamp">이번 주<br>미션</div>
+  <div><h3>성장 미션</h3><p>${p.mission}</p></div>
+ </div>
+
+ <p class="note">10가지 학습자상은 모두가 함께 키워 가는 모습이에요. 오늘 결과는 ‘지금 나에게 잘 보이는 모습’일 뿐, 정답도 등급도 아니에요.<br>결과 화면을 휴대폰으로 찍어 가세요!</p>
+ <div class="actions">
+  <button class="btn" id="next">다음 친구 차례!</button>
+  <button class="btn sub" id="again">다시 해 보기</button>
+ </div>`;
+ show("result");
+ confetti();
+ $("next").onclick=()=>{renderTally();show("start");};
+ $("again").onclick=start;
+}
+
+/* ===== confetti ===== */
+function confetti(){
+ if(matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+ const cv=$("confetti"),ctx=cv.getContext("2d"),dpr=window.devicePixelRatio||1;
+ cv.hidden=false;cv.width=innerWidth*dpr;cv.height=innerHeight*dpr;ctx.scale(dpr,dpr);
+ const cols=Object.values(COL),parts=[];
+ for(let i=0;i<160;i++)parts.push({x:innerWidth/2+(Math.random()-.5)*120,y:innerHeight*.35,vx:(Math.random()-.5)*14,vy:-Math.random()*14-4,s:6+Math.random()*7,r:Math.random()*6,vr:(Math.random()-.5)*.3,c:cols[i%cols.length],shape:i%3});
+ let f=0;
+ (function tick(){
+  ctx.clearRect(0,0,innerWidth,innerHeight);
+  parts.forEach(p=>{p.vy+=.35;p.vx*=.99;p.x+=p.vx;p.y+=p.vy;p.r+=p.vr;
+   ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.r);ctx.fillStyle=p.c;ctx.strokeStyle=INK;ctx.lineWidth=1.5;
+   if(p.shape===0){ctx.fillRect(-p.s/2,-p.s/3,p.s,p.s/1.5);ctx.strokeRect(-p.s/2,-p.s/3,p.s,p.s/1.5);}
+   else if(p.shape===1){ctx.beginPath();ctx.arc(0,0,p.s/2,0,7);ctx.fill();ctx.stroke();}
+   else{ctx.beginPath();for(let j=0;j<10;j++){const rr=j%2?p.s/4:p.s/1.6,a=j*Math.PI/5;ctx.lineTo(rr*Math.cos(a),rr*Math.sin(a));}ctx.closePath();ctx.fill();ctx.stroke();}
+   ctx.restore();});
+  if(++f<200)requestAnimationFrame(tick);else{ctx.clearRect(0,0,innerWidth,innerHeight);cv.hidden=true;}
+ })();
+}
+
+$("go").onclick=start;
+$("optA").onclick=()=>pick("a");
+$("optB").onclick=()=>pick("b");
+$("back").onclick=back;
+document.addEventListener("keydown",e=>{
+ if($("quiz").hidden)return;
+ if(e.key==="1"||e.key==="ArrowLeft")pick("a");
+ else if(e.key==="2"||e.key==="ArrowRight")pick("b");
+ else if(e.key==="Backspace")back();
+});
+</script>
+
+</body></html>
