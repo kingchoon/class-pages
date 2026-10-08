@@ -38,10 +38,14 @@ button:focus-visible,summary:focus-visible{outline:3px solid var(--focus);outlin
 .start{display:flex;flex-direction:column;align-items:center;text-align:center;gap:22px;flex:1;justify-content:center}
 .start h1{font-size:clamp(2.3rem,8vw,3.8rem)}
 .start h1 .hl{background:linear-gradient(transparent 58%,var(--accent-2) 58%);padding-inline:4px}
-.parade{display:grid;grid-template-columns:repeat(5,1fr);gap:4px 6px;width:100%;max-width:560px}
+.parade figure svg{width:100%;height:auto;max-width:82px}
+.parade{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px 6px;width:100%;max-width:560px}
 .parade figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:0}
 .parade figcaption{font-family:var(--display);font-size:.82rem;color:var(--muted);line-height:1.2}
 .lead{max-width:30em}
+.notice{max-width:30em;background:#FFF7D6;border:2px dashed var(--ink);border-radius:18px;padding:10px 16px;font-size:.92rem;line-height:1.55}
+.notice b{font-family:var(--display);font-weight:400;font-size:1.02rem}
+.cotie{font-family:var(--display);font-size:.95rem;background:var(--pcl);border:2px solid var(--ink);border-radius:999px;padding:2px 12px}
 .tally{width:100%;max-width:560px;background:var(--surface);border:2px dashed var(--line);border-radius:22px;padding:14px 18px;display:flex;flex-direction:column;gap:10px;margin-top:10px}
 .tally-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;font-family:var(--display)}
 .tally-bars{display:grid;grid-template-columns:repeat(10,1fr);gap:6px;align-items:end;height:60px}
@@ -146,7 +150,8 @@ summary{cursor:pointer;font-family:var(--display);color:var(--muted)}
     <span class="pill">IB 학습자상 체험 부스</span>
     <h1>나는 어떤<br><span class="hl">IB 학습자</span>일까?</h1>
     <div class="parade" id="parade"></div>
-    <p class="lead">14가지 상황에서 <b>나랑 더 비슷한 쪽</b>을 골라 보세요. 정답은 없어요! 10명의 IB 친구들 중 누가 나랑 제일 닮았는지 알려 줄게요.</p>
+    <p class="lead">15가지 상황에서 <b>나랑 더 비슷한 쪽</b>을 골라 보세요. 정답은 없어요! 10명의 IB 친구들 중 누가 나랑 제일 닮았는지 알려 줄게요.</p>
+    <div class="notice"><b>잠깐! 이건 체험 활동이에요.</b><br>성격을 정확하게 재는 검사가 아니라, 내가 고른 답으로 10가지 IB 학습자상과 친해져 보는 놀이예요. 결과는 재미로 보고, 10가지 모습 모두 키워 갈 수 있다는 걸 기억해 주세요!</div>
     <button class="btn" id="go">시작하기!</button>
     <p class="muted" style="font-size:.9rem">약 2분 · 키보드 1, 2로도 고를 수 있어요</p>
 
@@ -164,7 +169,7 @@ summary{cursor:pointer;font-family:var(--display);color:var(--muted)}
     <div class="top">
       <button class="back" id="back">이전</button>
       <div class="track"><span id="bar"></span></div>
-      <div class="count" id="count">1/14</div>
+      <div class="count" id="count">1/15</div>
     </div>
     <div class="qcard">
       <div class="who" id="who"></div>
@@ -313,8 +318,12 @@ const Q=[
   b:["쓰레기가 왜 많아졌는지 원인부터 조사한다",["inq","thi"]]},
  {q:"게임 규칙을 잘 모르는 친구가 함께하게 되면?",
   a:["규칙을 정확히 알려 주고 모두 똑같이 지키자고 한다",["pri","com"]],
-  b:["친구가 익숙해질 때까지 규칙을 살짝 바꿔 같이 즐긴다",["car","ope"]]}
+  b:["친구가 익숙해질 때까지 규칙을 살짝 바꿔 같이 즐긴다",["car","ope"]]},
+ {q:"모둠 발표가 모두 끝난 뒤에 나는?",
+  a:["새로 알게 된 내용과 아쉬웠던 점을 정리해 본다",["kno","ref"]],
+  b:["맡은 일을 끝까지 마무리하고, 수고한 나에게 쉬는 시간을 준다",["pri","bal"]]}
 ];
+/* 공정성: 모든 학습자상이 선택지에 똑같이 6번씩 나와요 (15문항 × 2선택지 × 2개 = 60 = 10 × 6) */
 const MAX=Object.fromEntries(ORDER.map(k=>[k,Q.filter(x=>x.a[1].includes(k)||x.b[1].includes(k)).length]));
 
 /* ===== 마스코트 (SVG) ===== */
@@ -424,8 +433,13 @@ function finish(){
  const raw=Object.fromEntries(ORDER.map(k=>[k,0]));
  answers.forEach((c,i)=>Q[i][c][1].forEach(k=>raw[k]++));
  const pct=Object.fromEntries(ORDER.map(k=>[k,Math.round(raw[k]/MAX[k]*100)]));
- const rank=[...ORDER].sort((a,b)=>pct[b]-pct[a]||raw[b]-raw[a]||ORDER.indexOf(a)-ORDER.indexOf(b));
+ /* 동점이면 목록 순서가 아니라 무작위로 섞어서 정해요 */
+ const shuffled=[...ORDER];
+ for(let i=shuffled.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];}
+ const rank=shuffled.sort((a,b)=>pct[b]-pct[a]);
  const k1=rank[0],k2=rank[1],low=rank[rank.length-1],p=P[k1],pr=PAIR[k1];
+ const ties=rank.filter(k=>k!==k1&&pct[k]===pct[k1]);
+ const tieNote=ties.length?`<span class="cotie">${ties.map(k=>P[k].short).join(", ")}도 공동 1위예요!</span>`:"";
  const t=loadTally();t[k1]=(t[k1]||0)+1;saveTally(t);
  const stars="★★★★★".slice(0,Math.max(1,Math.round(pct[k1]/20)))+"☆☆☆☆☆".slice(0,5-Math.max(1,Math.round(pct[k1]/20)));
  const medals=["1","2","3"],mcol=["#FFCF4A","#E3E3EE","#F2B48A"];
@@ -442,7 +456,8 @@ function finish(){
   <div class="card-name">
    <h2 class="nick">${p.nick}</h2>
    <div class="official">${p.ko} <small>${p.en.toUpperCase()}</small></div>
-   <div class="match">닮은 정도 <span class="stars">${stars}</span> ${pct[k1]}%</div>
+   <div class="match">닮은 정도 <span class="stars">${stars}</span> ${raw[k1]}/${MAX[k1]}번</div>
+   ${tieNote}
    <div class="tags">${p.tags.map(x=>`<span class="tag">#${x}</span>`).join("")}</div>
   </div>
  </div>
@@ -454,7 +469,7 @@ function finish(){
   <p>${p.easy}</p>
   <details><summary>IB 공식 정의 원문 보기</summary>
    <div class="quote">${p.official}</div>
-   <p class="src">출처: IB 학습자상, 국제 바칼로레아 기구(IBO) 「IB 교육이란 무엇인가?」 한국어판</p>
+   <p class="src">출처: 국제 바칼로레아 기구(IBO), 「IB 교육이란 무엇인가?」 한국어판(2020년 8월) ‘IB 학습자상’ 페이지</p>
   </details>
  </div>
 
@@ -467,8 +482,8 @@ function finish(){
   <h3><span class="ic">%</span>나의 학습자 능력치</h3>
   <div class="radar-wrap">
    ${radar(pct,k1)}
-   <div class="rank">${rank.slice(0,3).map((k,i)=>`<div class="row"><span class="medal" style="background:${mcol[i]}">${medals[i]}</span><span>${P[k].ko}</span><span>${pct[k]}%</span></div>`).join("")}
-    <p class="muted" style="font-size:.88rem;margin-top:4px">점수는 내가 고른 답에서 그 학습자상이 나온 비율이에요.</p>
+   <div class="rank">${rank.slice(0,3).map((k,i)=>`<div class="row"><span class="medal" style="background:${mcol[i]}">${medals[i]}</span><span>${P[k].ko}</span><span>${raw[k]}/${MAX[k]}</span></div>`).join("")}
+    <p class="muted" style="font-size:.88rem;margin-top:4px">각 학습자상은 선택지에 똑같이 ${MAX[k1]}번씩 나와요. 숫자는 그중 내가 몇 번 골랐는지예요. 진짜 실력을 잰 점수가 아니에요!</p>
    </div>
   </div>
  </div>
@@ -480,7 +495,7 @@ function finish(){
   </div>
   <div class="panel">
    <h3><span class="ic">↑</span>숨은 모습</h3>
-   <div class="friend">${mascot(k2,64)}<div><b>${P[k2].nick}</b><br><span class="muted">${P[k2].ko} · ${pct[k2]}%</span><br><span class="combo">내 안의 두 번째 모습</span></div></div>
+   <div class="friend">${mascot(k2,64)}<div><b>${P[k2].nick}</b><br><span class="muted">${P[k2].ko} · ${raw[k2]}/${MAX[k2]}</span><br><span class="combo">내 안의 두 번째 모습</span></div></div>
   </div>
  </div>
 
