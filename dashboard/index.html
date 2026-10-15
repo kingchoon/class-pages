@@ -1967,6 +1967,37 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
     @media (prefers-reduced-motion: reduce) {
       /* 링 회전도 윈도우 설정과 상관없이 돈다 */
     }
+
+    /* 🐰🐱 토끼·고양이 달리기 */
+    .rs-strip { position: absolute; height: 64px; z-index: 30; pointer-events: none; overflow: hidden; }
+    .rs-ground { position: absolute; left: 0; right: 0; bottom: 6px; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(79, 227, 255, 0.45) 15%, rgba(79, 227, 255, 0.45) 85%, transparent); }
+    .rs-pack { position: absolute; bottom: 6px; display: flex; align-items: flex-end; gap: 22px; animation: rs-come 11s linear infinite; }
+    @keyframes rs-come {
+      0% { left: 100%; opacity: 1; }
+      78% { left: 0%; opacity: 1; }
+      86% { left: 0%; opacity: 1; }
+      92%, 100% { left: 0%; opacity: 0; }
+    }
+    .rs-bunny { overflow: visible; animation: rs-hop .46s cubic-bezier(.3,.1,.5,1) infinite; transform-origin: 50% 100%; }
+    @keyframes rs-hop {
+      0%, 100% { transform: translateY(0) scaleY(.9) scaleX(1.06); }
+      45% { transform: translateY(-16px) scaleY(1.05) scaleX(.97) rotate(-6deg); }
+      70% { transform: translateY(-6px) rotate(4deg); }
+    }
+    .rs-bunny-ears { transform-origin: 22px 20px; animation: rs-ears .46s ease-in-out infinite; }
+    @keyframes rs-ears { 0%, 100% { transform: rotate(0); } 45% { transform: rotate(14deg); } }
+    .rs-cat { overflow: visible; animation: rs-trot .32s ease-in-out infinite; }
+    @keyframes rs-trot { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+    .rs-leg { transform-box: fill-box; transform-origin: 50% 0; }
+    .rs-leg-a { animation: rs-leg .32s ease-in-out infinite; }
+    .rs-leg-b { animation: rs-leg .32s ease-in-out infinite reverse; }
+    @keyframes rs-leg { 0%, 100% { transform: rotate(32deg); } 50% { transform: rotate(-32deg); } }
+    .rs-cat-tail { transform-box: fill-box; transform-origin: 0 100%; animation: rs-tail .64s ease-in-out infinite; }
+    @keyframes rs-tail { 0%, 100% { transform: rotate(-8deg); } 50% { transform: rotate(10deg); } }
+    /* 끝에 도착하면 둘 다 잠깐 멈춰 서서 숨 고르기 */
+    .rs-pack { --x: 0; }
+    body.theme-jarvis .rs-bunny, body.theme-jarvis .rs-cat { filter: drop-shadow(0 0 5px rgba(79, 227, 255, 0.45)); }
     /* 대시보드 폭이 좁으면(화면 배율 큼) 위쪽 단추는 아이콘만 */
     @media (max-width: 760px) {
       .topbar-glass .topbar-btn > span:not([class*="rounded-full"]) { display: none; }
@@ -2473,6 +2504,72 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
             <circle className="jv-ring-inner" cx="60" cy="60" r="36" />
           </svg>
           <div className="jv-ring-text"><b className={label.length > 1 ? 'is-word' : ''}>{label}</b><span>{sub}</span></div>
+        </div>
+      );
+    }
+
+    // 🐰🐱 아래 도구 막대 오른쪽 빈자리: 토끼를 고양이가 쫓아 뛰어오는 애니메이션 (직접 그린 그림)
+    function RunnersStrip() {
+      const [box, setBox] = useState(null);
+      useEffect(() => {
+        const measure = () => {
+          const dock = document.querySelector('.wb-dock');
+          const root = document.getElementById('root');
+          if (!dock || !root) { setBox(null); return; }
+          const d = dock.getBoundingClientRect(), r = root.getBoundingClientRect();
+          const left = d.right - r.left + 16, width = r.right - 14 - (d.right + 16);
+          setBox(width >= 150 ? { left, width, bottom: r.bottom - d.bottom } : null);
+        };
+        measure();
+        const t = setInterval(measure, 2000);
+        window.addEventListener('resize', measure);
+        return () => { clearInterval(t); window.removeEventListener('resize', measure); };
+      }, []);
+      if (!box) return null;
+      return (
+        <div className="rs-strip" style={{ left: box.left, width: box.width, bottom: box.bottom }} aria-hidden="true">
+          <div className="rs-ground" />
+          <div className="rs-pack">
+            <svg className="rs-bunny" viewBox="0 0 64 56" width="58" height="51">
+              <g className="rs-bunny-body">
+                <ellipse cx="40" cy="38" rx="17" ry="12" fill="#f4f6fb" />
+                <circle cx="57" cy="34" r="5" fill="#ffffff" />
+                <g className="rs-bunny-ears">
+                  <ellipse cx="19" cy="9" rx="4.2" ry="12" fill="#f4f6fb" transform="rotate(-28 19 9)" />
+                  <ellipse cx="19" cy="9" rx="2" ry="8" fill="#f7b8c8" transform="rotate(-28 19 9)" />
+                  <ellipse cx="26" cy="8" rx="4.2" ry="12" fill="#e8ecf4" transform="rotate(-8 26 8)" />
+                </g>
+                <circle cx="22" cy="29" r="11" fill="#f4f6fb" />
+                <circle cx="17.5" cy="27" r="1.9" fill="#1d2430" />
+                <circle cx="17" cy="26.4" r="0.6" fill="#fff" />
+                <ellipse cx="12.2" cy="31" rx="1.6" ry="1.2" fill="#f28aa5" />
+                <ellipse cx="20" cy="33" rx="2.4" ry="1.4" fill="#f7c4d2" opacity=".8" />
+                <ellipse className="rs-bunny-front" cx="27" cy="48" rx="4" ry="2.6" fill="#e3e8f1" />
+                <ellipse className="rs-bunny-back" cx="50" cy="48" rx="7" ry="3.2" fill="#e3e8f1" />
+              </g>
+            </svg>
+            <svg className="rs-cat" viewBox="0 0 76 56" width="66" height="49">
+              <g className="rs-cat-body">
+                <path className="rs-cat-tail" d="M60 30 C 72 26, 74 12, 66 8" stroke="#f0a04b" strokeWidth="5" fill="none" strokeLinecap="round" />
+                <ellipse cx="44" cy="33" rx="19" ry="10" fill="#f0a04b" />
+                <path d="M36 25 q4 8 0 16 M44 24 q4 9 0 18" stroke="#d9852f" strokeWidth="2.4" fill="none" strokeLinecap="round" />
+                <g className="rs-cat-legs">
+                  <rect className="rs-leg rs-leg-a" x="28" y="38" width="5" height="13" rx="2.5" fill="#e58f38" />
+                  <rect className="rs-leg rs-leg-b" x="34" y="38" width="5" height="13" rx="2.5" fill="#f0a04b" />
+                  <rect className="rs-leg rs-leg-b" x="52" y="38" width="5" height="13" rx="2.5" fill="#e58f38" />
+                  <rect className="rs-leg rs-leg-a" x="57" y="38" width="5" height="13" rx="2.5" fill="#f0a04b" />
+                </g>
+                <circle cx="20" cy="25" r="11" fill="#f0a04b" />
+                <path d="M11 19 L12 7 L20 15 Z M22 14 L29 6 L30 18 Z" fill="#f0a04b" />
+                <path d="M13 16 L13.6 10 L17.5 14 Z" fill="#f7c4d2" />
+                <ellipse cx="15.5" cy="24" rx="1.8" ry="2.4" fill="#1d2430" />
+                <ellipse cx="23" cy="24" rx="1.8" ry="2.4" fill="#1d2430" />
+                <circle cx="15" cy="23.2" r="0.6" fill="#fff" /><circle cx="22.5" cy="23.2" r="0.6" fill="#fff" />
+                <path d="M18 28 l1.3 1 l1.3 -1" stroke="#7a3d12" strokeWidth="1.2" fill="none" strokeLinecap="round" />
+                <path d="M9 27 h-5 M9 29.5 h-5" stroke="#7a3d12" strokeWidth=".9" strokeLinecap="round" />
+              </g>
+            </svg>
+          </div>
         </div>
       );
     }
@@ -6104,6 +6201,7 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
       return (
         <div className="w-full h-full overflow-hidden flex flex-col relative select-none">
           {currentTheme === 'jarvis' && <NeuralBackdrop enabled={jvMotion} />}
+          <RunnersStrip />
           {toastMsg && (
             <div className="fixed top-16 left-1/2 -translate-x-1/2 z-[10000] bg-slate-900/95 border border-amber-500/80 text-amber-200 px-5 py-2 rounded-2xl shadow-2xl text-sm font-bold backdrop-blur-md flex items-center gap-2">
               <i className="fa-solid fa-bell text-amber-400"></i>
