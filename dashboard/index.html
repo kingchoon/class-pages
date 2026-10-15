@@ -579,7 +579,6 @@
     .widget-container[data-w="school"]    { --accent: #34d399; }
     .widget-container[data-w="gcal"]      { --accent: #f472b6; }
     .widget-container[data-w="gemini"]    { --accent: #a78bfa; }
-    .widget-container[data-w="vocab"]     { --accent: #facc15; }
     .widget-container[data-w="folders"]   { --accent: #60a5fa; }
     .widget-container[data-w="bookmarks"] { --accent: #fb923c; }
 
@@ -2562,156 +2561,8 @@
       );
     }
 
-    // ------------------------------------------------------------------ ▶ 유튜브
-    function lessonVideosFor(videos, cls, n) {
-      const g = gradeOfClass(cls);
-      return (((videos || {})[g] || {})[String(n)]) || [];
-    }
-
-    function YoutubeKeyModal({ onClose, onToast }) {
-      const [status, setStatus] = useState(null);
-      const [val, setVal] = useState('');
-      const [busy, setBusy] = useState(false);
-      const load = () => dApiFetch('/api/youtube/key').then(r => r.json()).then(setStatus).catch(() => {});
-      useEffect(() => { load(); }, []);
-      const save = async (e) => {
-        e.preventDefault();
-        setBusy(true);
-        try {
-          const r = await dApiFetch('/api/youtube/key', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ apiKey: val.trim(), verify: true }) });
-          const d = await r.json();
-          if (d.success) { onToast(val.trim() ? '▶ 유튜브 키를 저장했어요. 이제 영상을 찾을 수 있어요!' : '유튜브 키를 지웠어요.'); setVal(''); load(); onClose(); }
-          else onToast(`⚠️ ${d.error || '저장하지 못했어요.'}`);
-        } catch (err) { onToast('⚠️ 백엔드 서버에 연결할 수 없습니다.'); }
-        setBusy(false);
-      };
-      return (
-        <div className="fixed inset-0 z-[10030] bg-black/75 backdrop-blur-sm flex items-center justify-center p-6" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-          <form onSubmit={save} className="w-[520px] max-w-[96vw] bg-slate-950 border border-rose-500/60 rounded-3xl shadow-2xl p-6 flex flex-col gap-4 select-text">
-            <div className="flex items-center justify-between">
-              <span className="text-xl font-black text-rose-300">▶ 유튜브 API 키</span>
-              <button type="button" onClick={onClose} className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 font-bold">✕</button>
-            </div>
-            <div className="text-sm text-slate-300 leading-relaxed">
-              발급받은 키를 붙여 넣고 저장하세요. 키는 이 컴퓨터의 <b>config.json</b>에만 저장되고, 화면이나 휴대폰에는 보내지 않아요.
-            </div>
-            <div className="text-sm font-bold">{status ? (status.hasKey ? <span className="text-emerald-300">● 저장된 키: {status.masked}</span> : <span className="text-slate-500">● 아직 키가 없어요</span>) : '확인 중…'}</div>
-            <input value={val} onChange={(e) => setVal(e.target.value)} placeholder="AIza로 시작하는 키" autoFocus className="w-full bg-slate-900 border border-slate-700 focus:border-rose-400 rounded-xl px-4 py-3 text-sm text-white font-mono outline-none" />
-            <div className="flex justify-between gap-2">
-              {status && status.hasKey ? <button type="button" onClick={() => { setVal(''); setTimeout(() => document.getElementById('ytKeySaveBtn').click(), 0); }} className="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-sm font-bold">키 지우기</button> : <span />}
-              <button id="ytKeySaveBtn" type="submit" disabled={busy} className="px-6 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-sm font-black">{busy ? '확인 중…' : '확인하고 저장'}</button>
-            </div>
-          </form>
-        </div>
-      );
-    }
-
-    function VideoSearchModal({ onClose, onPlay, onSave, saveLabel, onToast, onOpenKey, initialQuery, saved, onKeep, onUnkeep }) {
-      const [tab, setTab] = useState(initialQuery === '__library__' ? 'library' : 'search');
-      const [q, setQ] = useState(initialQuery && initialQuery !== '__library__' ? initialQuery : '');
-      const [items, setItems] = useState([]);
-      const [next, setNext] = useState('');
-      const [busy, setBusy] = useState(false);
-      const [err, setErr] = useState('');
-      const [url, setUrl] = useState('');
-      const [adding, setAdding] = useState(false);
-      const savedList = saved || [];
-      const isKept = (id) => savedList.some(v => v.id === id);
-      const run = async (more) => {
-        if (!q.trim()) return;
-        setBusy(true); setErr(''); setTab('search');
-        try {
-          const r = await dApiFetch(`/api/youtube/search?q=${encodeURIComponent(q.trim())}${more && next ? `&page=${encodeURIComponent(next)}` : ''}`);
-          const d = await r.json();
-          if (d.success) { setItems(more ? [...items, ...d.items] : d.items); setNext(d.next || ''); }
-          else setErr(d.error || '검색하지 못했어요.');
-        } catch (e) { setErr('백엔드 서버에 연결할 수 없습니다.'); }
-        setBusy(false);
-      };
-      useEffect(() => { if (initialQuery && initialQuery !== '__library__') run(false); }, []);
-      // 유튜브 주소를 붙여 넣으면 보관함에 저장
-      const addByUrl = async (e) => {
-        e.preventDefault();
-        if (!url.trim()) return;
-        setAdding(true);
-        try {
-          const r = await dApiFetch(`/api/youtube/info?u=${encodeURIComponent(url.trim())}`);
-          const d = await r.json();
-          if (d.success) {
-            onKeep({ id: d.id, title: d.title, channel: d.channel || '' });
-            setUrl(''); setTab('library');
-            if (d.warning) onToast(`⚠️ ${d.warning}`);
-          } else onToast(`⚠️ ${d.error || '영상 정보를 가져오지 못했어요.'}`);
-        } catch (err2) { onToast('⚠️ 백엔드 서버에 연결할 수 없습니다.'); }
-        setAdding(false);
-      };
-      const noKey = /키가 없어요/.test(err);
-      const card = (v, inLibrary) => (
-        <div key={v.id} className="rounded-2xl bg-slate-900/90 border border-slate-800 overflow-hidden flex flex-col">
-          <button onClick={() => onPlay(v)} className="relative block group" title="학생 화면(TV)에서 재생">
-            <img src={v.thumb || `https://i.ytimg.com/vi/${v.id}/mqdefault.jpg`} alt="" className="w-full aspect-video object-cover bg-slate-800" />
-            {v.duration && <span className="absolute right-2 bottom-2 px-1.5 py-0.5 rounded bg-black/80 text-white text-xs font-bold">{v.duration}</span>}
-            <span className="absolute inset-0 bg-black/0 group-hover:bg-black/40 flex items-center justify-center text-white text-3xl font-black opacity-0 group-hover:opacity-100 transition">▶ TV로</span>
-          </button>
-          <div className="p-3 flex flex-col gap-1 flex-1">
-            <div className="text-sm font-bold text-slate-100 leading-snug line-clamp-2" title={v.title}>{v.title}</div>
-            <div className="text-xs text-slate-400">{v.channel}{v.views != null ? ` · 조회수 ${v.views.toLocaleString()}` : ''}{v.published ? ` · ${v.published}` : ''}</div>
-            <div className="mt-auto pt-2 flex gap-1.5">
-              <button onClick={() => onPlay(v)} className="flex-1 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-black">📺 TV로 틀기</button>
-              {inLibrary
-                ? <button onClick={() => onUnkeep(v.id)} className="px-2.5 py-2 rounded-lg bg-slate-800 hover:bg-rose-800 text-slate-300 text-xs font-bold" title="보관함에서 빼기">🗑</button>
-                : <button onClick={() => isKept(v.id) ? onUnkeep(v.id) : onKeep(v)} className={`px-2.5 py-2 rounded-lg text-xs font-bold ${isKept(v.id) ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 hover:bg-slate-700 text-slate-200'}`} title="보관함에 저장">⭐</button>}
-              <button onClick={() => onSave(v)} disabled={!saveLabel} title={saveLabel ? `${saveLabel}에 저장` : '수업 화면에 차시가 있을 때 저장할 수 있어요'} className="px-2.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold disabled:opacity-40">📌 {saveLabel ? saveLabel : '차시'}</button>
-            </div>
-          </div>
-        </div>
-      );
-      return (
-        <div className="fixed inset-0 z-[10025] bg-black/75 backdrop-blur-sm flex items-center justify-center p-6" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-          <div className="w-[1180px] max-w-[96vw] h-[86vh] bg-slate-950 border border-rose-500/50 rounded-3xl shadow-2xl p-6 flex flex-col gap-4 min-h-0">
-            <div className="flex items-center gap-3 flex-shrink-0">
-              <span className="text-xl font-black text-rose-300 whitespace-nowrap">🎬 수업 영상</span>
-              <form onSubmit={(e) => { e.preventDefault(); run(false); }} className="flex-1 flex gap-2">
-                <input value={q} onChange={(e) => setQ(e.target.value)} autoFocus placeholder="검색: 전기 회로 원리, 브레드보드 사용법, 발명 기법" className="flex-1 bg-slate-900 border border-slate-700 focus:border-rose-400 rounded-xl px-4 py-2.5 text-[15px] text-white outline-none select-text" />
-                <button type="submit" disabled={busy} className="px-5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-black">{busy ? '찾는 중…' : '🔍 찾기'}</button>
-              </form>
-              <button onClick={onClose} className="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 font-bold">닫기</button>
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <button onClick={() => setTab('search')} className={`px-4 py-2 rounded-xl text-sm font-black ${tab === 'search' ? 'bg-rose-600 text-white' : 'bg-slate-800 text-slate-300'}`}>🔍 검색 결과</button>
-              <button onClick={() => setTab('library')} className={`px-4 py-2 rounded-xl text-sm font-black ${tab === 'library' ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-slate-300'}`}>⭐ 보관함 {savedList.length ? `(${savedList.length})` : ''}</button>
-              <form onSubmit={addByUrl} className="flex-1 flex gap-2 ml-3">
-                <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="🔗 유튜브 영상 주소를 붙여 넣으면 보관함에 저장돼요 (https://youtu.be/…)" className="flex-1 bg-slate-900 border border-slate-700 focus:border-amber-400 rounded-xl px-4 py-2 text-sm text-white outline-none select-text" />
-                <button type="submit" disabled={adding} className="px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-sm font-black whitespace-nowrap">{adding ? '확인 중…' : '⭐ 저장'}</button>
-              </form>
-            </div>
-            {tab === 'search' && err && (
-              <div className="rounded-xl bg-rose-950/60 border border-rose-700/60 px-4 py-3 text-sm text-rose-200 font-bold flex items-center justify-between flex-shrink-0">
-                <span>⚠️ {err}</span>
-                {noKey && <button onClick={onOpenKey} className="px-3 py-1.5 rounded-lg bg-rose-600 text-white text-xs font-black">키 넣기</button>}
-              </div>
-            )}
-            <div className="flex-1 min-h-0 overflow-y-auto custom-scroll pr-1">
-              {tab === 'search' ? (
-                <div className="grid grid-cols-3 gap-4 content-start">
-                  {items.length === 0 && !busy && !err && <div className="col-span-3 text-center text-slate-500 mt-24">검색어를 넣고 찾아보세요. 결과를 누르면 학생 화면(TV)에서 바로 재생돼요.</div>}
-                  {items.map(v => card(v, false))}
-                  {next && items.length > 0 && <button onClick={() => run(true)} disabled={busy} className="col-span-3 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold">{busy ? '불러오는 중…' : '더 보기'}</button>}
-                </div>
-              ) : (
-                <div className="grid grid-cols-3 gap-4 content-start">
-                  {savedList.length === 0 && <div className="col-span-3 text-center text-slate-500 mt-24 leading-relaxed">아직 보관한 영상이 없어요.<br />위 칸에 유튜브 주소를 붙여 넣거나, 검색 결과의 ⭐를 누르면 여기에 모여요.<br />보관한 영상은 검색 횟수와 상관없이 언제든 틀 수 있어요.</div>}
-                  {savedList.map(v => card(v, true))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      );
-    }
-
     // ------------------------------------------------------------------ 수업 화면 (시간에 따라 자동으로 뜨는 큰 화면)
-    function ClassFocusPanel({ ctx, now, plans, progress, setProgress, onDismiss, onOpenSetup, studentPanel, videos, onPlayVideo, onFindVideo, onRemoveVideo }) {
+    function ClassFocusPanel({ ctx, now, plans, progress, setProgress, onDismiss, onOpenSetup, studentPanel }) {
       const narrow = dashViewW() < 1300;
       const target = ctx.current || ctx.next || ctx.upcoming;
       const info = target ? getLessonInfo(target.cls, plans, progress) : null;
@@ -2792,17 +2643,6 @@
                   )}
                 </div>
 
-                <div className="mt-4 flex flex-wrap items-center gap-2">
-                  <span className="text-sm font-bold text-slate-400">🎬 이 차시 영상</span>
-                  {lessonVideosFor(videos, target.cls, info.n).map(v => (
-                    <span key={v.id} className="group inline-flex items-center rounded-lg bg-rose-950/60 border border-rose-700/60 overflow-hidden">
-                      <button onClick={() => onPlayVideo(v)} className="px-3 py-1 text-rose-100 text-sm font-bold hover:bg-rose-800/60 max-w-[260px] truncate" title={`${v.title} — TV로 틀기`}>▶ {v.title}</button>
-                      <button onClick={() => onRemoveVideo(target.cls, info.n, v.id)} className="px-2 py-1 text-rose-300/70 hover:text-white hover:bg-rose-700 text-xs" title="이 차시에서 빼기">✕</button>
-                    </span>
-                  ))}
-                  <button onClick={() => onFindVideo(info.lesson ? info.lesson.title : '')} className="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-bold">+ 영상 찾기</button>
-                </div>
-
                 {info.memo && (
                   <div className="mt-4 rounded-2xl bg-sky-950/60 border border-sky-800/60 p-4">
                     <div className="text-xs font-black text-sky-300 mb-1">📝 지난 시간 메모</div>
@@ -2870,22 +2710,7 @@
     }
 
     // ------------------------------------------------------------------ 학생 화면 조종판
-    function videoStatusText(rep, open) {
-      if (!open) return { t: '학생 화면이 꺼져 있어요 — 위의 [켜기]를 누르면 재생돼요', c: 'text-amber-300' };
-      if (!rep || !rep.video) return { t: '학생 화면 응답 기다리는 중…', c: 'text-slate-400' };
-      const m = { playing: ['▶ 재생 중', 'text-emerald-300'], paused: ['⏸ 일시정지', 'text-slate-300'], buffering: ['⏳ 불러오는 중', 'text-sky-300'], ended: ['■ 끝남', 'text-slate-300'], cued: ['준비됨', 'text-slate-300'], ready: ['준비됨', 'text-slate-300'],
-        'api-fail': ['⚠️ 학생 화면 컴퓨터가 youtube.com 에 연결하지 못했어요 (학교 사이트 차단·인터넷 확인)', 'text-rose-300'],
-        'api-slow': ['⚠️ 유튜브 재생기를 불러오는 데 오래 걸려요 (인터넷 확인)', 'text-amber-300'],
-        'youtube-window': ['📺 퍼가기가 막힌 영상이라 유튜브 창으로 TV에 띄웠어요 (재생·멈춤 버튼도 따라가요)', 'text-sky-300'] };
-      if (rep.video === 'error') {
-        const why = { 100: '영상이 삭제됐거나 비공개예요', 101: '유튜브에서만 볼 수 있는 영상이에요', 150: '유튜브에서만 볼 수 있는 영상이에요', 153: '재생기 설정 오류 — 학생 화면을 껐다 켜 보세요', 152: '재생기 설정 오류 — 학생 화면을 껐다 켜 보세요' };
-        return { t: `⚠️ 재생 오류 ${rep.code || ''}: ${why[rep.code] || '다른 영상을 골라 주세요'}`, c: 'text-rose-300' };
-      }
-      const x = m[rep.video] || [rep.video, 'text-slate-300'];
-      return { t: x[0], c: x[1] };
-    }
-
-    function StudentControlPanel({ open, onOpen, onClose, stu, setStu, nowMs, onFillFromLesson, canFill, onFindVideo, onVideoCmd, lessonVids, onPlayVideo, report, savedVids }) {
+    function StudentControlPanel({ open, onOpen, onClose, stu, setStu, nowMs, onFillFromLesson, canFill, report }) {
       const rem = timerRemainingMs(stu.timer, nowMs);
       const running = !!(stu.timer && stu.timer.endAt);
       const [msgDraft, setMsgDraft] = useState(stu.message || '');
@@ -2966,7 +2791,6 @@
             {viewBtn('lesson', '📋 수업')}
             {viewBtn('groups', '👥 모둠')}
             {viewBtn('pick', '🎯 뽑기')}
-            {viewBtn('video', '🎬 영상')}
             {viewBtn('blank', '🙈 가리기')}
           </div>
 
@@ -2989,57 +2813,7 @@
             </div>
           </div>
 
-          {stu.view === 'video' ? (
-            <div className="rounded-2xl bg-slate-900/90 border border-rose-700/60 p-4 flex-1 min-h-0 flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-black text-rose-300">🎬 영상 (학생 화면에서 재생)</span>
-                <button onClick={() => onFindVideo('')} className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-black">🔍 영상 찾기</button>
-              </div>
-              {stu.video && stu.video.id ? (
-                <>
-                  <div className="flex gap-3 items-center">
-                    <img src={`https://i.ytimg.com/vi/${stu.video.id}/mqdefault.jpg`} alt="" className="w-32 rounded-lg flex-shrink-0" />
-                    <div className="text-sm font-bold text-slate-100 leading-snug line-clamp-3">{stu.video.title}</div>
-                  </div>
-                  {(() => { const r = videoStatusText(report && report.id && report.id !== stu.video.id && report.video !== 'api-fail' ? null : report, open); return <div className={`text-xs font-bold ${r.c}`}>{r.t}</div>; })()}
-                  <div className="grid grid-cols-4 gap-1.5">
-                    <button onClick={() => onVideoCmd('restart')} className="py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-bold" title="처음부터">⏮</button>
-                    <button onClick={() => onVideoCmd('seek', -10)} className="py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-bold">⏪ 10초</button>
-                    <button onClick={() => onVideoCmd('seek', 10)} className="py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-bold">10초 ⏩</button>
-                    <button onClick={() => setStu(s => ({ ...s, view: 'lesson' }))} className="py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-bold">끄기</button>
-                  </div>
-                  <div className="grid grid-cols-2 gap-1.5">
-                    <button onClick={() => onVideoCmd('pause')} className="py-3 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-base font-black">⏸ 일시정지</button>
-                    <button onClick={() => onVideoCmd('play')} className="py-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-base font-black">▶ 재생</button>
-                  </div>
-                </>
-              ) : <div className="text-sm text-slate-500 text-center my-4">아직 고른 영상이 없어요. [🔍 영상 찾기]를 눌러 보세요.</div>}
-              {((lessonVids || []).length > 0 || (savedVids || []).length > 0) && (
-                <div className="mt-auto flex flex-col gap-2 min-h-0">
-                  {(savedVids || []).length > 0 && (
-                    <div>
-                      <div className="flex items-center justify-between mb-1"><span className="text-xs font-bold text-amber-300">⭐ 보관함</span><button onClick={() => onFindVideo('__library__')} className="text-xs font-bold text-slate-400 hover:text-slate-200 underline">전체 보기</button></div>
-                      <div className="flex flex-col gap-1 max-h-28 overflow-y-auto custom-scroll">
-                        {savedVids.map(v => (
-                          <button key={v.id} onClick={() => onPlayVideo(v)} className={`text-left px-3 py-1.5 rounded-lg text-xs font-bold truncate ${stu.video && stu.video.id === v.id ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-slate-200 hover:bg-slate-700'}`}>▶ {v.title}</button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-              {(lessonVids || []).length > 0 && (
-                <div>
-                  <div className="text-xs font-bold text-slate-400 mb-1">이 차시에 저장한 영상</div>
-                  <div className="flex flex-col gap-1 max-h-32 overflow-y-auto custom-scroll">
-                    {lessonVids.map(v => (
-                      <button key={v.id} onClick={() => onPlayVideo(v)} className={`text-left px-3 py-1.5 rounded-lg text-xs font-bold truncate ${stu.video && stu.video.id === v.id ? 'bg-rose-600 text-white' : 'bg-slate-800 text-slate-200 hover:bg-slate-700'}`}>▶ {v.title}</button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : stu.view === 'pick' ? (
+          {stu.view === 'pick' ? (
             <div className="rounded-2xl bg-slate-900/90 border border-pink-700/60 p-4 flex-1 min-h-0 flex flex-col">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-black text-pink-300">🎯 발표자 뽑기 (학생 화면에 크게 보여요)</span>
@@ -3432,14 +3206,7 @@
       const [lessonVideos, setLessonVideos] = useState(() => loadJSONKey('MODONG_LESSON_VIDEOS', {}));
       const [savedVideos, setSavedVideos] = useState(() => loadJSONKey('MODONG_SAVED_VIDEOS', []));
       useEffect(() => { saveJSONKey('MODONG_SAVED_VIDEOS', savedVideos); }, [savedVideos]);
-      const keepVideo = (v) => {
-        setSavedVideos(prev => prev.some(x => x.id === v.id) ? prev : [{ id: v.id, title: v.title || '', channel: v.channel || '' }, ...prev]);
-        showToast('⭐ 보관함에 저장했어요. 언제든 다시 틀 수 있어요.');
-      };
-      const unkeepVideo = (id) => setSavedVideos(prev => prev.filter(x => x.id !== id));
       useEffect(() => { saveJSONKey('MODONG_LESSON_VIDEOS', lessonVideos); }, [lessonVideos]);
-      const [showYtKeyModal, setShowYtKeyModal] = useState(false);
-      const [videoSearch, setVideoSearch] = useState(null);   // null 이면 닫힘, 문자열이면 첫 검색어
       const [classProgress, setClassProgress] = useState(() => loadJSONKey('MODONG_CLASS_PROGRESS', {}));
       useEffect(() => { saveJSONKey('MODONG_MY_TIMETABLE', timetable); }, [timetable]);
       useEffect(() => { saveJSONKey('MODONG_LESSON_PLANS', lessonPlans); }, [lessonPlans]);
@@ -3559,28 +3326,6 @@
         const iv = setInterval(check, 4000);
         return () => clearInterval(iv);
       }, []);
-      // ▶ 영상: 학생 화면(TV)에서 재생 / 조종 / 차시에 저장
-      const playVideoOnStudent = (v) => {
-        setStu(s => ({ ...s, view: 'video', video: { id: v.id, title: v.title || '', start: 0, loadAt: Date.now(), cmd: null } }));
-        showToast(studentOpen ? `🎬 학생 화면에서 재생: ${v.title || ''}` : '🎬 영상을 보냈어요. 학생 화면을 켜면 재생돼요 (휴대폰 TV 화면에서도 나와요).');
-      };
-      const videoCmd = (type, value) => setStu(s => (s.video ? { ...s, video: { ...s.video, cmd: { type, value: value || 0, at: Date.now() } } } : s));
-      const videoSaveTarget = lessonTarget ? { cls: lessonTarget.cls, n: getLessonInfo(lessonTarget.cls, lessonPlans, classProgress).n } : null;
-      const saveVideoToLesson = (v, target = videoSaveTarget) => {
-        if (!target) { showToast('⚠️ 저장할 차시가 없어요. 시간표·차시 계획을 먼저 적어 주세요.'); return; }
-        const g = gradeOfClass(target.cls), key = String(target.n);
-        setLessonVideos(prev => {
-          const list = ((prev[g] || {})[key]) || [];
-          if (list.some(x => x.id === v.id)) return prev;
-          return { ...prev, [g]: { ...(prev[g] || {}), [key]: [...list, { id: v.id, title: v.title || '' }] } };
-        });
-        showToast(`📌 ${g}학년 ${target.n}차시에 영상을 저장했어요.`);
-      };
-      const removeVideoFromLesson = (cls, n, id) => {
-        const g = gradeOfClass(cls), key = String(n);
-        setLessonVideos(prev => ({ ...prev, [g]: { ...(prev[g] || {}), [key]: (((prev[g] || {})[key]) || []).filter(x => x.id !== id) } }));
-      };
-
       const openStudentScreen = async () => {
         if (!stu.title && lessonTarget) fillStudentFromLesson();
         showToast('📺 학생 화면을 여는 중...');
@@ -4699,9 +4444,6 @@
                       <button className="menu-item" onClick={() => { setShowSettingsMenu(false); setTempGasUrl(gasUrl); setShowSheetSyncModal(true); }}>
                         <i className="fa-solid fa-table"></i> 구글 시트 연동 설정
                       </button>
-                      <button className="menu-item" onClick={() => { setShowSettingsMenu(false); setShowYtKeyModal(true); }}>
-                        <i className="fa-brands fa-youtube"></i> 유튜브 API 키
-                      </button>
                       <button className="menu-item tablet-only" onClick={() => { setShowSettingsMenu(false); window.__openTabletSettings && window.__openTabletSettings(); }}>
                         <i className="fa-solid fa-tablet-screen-button"></i> 📲 갤탭 앱 설정 (급식·시간표)
                       </button>
@@ -4733,10 +4475,6 @@
                 setProgress={setClassProgress}
                 onDismiss={dismissClassFocus}
                 onOpenSetup={(tab) => setClassSetupTab(tab || 'timetable')}
-                videos={lessonVideos}
-                onPlayVideo={playVideoOnStudent}
-                onFindVideo={(q) => setVideoSearch(q || '')}
-                onRemoveVideo={removeVideoFromLesson}
                 studentPanel={
                   <StudentControlPanel
                     open={studentOpen}
@@ -4747,11 +4485,6 @@
                     nowMs={now.getTime()}
                     onFillFromLesson={() => fillStudentFromLesson()}
                     canFill={!!lessonTarget}
-                    onFindVideo={(q) => setVideoSearch(q || '')}
-                    onVideoCmd={videoCmd}
-                    onPlayVideo={playVideoOnStudent}
-                    lessonVids={videoSaveTarget ? lessonVideosFor(lessonVideos, videoSaveTarget.cls, videoSaveTarget.n) : []}
-                    savedVids={savedVideos}
                     report={studentReport}
                   />
                 }
@@ -4759,21 +4492,6 @@
             )}
           </div>
 
-          {videoSearch !== null && (
-            <VideoSearchModal
-              initialQuery={videoSearch}
-              onClose={() => setVideoSearch(null)}
-              onPlay={(v) => playVideoOnStudent(v)}
-              onSave={(v) => saveVideoToLesson(v)}
-              saveLabel={videoSaveTarget ? `${gradeOfClass(videoSaveTarget.cls)}학년 ${videoSaveTarget.n}차시` : ''}
-              onToast={showToast}
-              onOpenKey={() => setShowYtKeyModal(true)}
-              saved={savedVideos}
-              onKeep={keepVideo}
-              onUnkeep={unkeepVideo}
-            />
-          )}
-          {showYtKeyModal && <YoutubeKeyModal onClose={() => setShowYtKeyModal(false)} onToast={showToast} />}
 
           {showTabletModal && <TabletConnectModal gasUrl={gasUrl} onClose={() => setShowTabletModal(false)} onToast={showToast} onOpenUrl={handleOpenUrl} />}
 
@@ -4798,9 +4516,6 @@
             <button type="button" onClick={() => openToolModal('group')} className="dock-tool"><span className="ico">👥</span><span>모둠 편성</span></button>
             <button type="button" onClick={() => openToolModal('noise')} className="dock-tool"><span className="ico">🎙️</span><span>소음 측정</span></button>
             <button type="button" onClick={() => openToolModal('whiteboard')} className="dock-tool"><span className="ico">📝</span><span>낙서장</span></button>
-            <button type="button" onClick={() => setVideoSearch('')} className="dock-tool"><span className="ico">🎬</span><span>수업 영상</span></button>
-            <button type="button" onClick={() => { dApiFetch('/api/open?path=@materials').catch(() => {}); showToast('📂 수업 자료 폴더 — 여기에 넣은 파일을 갤탭에서 꺼내 TV로 보여 줄 수 있어요'); }} className="dock-tool pc-only" title="갤탭으로 꺼내 쓸 자료를 넣는 폴더"><span className="ico">📂</span><span>수업 자료</span></button>
-            <button type="button" onClick={() => handleOpenUrl(`${location.origin}/vocab`, '단어장')} className="dock-tool pc-only" title="단어장 (따로 뺀 웹 페이지)"><span className="ico">🔤</span><span>단어장</span></button>
           </div>
 
           {showSheetSyncModal && (
