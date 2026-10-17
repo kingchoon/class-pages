@@ -1,0 +1,612 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#050b14">
+<meta name="mobile-web-app-capable" content="yes">
+<title>기술쌤 허브</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+:root{
+  --bg:#050b14; --panel:rgba(8,22,40,.62); --panel2:rgba(14,34,60,.75);
+  --line:rgba(79,216,255,.22); --line2:rgba(79,216,255,.5);
+  --cyan:#4fd8ff; --cyan2:#9be9ff; --text:#dcefff; --muted:#7f9bb8;
+  --warn:#ffb547; --bad:#ff6b7a; --ok:#5dffb0;
+  --r:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--text);font-family:Pretendard,-apple-system,"Noto Sans KR",sans-serif;
+  -webkit-tap-highlight-color:transparent;overflow-x:hidden}
+#bg{position:fixed;inset:0;z-index:0;pointer-events:none}
+.app{position:relative;z-index:1;max-width:1240px;margin:0 auto;padding:16px 16px calc(96px + env(safe-area-inset-bottom))}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+
+/* header */
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 2px 16px}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.18em;font-size:15px;color:var(--cyan2)}
+.logo .core{width:28px;height:28px;border-radius:50%;border:2px solid var(--cyan);box-shadow:0 0 14px var(--cyan),inset 0 0 10px var(--cyan);position:relative}
+.logo .core::after{content:"";position:absolute;inset:7px;border-radius:50%;background:var(--cyan);animation:pulse 2.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.35;transform:scale(.7)}}
+.hclock{font-variant-numeric:tabular-nums;color:var(--muted);font-size:14px;text-align:right}
+
+/* panels */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px;position:relative;
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.panel::before{content:"";position:absolute;inset:-1px;border-radius:var(--r);pointer-events:none;
+  background:
+   linear-gradient(var(--cyan),var(--cyan)) top left/18px 2px no-repeat,
+   linear-gradient(var(--cyan),var(--cyan)) top left/2px 18px no-repeat,
+   linear-gradient(var(--cyan),var(--cyan)) bottom right/18px 2px no-repeat,
+   linear-gradient(var(--cyan),var(--cyan)) bottom right/2px 18px no-repeat;opacity:.8}
+.ptitle{font-size:12px;letter-spacing:.2em;color:var(--cyan);font-weight:700;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr))}
+.stack{display:grid;gap:16px}
+section{display:none}
+section.on{display:block;animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}}
+
+/* home */
+.bigtime{font-size:clamp(48px,9vw,84px);font-weight:200;letter-spacing:.04em;font-variant-numeric:tabular-nums;line-height:1;
+  color:#fff;text-shadow:0 0 24px rgba(79,216,255,.55)}
+.date{color:var(--muted);margin-top:8px}
+.now{margin-top:18px;padding:14px 16px;border:1px solid var(--line2);border-radius:12px;background:rgba(79,216,255,.07)}
+.now b{color:var(--cyan2);font-size:20px}
+.now .sub{color:var(--muted);font-size:14px;margin-top:4px}
+.bar{height:4px;background:rgba(255,255,255,.08);border-radius:4px;margin-top:10px;overflow:hidden}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--cyan),var(--cyan2));box-shadow:0 0 10px var(--cyan)}
+.tt{list-style:none;display:grid;gap:6px}
+.tt li{display:grid;grid-template-columns:52px 96px 1fr;align-items:center;gap:8px;padding:9px 12px;border-radius:10px;border:1px solid transparent;font-size:15px}
+.tt li .p{color:var(--cyan);font-weight:700}
+.tt li .t{color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
+.tt li.cur{border-color:var(--cyan);background:rgba(79,216,255,.12);box-shadow:0 0 16px rgba(79,216,255,.25)}
+.tt li.past{opacity:.4}
+.tt li .s.empty{color:var(--muted)}
+.tiles{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}
+.tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:112px;padding:12px;
+  border-radius:12px;border:1px solid var(--line);background:var(--panel2);text-align:center;transition:.15s}
+.tile:hover,.tile:active{border-color:var(--cyan);box-shadow:0 0 18px rgba(79,216,255,.3);transform:translateY(-2px)}
+.tile .ic{font-size:32px;line-height:1}
+.tile .nm{font-weight:600;font-size:14px}
+.tile.dim{opacity:.45}
+.tile.dim .nm::after{content:"주소 미입력";display:block;font-size:11px;color:var(--warn);font-weight:400;margin-top:2px}
+
+/* controls */
+.btn{min-height:44px;padding:0 16px;border-radius:10px;border:1px solid var(--line2);background:rgba(79,216,255,.1);font-weight:600;white-space:nowrap}
+.btn:hover{background:rgba(79,216,255,.2)}
+.btn.pri{background:var(--cyan);color:#022;border-color:var(--cyan);box-shadow:0 0 14px rgba(79,216,255,.4)}
+.btn.sm{min-height:34px;padding:0 10px;font-size:13px}
+.btn.danger{border-color:rgba(255,107,122,.5);background:rgba(255,107,122,.1);color:#ffc2c8}
+.inp{min-height:44px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:rgba(0,0,0,.3);width:100%;outline:none}
+.inp:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(79,216,255,.18)}
+select.inp{appearance:none;-webkit-appearance:none;padding-right:28px;
+  background-image:linear-gradient(45deg,transparent 50%,var(--cyan) 50%),linear-gradient(135deg,var(--cyan) 50%,transparent 50%);
+  background-position:calc(100% - 16px) 50%,calc(100% - 11px) 50%;background-size:5px 5px;background-repeat:no-repeat}
+select.inp option{background:#0a1a2e}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.row>.grow{flex:1 1 200px}
+.hint{color:var(--muted);font-size:13px;line-height:1.6}
+
+/* videos */
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;min-height:38px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--panel2);font-size:14px}
+.chip.on{border-color:var(--cyan);color:#022;background:var(--cyan);font-weight:700}
+.chip .n{opacity:.6;margin-left:4px;font-size:12px}
+.vgrid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(min(100%,230px),1fr));margin-top:16px}
+.vcard{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel2);display:flex;flex-direction:column}
+.thumb{position:relative;aspect-ratio:16/9;background:#000 center/cover no-repeat;border:0;width:100%}
+.thumb::after{content:"▶";position:absolute;inset:0;margin:auto;width:54px;height:54px;border-radius:50%;display:grid;place-items:center;
+  background:rgba(5,11,20,.7);border:2px solid var(--cyan);color:var(--cyan);font-size:20px;box-shadow:0 0 16px var(--cyan);padding-left:4px}
+.thumb .st{position:absolute;right:6px;bottom:6px;background:rgba(0,0,0,.75);font-size:11px;padding:2px 6px;border-radius:4px;z-index:1}
+.vbody{padding:10px 12px;display:grid;gap:8px}
+.vtitle{font-size:14px;font-weight:600;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.8em}
+.vfoot{display:flex;gap:6px}
+.vfoot select{flex:1;min-height:34px;font-size:13px}
+.empty{padding:40px 10px;text-align:center;color:var(--muted)}
+
+/* modal player */
+.modal{position:fixed;inset:0;z-index:50;background:rgba(2,6,12,.92);display:none;align-items:center;justify-content:center;padding:16px}
+.modal.on{display:flex}
+.mbox{width:min(1100px,100%)}
+.mhead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
+.mhead .tt2{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.frame{aspect-ratio:16/9;width:100%;border:1px solid var(--cyan);border-radius:12px;overflow:hidden;box-shadow:0 0 40px rgba(79,216,255,.35);background:#000}
+.frame iframe{width:100%;height:100%;border:0}
+
+/* tools */
+.timer{font-size:clamp(64px,14vw,140px);font-weight:200;text-align:center;font-variant-numeric:tabular-nums;color:#fff;
+  text-shadow:0 0 30px rgba(79,216,255,.6);line-height:1.1;margin:8px 0 14px}
+.timer.end{color:var(--warn);text-shadow:0 0 30px var(--warn);animation:blink .6s steps(2) infinite}
+@keyframes blink{50%{opacity:.3}}
+.tpanel:fullscreen{display:flex;flex-direction:column;justify-content:center;background:var(--bg);padding:40px}
+.tpanel:fullscreen .timer{font-size:28vw}
+.pick{font-size:clamp(80px,18vw,160px);font-weight:800;text-align:center;color:var(--cyan2);text-shadow:0 0 30px var(--cyan);line-height:1.1;margin:6px 0 10px;font-variant-numeric:tabular-nums}
+.pick.roll{color:var(--muted);text-shadow:none}
+.chk{display:flex;align-items:center;gap:8px;min-height:44px;color:var(--muted)}
+.chk input{width:20px;height:20px;accent-color:var(--cyan)}
+.used{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.used span{font-size:12px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--muted)}
+
+/* settings */
+.lrow{display:grid;grid-template-columns:56px 1fr 2fr 44px;gap:8px;margin-bottom:8px}
+.lrow .inp{min-height:40px}
+.lrow .ico{text-align:center;font-size:20px;padding:0}
+.ttwrap{overflow-x:auto}
+table.ted{border-collapse:separate;border-spacing:4px;min-width:640px;width:100%}
+table.ted th{font-size:12px;color:var(--cyan);font-weight:700}
+table.ted td .inp{min-height:38px;padding:0 8px;font-size:13px}
+table.ted td.pn{color:var(--cyan);font-weight:700;text-align:center;width:44px}
+
+/* nav */
+nav{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;justify-content:center;
+  padding:8px 12px calc(8px + env(safe-area-inset-bottom));background:linear-gradient(transparent,rgba(5,11,20,.95) 30%)}
+.navin{display:flex;gap:6px;padding:6px;border-radius:16px;border:1px solid var(--line);background:rgba(8,22,40,.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+nav button{min-width:72px;min-height:52px;border:0;background:none;border-radius:11px;color:var(--muted);font-size:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+nav button .e{font-size:20px}
+nav button.on{background:rgba(79,216,255,.16);color:var(--cyan2);box-shadow:inset 0 0 0 1px var(--cyan)}
+
+.toast{position:fixed;left:50%;bottom:110px;transform:translateX(-50%) translateY(20px);opacity:0;z-index:60;
+  background:var(--panel2);border:1px solid var(--cyan);padding:10px 18px;border-radius:10px;transition:.25s;pointer-events:none;font-size:14px}
+.toast.on{opacity:1;transform:translateX(-50%)}
+@media (max-width:520px){
+  .lrow{grid-template-columns:48px 1fr 44px}
+  .lrow .url{grid-column:1/-1;order:5}
+  nav button{min-width:60px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+
+<div class="app">
+  <header>
+    <div class="logo"><span class="core"></span>TECH HUB</div>
+    <div class="hclock" id="hclock"></div>
+  </header>
+
+  <!-- 홈 -->
+  <section id="home" class="on">
+    <div class="grid">
+      <div class="stack">
+        <div class="panel">
+          <div class="bigtime" id="bigtime">--:--</div>
+          <div class="date" id="date"></div>
+          <div class="now" id="now"></div>
+        </div>
+        <div class="panel">
+          <div class="ptitle">TODAY · 오늘 시간표 <button class="btn sm" data-go="settings">편집</button></div>
+          <ul class="tt" id="tt"></ul>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="ptitle">LAUNCH · 내 프로그램 <button class="btn sm" data-go="settings">관리</button></div>
+        <div class="tiles" id="tiles"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 영상 -->
+  <section id="videos">
+    <div class="stack">
+      <div class="panel">
+        <div class="ptitle">ADD · 영상 추가</div>
+        <div class="row">
+          <input class="inp grow" id="vUrl" placeholder="유튜브 주소 붙여넣기 (시작 시간 포함 주소도 OK)" inputmode="url">
+          <input class="inp grow" id="vTitle" placeholder="제목 (비우면 자동으로 가져옴)">
+          <select class="inp" id="vFolder" style="flex:0 1 170px"></select>
+          <button class="btn pri" id="vAdd">추가</button>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="ptitle">LIBRARY · 영상 보관함
+          <span class="row" style="gap:6px">
+            <button class="btn sm" id="fAdd">+ 폴더</button>
+            <button class="btn sm danger" id="fDel" hidden>폴더 삭제</button>
+          </span>
+        </div>
+        <div class="chips" id="chips"></div>
+        <input class="inp" id="vSearch" placeholder="🔍 제목으로 찾기" style="margin-top:12px">
+        <div class="vgrid" id="vgrid"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 도구 -->
+  <section id="tools">
+    <div class="grid">
+      <div class="panel tpanel" id="tpanel">
+        <div class="ptitle">TIMER · 타이머 <button class="btn sm" id="tFull">전체화면</button></div>
+        <div class="timer" id="tDisp">05:00</div>
+        <div class="row" style="justify-content:center">
+          <button class="btn" data-min="1">1분</button>
+          <button class="btn" data-min="3">3분</button>
+          <button class="btn" data-min="5">5분</button>
+          <button class="btn" data-min="10">10분</button>
+          <input class="inp" id="tCustom" type="number" min="1" max="180" placeholder="분" style="width:80px">
+        </div>
+        <div class="row" style="justify-content:center;margin-top:10px">
+          <button class="btn pri" id="tStart" style="min-width:110px">시작</button>
+          <button class="btn" id="tReset">다시</button>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="ptitle">PICK · 발표자 뽑기</div>
+        <div class="pick" id="pDisp">?</div>
+        <div class="row" style="justify-content:center">
+          <span class="hint">1번부터</span>
+          <input class="inp" id="pMax" type="number" min="2" max="60" value="28" style="width:80px">
+          <span class="hint">번까지</span>
+          <label class="chk"><input type="checkbox" id="pNoRep" checked>뽑힌 번호 빼기</label>
+        </div>
+        <div class="row" style="justify-content:center;margin-top:10px">
+          <button class="btn pri" id="pGo" style="min-width:110px">뽑기</button>
+          <button class="btn" id="pReset">처음부터</button>
+        </div>
+        <div class="used" id="pUsed"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 설정 -->
+  <section id="settings">
+    <div class="stack">
+      <div class="panel">
+        <div class="ptitle">LINKS · 내 프로그램 바로가기</div>
+        <p class="hint" style="margin-bottom:12px">아이콘(이모지) · 이름 · 주소를 적으면 홈 화면 타일로 나옵니다. Apps Script 웹앱은 배포 주소(…/exec)를 넣으세요.</p>
+        <div id="lEdit"></div>
+        <button class="btn" id="lAdd" style="margin-top:4px">+ 바로가기 추가</button>
+      </div>
+      <div class="panel">
+        <div class="ptitle">SCHEDULE · 시간표</div>
+        <p class="hint" style="margin-bottom:10px">시간은 <b>09:00-09:45</b> 모양으로 적습니다. 빈칸은 공강으로 표시됩니다.</p>
+        <div class="ttwrap"><table class="ted" id="ted"></table></div>
+      </div>
+      <div class="panel">
+        <div class="ptitle">SYSTEM · 화면과 데이터</div>
+        <label class="chk"><input type="checkbox" id="sAnim">신경망 배경 움직이기 (태블릿 배터리 아끼려면 끄기)</label>
+        <p class="hint" style="margin:10px 0">데이터는 <b>이 기기의 이 브라우저</b>에만 저장됩니다. 다른 기기로 옮기거나 혹시 모를 삭제에 대비해 가끔 내보내기 파일을 받아 두세요.</p>
+        <div class="row">
+          <button class="btn" id="bExp">⬇ 내보내기</button>
+          <button class="btn" id="bImp">⬆ 가져오기</button>
+          <input type="file" id="bFile" accept=".json,application/json" hidden>
+          <button class="btn danger" id="bReset">전체 초기화</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<nav><div class="navin">
+  <button data-go="home" class="on"><span class="e">◎</span>홈</button>
+  <button data-go="videos"><span class="e">▶</span>영상</button>
+  <button data-go="tools"><span class="e">⏱</span>도구</button>
+  <button data-go="settings"><span class="e">⚙</span>설정</button>
+</div></nav>
+
+<div class="modal" id="modal">
+  <div class="mbox">
+    <div class="mhead">
+      <div class="tt2" id="mTitle"></div>
+      <div class="row" style="flex:none">
+        <a class="btn sm" id="mYT" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;text-decoration:none">유튜브에서 열기</a>
+        <button class="btn sm" id="mClose">닫기 ✕</button>
+      </div>
+    </div>
+    <div class="frame" id="mFrame"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(()=>{
+'use strict';
+const KEY='techhub.v1';
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const uid=()=>Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-3);
+const DAYS=['일','월','화','수','목','금','토'];
+
+const DEFAULT=()=>({
+  links:[
+    {id:uid(),icon:'🗂️',name:'기술쌤의 공간',url:''},
+    {id:uid(),icon:'🏅',name:'학습자상 투표',url:''},
+    {id:uid(),icon:'📽️',name:'수업 슬라이드',url:''},
+    {id:uid(),icon:'💰',name:'우리집 가계부',url:''}
+  ],
+  folders:[{id:uid(),name:'수송 단원'},{id:uid(),name:'에너지'}],
+  videos:[],
+  bells:['09:00-09:45','09:55-10:40','10:50-11:35','11:45-12:30','13:20-14:05','14:15-15:00','15:10-15:55'],
+  tt:{1:Array(7).fill(''),2:Array(7).fill(''),3:Array(7).fill(''),4:Array(7).fill(''),5:Array(7).fill('')},
+  bgAnim:true
+});
+
+/* ---------- 저장 ---------- */
+let S;
+function load(){
+  let d=null;
+  try{d=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){}
+  S=Object.assign(DEFAULT(),d||{});
+  for(let i=1;i<=5;i++){ if(!Array.isArray(S.tt[i])) S.tt[i]=Array(7).fill(''); }
+}
+function save(){ try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){toast('저장 실패: 브라우저 저장 공간을 확인하세요')} }
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),1800)}
+function el(tag,attrs={},kids=[]){
+  const e=document.createElement(tag);
+  for(const[k,v]of Object.entries(attrs)){
+    if(k==='text')e.textContent=v; else if(k==='class')e.className=v;
+    else if(k.startsWith('on'))e.addEventListener(k.slice(2),v); else e.setAttribute(k,v);
+  }
+  (Array.isArray(kids)?kids:[kids]).forEach(c=>c&&e.append(c)); return e;
+}
+
+/* ---------- 화면 전환 ---------- */
+function go(id){
+  $$('section').forEach(s=>s.classList.toggle('on',s.id===id));
+  $$('nav button').forEach(b=>b.classList.toggle('on',b.dataset.go===id));
+  try{sessionStorage.setItem('hub.tab',id)}catch(e){}
+  window.scrollTo({top:0});
+}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-go]'); if(b) go(b.dataset.go)});
+
+/* ---------- 홈: 시계 · 시간표 ---------- */
+const pad=n=>String(n).padStart(2,'0');
+function parseRange(s){const m=String(s||'').match(/(\d{1,2}):(\d{2})\s*[-~]\s*(\d{1,2}):(\d{2})/);return m?[+m[1]*60+ +m[2],+m[3]*60+ +m[4]]:null}
+function tick(){
+  const d=new Date();
+  $('#bigtime').textContent=pad(d.getHours())+':'+pad(d.getMinutes());
+  $('#hclock').textContent=pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());
+  $('#date').textContent=`${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일 ${DAYS[d.getDay()]}요일`;
+}
+function renderToday(){
+  const d=new Date(), wd=d.getDay(), mins=d.getHours()*60+d.getMinutes();
+  const now=$('#now'), ul=$('#tt'); ul.textContent='';
+  if(wd===0||wd===6){ now.innerHTML='<b>주말입니다</b><div class="sub">푹 쉬세요. 월요일 시간표는 설정에서 확인할 수 있어요.</div>'; ul.append(el('li',{style:'grid-template-columns:1fr;text-align:center;padding:24px'},[el('span',{class:'s empty',text:'오늘은 수업이 없어요'})])); return; }
+  const subj=S.tt[wd]; let cur=-1,next=-1;
+  S.bells.forEach((b,i)=>{
+    const r=parseRange(b); const li=el('li',{},[
+      el('span',{class:'p',text:(i+1)+'교시'}), el('span',{class:'t',text:b}),
+      el('span',{class:'s'+(subj[i]?'':' empty'),text:subj[i]||'공강'})]);
+    if(r){ if(mins>=r[0]&&mins<r[1]){li.classList.add('cur');cur=i} else if(mins>=r[1])li.classList.add('past'); else if(next<0)next=i; }
+    ul.append(li);
+  });
+  now.textContent='';
+  if(cur>=0){
+    const r=parseRange(S.bells[cur]), left=r[1]-mins, pct=Math.round((mins-r[0])/(r[1]-r[0])*100);
+    now.append(el('b',{text:`${cur+1}교시 진행 중 · ${subj[cur]||'공강'}`}),el('div',{class:'sub',text:`끝날 때까지 ${left}분`}),
+      el('div',{class:'bar'},el('i',{style:`width:${pct}%`})));
+  }else if(next>=0){
+    const r=parseRange(S.bells[next]), gap=r[0]-mins;
+    now.append(el('b',{text:`다음: ${next+1}교시 · ${subj[next]||'공강'}`}),el('div',{class:'sub',text:`${gap}분 뒤 시작 (${S.bells[next]})`}));
+  }else now.append(el('b',{text:'오늘 수업 끝'}),el('div',{class:'sub',text:'수고하셨습니다.'}));
+}
+function renderTiles(){
+  const box=$('#tiles'); box.textContent='';
+  if(!S.links.length){box.append(el('div',{class:'empty',text:'설정에서 바로가기를 추가하세요'}));return}
+  S.links.forEach(l=>{
+    const t=el('button',{class:'tile'+(l.url?'':' dim'),onclick:()=>{
+      if(!l.url){go('settings');toast('주소를 먼저 입력하세요');return}
+      window.open(l.url,'_blank','noopener');
+    }},[el('span',{class:'ic',text:l.icon||'◆'}),el('span',{class:'nm',text:l.name||'이름 없음'})]);
+    box.append(t);
+  });
+}
+
+/* ---------- 영상 보관함 ---------- */
+let curFolder='all';
+function parseYT(u){
+  try{
+    const x=new URL(u.trim()); const h=x.hostname.replace(/^(www|m|music)\./,''); let id='';
+    if(h==='youtu.be') id=x.pathname.slice(1).split('/')[0];
+    else if(/(^|\.)youtube(-nocookie)?\.com$/.test(h)){
+      id=x.searchParams.get('v')||''; if(!id){const m=x.pathname.match(/\/(shorts|embed|live|v)\/([\w-]{11})/); if(m)id=m[2];}
+    }
+    if(!/^[\w-]{11}$/.test(id)) return null;
+    const t=x.searchParams.get('t')||x.searchParams.get('start')||''; let s=0;
+    if(/^\d+s?$/.test(t)) s=parseInt(t); else if(t){const m=t.match(/(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?/); if(m)s=(+m[1]||0)*3600+(+m[2]||0)*60+(+m[3]||0);}
+    return {id,start:s};
+  }catch(e){return null}
+}
+async function fetchTitle(id){
+  const ac=new AbortController(); const to=setTimeout(()=>ac.abort(),4000);
+  try{const r=await fetch('https://noembed.com/embed?url='+encodeURIComponent('https://www.youtube.com/watch?v='+id),{signal:ac.signal});
+    const j=await r.json(); return j.title||'';}catch(e){return ''}finally{clearTimeout(to)}
+}
+const fmtSec=s=>s>=3600?`${Math.floor(s/3600)}:${pad(Math.floor(s%3600/60))}:${pad(s%60)}`:`${Math.floor(s/60)}:${pad(s%60)}`;
+function renderFolderSelect(){
+  const sel=$('#vFolder'), keep=sel.value; sel.textContent='';
+  sel.append(el('option',{value:'',text:'폴더 없음'}));
+  S.folders.forEach(f=>sel.append(el('option',{value:f.id,text:f.name})));
+  sel.value=S.folders.some(f=>f.id===keep)?keep:(S.folders.some(f=>f.id===curFolder)?curFolder:'');
+}
+function renderChips(){
+  const box=$('#chips'); box.textContent='';
+  const count=fid=>S.videos.filter(v=>fid==='all'||(fid==='none'?!v.folderId:v.folderId===fid)).length;
+  const mk=(id,name)=>el('button',{class:'chip'+(curFolder===id?' on':''),onclick:()=>{curFolder=id;renderVideos()}},
+    [document.createTextNode(name),el('span',{class:'n',text:count(id)})]);
+  box.append(mk('all','전체'));
+  S.folders.forEach(f=>box.append(mk(f.id,f.name)));
+  if(S.videos.some(v=>!v.folderId)) box.append(mk('none','폴더 없음'));
+  $('#fDel').hidden=!S.folders.some(f=>f.id===curFolder);
+}
+function renderVideos(){
+  renderChips(); renderFolderSelect();
+  const q=$('#vSearch').value.trim().toLowerCase(), g=$('#vgrid'); g.textContent='';
+  const list=S.videos.filter(v=>(curFolder==='all'||(curFolder==='none'?!v.folderId:v.folderId===curFolder))&&(!q||(v.title||'').toLowerCase().includes(q)))
+    .sort((a,b)=>b.added-a.added);
+  if(!list.length){g.append(el('div',{class:'empty',style:'grid-column:1/-1',text:q?'찾는 영상이 없어요':'아직 영상이 없어요. 위에서 주소를 붙여 넣어 추가하세요.'}));return}
+  list.forEach(v=>{
+    const sel=el('select',{class:'inp',title:'폴더 이동',onchange:e=>{v.folderId=e.target.value;save();renderVideos();toast('폴더를 옮겼어요')}});
+    sel.append(el('option',{value:'',text:'폴더 없음'})); S.folders.forEach(f=>sel.append(el('option',{value:f.id,text:f.name}))); sel.value=v.folderId||'';
+    const th=el('button',{class:'thumb',style:`background-image:url(https://i.ytimg.com/vi/${v.ytId}/hqdefault.jpg)`,'aria-label':'재생',onclick:()=>play(v)},
+      v.start?el('span',{class:'st',text:fmtSec(v.start)+'부터'}):null);
+    g.append(el('div',{class:'vcard'},[th,el('div',{class:'vbody'},[
+      el('div',{class:'vtitle',text:v.title||'(제목 없음)'}),
+      el('div',{class:'vfoot'},[sel,el('button',{class:'btn sm',title:'제목 고치기',text:'✎',onclick:()=>{const t=prompt('영상 제목',v.title||'');if(t!==null){v.title=t.trim();save();renderVideos()}}}),
+        el('button',{class:'btn sm danger',title:'삭제',text:'🗑',onclick:()=>{if(confirm('이 영상을 보관함에서 지울까요?')){S.videos=S.videos.filter(x=>x!==v);save();renderVideos()}}})])
+    ])]));
+  });
+}
+async function addVideo(){
+  const url=$('#vUrl').value, p=parseYT(url);
+  if(!p){toast('유튜브 주소가 아니에요');return}
+  if(S.videos.some(v=>v.ytId===p.id&&v.start===p.start)){toast('이미 보관함에 있는 영상이에요');return}
+  const btn=$('#vAdd'); btn.disabled=true; btn.textContent='가져오는 중…';
+  let title=$('#vTitle').value.trim(); if(!title) title=await fetchTitle(p.id);
+  S.videos.push({id:uid(),ytId:p.id,start:p.start,title:title||'제목 없는 영상',folderId:$('#vFolder').value,added:Date.now()});
+  save(); $('#vUrl').value=''; $('#vTitle').value=''; btn.disabled=false; btn.textContent='추가';
+  renderVideos(); toast('보관함에 넣었어요');
+}
+function play(v){
+  $('#mTitle').textContent=v.title||'';
+  $('#mYT').href=`https://www.youtube.com/watch?v=${v.ytId}${v.start?'&t='+v.start+'s':''}`;
+  const f=$('#mFrame'); f.textContent='';
+  f.append(el('iframe',{src:`https://www.youtube-nocookie.com/embed/${v.ytId}?autoplay=1&rel=0&playsinline=1${v.start?'&start='+v.start:''}`,
+    allow:'autoplay; encrypted-media; picture-in-picture; fullscreen',allowfullscreen:'',title:v.title||'영상'}));
+  $('#modal').classList.add('on');
+}
+function closeModal(){ $('#modal').classList.remove('on'); $('#mFrame').textContent=''; }
+$('#mClose').onclick=closeModal;
+$('#modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
+$('#vAdd').onclick=addVideo;
+$('#vUrl').addEventListener('keydown',e=>{if(e.key==='Enter')addVideo()});
+$('#vSearch').addEventListener('input',renderVideos);
+$('#fAdd').onclick=()=>{const n=prompt('새 폴더 이름');if(n&&n.trim()){const f={id:uid(),name:n.trim()};S.folders.push(f);curFolder=f.id;save();renderVideos()}};
+$('#fDel').onclick=()=>{
+  const f=S.folders.find(x=>x.id===curFolder); if(!f)return;
+  if(!confirm(`'${f.name}' 폴더를 지울까요?\n안에 있던 영상은 지워지지 않고 '폴더 없음'으로 옮겨집니다.`))return;
+  S.videos.forEach(v=>{if(v.folderId===f.id)v.folderId=''}); S.folders=S.folders.filter(x=>x!==f); curFolder='all'; save(); renderVideos();
+};
+
+/* ---------- 도구: 타이머 ---------- */
+let tTotal=300,tLeft=300,tEnd=0,tRun=false,tH=null,actx=null;
+function tShow(){const s=Math.max(0,Math.ceil(tLeft));$('#tDisp').textContent=pad(Math.floor(s/60))+':'+pad(s%60)}
+function tSet(min){tStop();tTotal=tLeft=Math.round(min*60);$('#tDisp').classList.remove('end');tShow()}
+function tStop(){tRun=false;clearInterval(tH);$('#tStart').textContent='시작'}
+function beep(){
+  try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();
+    [0,.35,.7].forEach(dt=>{const o=actx.createOscillator(),g=actx.createGain();o.frequency.value=880;o.connect(g);g.connect(actx.destination);
+      g.gain.setValueAtTime(.0001,actx.currentTime+dt);g.gain.exponentialRampToValueAtTime(.4,actx.currentTime+dt+.02);
+      g.gain.exponentialRampToValueAtTime(.0001,actx.currentTime+dt+.28);o.start(actx.currentTime+dt);o.stop(actx.currentTime+dt+.3)});
+  }catch(e){}
+}
+$('#tStart').onclick=()=>{
+  if(tRun){tLeft=(tEnd-Date.now())/1000;tStop();return}
+  if(tLeft<=0)tLeft=tTotal; $('#tDisp').classList.remove('end');
+  try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();actx.resume()}catch(e){}
+  tEnd=Date.now()+tLeft*1000;tRun=true;$('#tStart').textContent='멈춤';
+  tH=setInterval(()=>{tLeft=(tEnd-Date.now())/1000;tShow();if(tLeft<=0){tStop();tLeft=0;tShow();$('#tDisp').classList.add('end');beep()}},200);
+};
+$('#tReset').onclick=()=>tSet(tTotal/60);
+$$('[data-min]').forEach(b=>b.onclick=()=>tSet(+b.dataset.min));
+$('#tCustom').addEventListener('change',e=>{const m=+e.target.value;if(m>0&&m<=180)tSet(m)});
+$('#tFull').onclick=()=>{const p=$('#tpanel');
+  if(document.fullscreenElement)document.exitFullscreen(); else (p.requestFullscreen||p.webkitRequestFullscreen||(()=>toast('이 기기는 전체화면을 지원하지 않아요'))).call(p)};
+
+/* ---------- 도구: 발표자 뽑기 ---------- */
+let used=[];
+function pRender(){const u=$('#pUsed');u.textContent='';used.forEach(n=>u.append(el('span',{text:n+'번'})))}
+$('#pGo').onclick=()=>{
+  const max=Math.min(60,Math.max(2,+$('#pMax').value||28)), noRep=$('#pNoRep').checked;
+  let pool=[];for(let i=1;i<=max;i++)if(!noRep||!used.includes(i))pool.push(i);
+  if(!pool.length){toast('모두 뽑았어요. [처음부터]를 누르세요');return}
+  const d=$('#pDisp'),btn=$('#pGo');btn.disabled=true;d.classList.add('roll');let k=0;
+  const h=setInterval(()=>{d.textContent=pool[Math.floor(Math.random()*pool.length)];
+    if(++k>14){clearInterval(h);const pick=pool[Math.floor(Math.random()*pool.length)];d.textContent=pick;d.classList.remove('roll');
+      if(noRep)used.push(pick);pRender();btn.disabled=false}},70);
+};
+$('#pReset').onclick=()=>{used=[];$('#pDisp').textContent='?';pRender()};
+
+/* ---------- 설정 ---------- */
+function renderLinkEditor(){
+  const box=$('#lEdit'); box.textContent='';
+  S.links.forEach(l=>{
+    const upd=(k)=>e=>{l[k]=e.target.value.trim();save();renderTiles()};
+    box.append(el('div',{class:'lrow'},[
+      el('input',{class:'inp ico',value:l.icon||'',maxlength:'4','aria-label':'아이콘',onchange:upd('icon')}),
+      el('input',{class:'inp',value:l.name||'',placeholder:'이름',onchange:upd('name')}),
+      el('input',{class:'inp url',value:l.url||'',placeholder:'https://…',inputmode:'url',onchange:e=>{
+        let v=e.target.value.trim(); if(v&&!/^https?:\/\//i.test(v)){v='https://'+v;e.target.value=v}
+        l.url=v;save();renderTiles()}}),
+      el('button',{class:'btn danger',style:'padding:0','aria-label':'삭제',text:'✕',onclick:()=>{if(confirm(`'${l.name||'바로가기'}'를 지울까요?`)){S.links=S.links.filter(x=>x!==l);save();renderLinkEditor();renderTiles()}}})
+    ]));
+  });
+}
+$('#lAdd').onclick=()=>{S.links.push({id:uid(),icon:'⭐',name:'',url:''});save();renderLinkEditor();renderTiles();
+  const ins=$$('#lEdit .lrow:last-child .inp');if(ins[1])ins[1].focus()};
+function renderTTEditor(){
+  const t=$('#ted'); t.textContent='';
+  t.append(el('tr',{},[el('th',{text:'교시'}),el('th',{text:'시간'}),...[1,2,3,4,5].map(i=>el('th',{text:DAYS[i]}))]));
+  S.bells.forEach((b,p)=>{
+    t.append(el('tr',{},[
+      el('td',{class:'pn',text:p+1}),
+      el('td',{},el('input',{class:'inp',value:b,onchange:e=>{const v=e.target.value.trim();
+        if(v&&!parseRange(v)){toast('09:00-09:45 모양으로 적어 주세요');e.target.value=S.bells[p];return}
+        S.bells[p]=v;save();renderToday()}})),
+      ...[1,2,3,4,5].map(d=>el('td',{},el('input',{class:'inp',value:S.tt[d][p]||'',placeholder:'-',onchange:e=>{S.tt[d][p]=e.target.value.trim();save();renderToday()}})))
+    ]));
+  });
+}
+$('#sAnim').onchange=e=>{S.bgAnim=e.target.checked;save();bgToggle()};
+$('#bExp').onclick=()=>{
+  const d=new Date(),name=`허브백업_${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}.json`;
+  const a=el('a',{href:URL.createObjectURL(new Blob([JSON.stringify(S,null,2)],{type:'application/json'})),download:name});
+  document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000);toast('백업 파일을 내려받았어요');
+};
+$('#bImp').onclick=()=>$('#bFile').click();
+$('#bFile').onchange=async e=>{
+  const f=e.target.files[0]; e.target.value=''; if(!f)return;
+  try{const d=JSON.parse(await f.text());
+    if(!d||!Array.isArray(d.links)||!Array.isArray(d.videos))throw 0;
+    if(!confirm('지금 데이터를 백업 파일 내용으로 바꿀까요?'))return;
+    S=Object.assign(DEFAULT(),d);save();renderAll();toast('가져오기 완료');
+  }catch(err){toast('허브 백업 파일이 아니에요')}
+};
+$('#bReset').onclick=()=>{if(confirm('바로가기, 영상, 시간표가 모두 지워집니다. 계속할까요?')&&confirm('정말로 초기화할까요? 되돌릴 수 없습니다.')){S=DEFAULT();save();renderAll();toast('초기화했어요')}};
+
+/* ---------- 신경망 배경 ---------- */
+const cv=$('#bg'),cx=cv.getContext('2d'),reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+let W=0,H=0,N=[],sig=[],raf=null,fr=0;
+function bgSize(){
+  const dpr=Math.min(window.devicePixelRatio||1,2);W=innerWidth;H=innerHeight;
+  cv.width=W*dpr;cv.height=H*dpr;cv.style.width=W+'px';cv.style.height=H+'px';cx.setTransform(dpr,0,0,dpr,0,0);
+  const n=Math.round(Math.max(24,Math.min(72,W*H/17000)));
+  N=Array.from({length:n},()=>({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.28,vy:(Math.random()-.5)*.28,p:Math.random()*6.28}));
+  sig=[]; bgDraw(false);
+}
+function bgDraw(move){
+  const D=150; cx.clearRect(0,0,W,H);
+  const g=cx.createRadialGradient(W*.5,H*.35,0,W*.5,H*.35,Math.max(W,H)*.7);
+  g.addColorStop(0,'rgba(20,70,120,.25)');g.addColorStop(1,'rgba(5,11,20,0)');cx.fillStyle=g;cx.fillRect(0,0,W,H);
+  if(move)N.forEach(a=>{a.x+=a.vx;a.y+=a.vy;a.p+=.03;if(a.x<-20)a.x=W+20;if(a.x>W+20)a.x=-20;if(a.y<-20)a.y=H+20;if(a.y>H+20)a.y=-20});
+  cx.lineWidth=.7;
+  for(let i=0;i<N.length;i++)for(let j=i+1;j<N.length;j++){
+    const a=N[i],b=N[j],dx=a.x-b.x,dy=a.y-b.y,d=Math.hypot(dx,dy);
+    if(d<D){cx.strokeStyle=`rgba(79,216,255,${(1-d/D)*.32})`;cx.beginPath();cx.moveTo(a.x,a.y);cx.lineTo(b.x,b.y);cx.stroke();
+      if(move&&sig.length<8&&Math.random()<.0008)sig.push({a,b,t:0})}
+  }
+  N.forEach(a=>{const r=1.4+Math.sin(a.p)*.6;cx.fillStyle='rgba(155,233,255,.85)';cx.beginPath();cx.arc(a.x,a.y,r,0,6.29);cx.fill()});
+  sig=sig.filter(s=>{s.t+=.02;if(s.t>1)return false;const x=s.a.x+(s.b.x-s.a.x)*s.t,y=s.a.y+(s.b.y-s.a.y)*s.t;
+    cx.fillStyle='#fff';cx.shadowColor='#4fd8ff';cx.shadowBlur=12;cx.beginPath();cx.arc(x,y,2.2,0,6.29);cx.fill();cx.shadowBlur=0;return true});
+}
+function loop(){ if(++fr%2===0) bgDraw(true); raf=requestAnimationFrame(loop); }  // 30fps로 배터리 절약
+function bgToggle(){
+  const want=S.bgAnim&&!reduce&&!document.hidden;
+  if(want&&!raf)raf=requestAnimationFrame(loop);
+  if(!want&&raf){cancelAnimationFrame(raf);raf=null;bgDraw(false)}
+}
+addEventListener('resize',()=>{clearTimeout(bgSize._h);bgSize._h=setTimeout(bgSize,200)});
+document.addEventListener('visibilitychange',bgToggle);
+
+/* ---------- 시작 ---------- */
+function renderAll(){ $('#sAnim').checked=S.bgAnim; renderToday(); renderTiles(); renderVideos(); renderLinkEditor(); renderTTEditor(); bgToggle(); }
+load(); tick(); bgSize(); renderAll();
+setInterval(tick,1000); setInterval(renderToday,30000);
+try{const t=sessionStorage.getItem('hub.tab');if(t&&$('#'+t))go(t)}catch(e){}
+})();
+</script>
+</body>
+</html>
