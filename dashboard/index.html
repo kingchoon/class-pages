@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>모동중 기술 교육 OS</title>
   <!--
     📲 갤탭 앱 모드
@@ -421,34 +421,118 @@
       // ---- 앱 설치(PWA) ----
       var mf = document.createElement('link'); mf.rel = 'manifest'; mf.href = 'manifest.webmanifest';
       document.head.appendChild(mf);
-      var tc = document.createElement('meta'); tc.name = 'theme-color'; tc.content = '#0b1220';
+      var tc = document.createElement('meta'); tc.name = 'theme-color'; tc.content = '#04111c';
       document.head.appendChild(tc);
       var ai = document.createElement('link'); ai.rel = 'apple-touch-icon'; ai.href = 'icon-192.png';
       document.head.appendChild(ai);
-      if ('serviceWorker' in navigator && window.isSecureContext) {
-        window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+
+      // 갤탭 화면 배치(tablet.css): 지금 바로 받기 시작하고, 문서를 다 읽으면 head 맨 끝으로 옮겨서 Tailwind 등 다른 스타일보다 뒤에 오게 한다
+      var tcss = document.createElement('link'); tcss.rel = 'stylesheet'; tcss.href = 'tablet.css'; tcss.id = 'tablet-css';
+      document.head.appendChild(tcss);
+      function tcssLast() {
+        // tablet.css 뒤에 다른 스타일(<style>/<link rel=stylesheet>)이 있으면 tablet.css를 맨 끝으로 옮긴다
+        var n = tcss.nextElementSibling;
+        while (n) { if (n.tagName === 'STYLE' || (n.tagName === 'LINK' && /stylesheet/i.test(n.rel))) return false; n = n.nextElementSibling; }
+        return true;
+      }
+      document.addEventListener('DOMContentLoaded', function () {
+        if (!tcss.parentNode) return;
+        if (!tcssLast()) document.head.appendChild(tcss);
+        // Tailwind(Play CDN)는 자기 <style>을 나중에 붙일 수 있다 → 10초 동안만 지켜보고 최대 3번까지 다시 맨 끝으로
+        if (!window.MutationObserver) return;
+        var moves = 0;
+        var mo = new MutationObserver(function () {
+          if (moves < 3 && tcss.parentNode && !tcssLast()) { moves++; document.head.appendChild(tcss); }
+        });
+        mo.observe(document.head, { childList: true });
+        setTimeout(function () { mo.disconnect(); }, 10000);
+      });
+
+      // 갤탭 저장공간이 꽉 차도 대시보드 데이터·저장본을 함부로 지우지 않게 부탁
+      // (크롬은 묻는 창 없이 조용히 정한다. 앱으로 설치한 뒤에 허락되는 경우가 많아서, 아직 허락 전이면 열 때마다 한 번 부탁한다)
+      try {
+        if (navigator.storage && navigator.storage.persist && navigator.storage.persisted) {
+          navigator.storage.persisted().then(function (p) { if (!p) return navigator.storage.persist(); }).catch(function () {});
+        }
+      } catch (e) {}
+
+      // 공통 HUD 막대 (설치 안내 · 새 버전 안내)
+      var HUD_FONT = "'Oxanium','IBM Plex Sans KR',system-ui,sans-serif";
+      function hudBar(id, text, btnText, onBtn, onClose, bottomPx) {
+        var old = document.getElementById(id); if (old) old.remove();
+        var b = document.createElement('div');
+        b.id = id;
+        b.setAttribute('role', 'status');
+        b.style.cssText = 'position:fixed;left:50%;bottom:calc(' + bottomPx + 'px + env(safe-area-inset-bottom, 0px));transform:translateX(-50%);z-index:99999;display:flex;align-items:center;gap:12px;' +
+          'padding:10px 10px 10px 18px;border-radius:14px;background:rgba(4,17,28,.94);border:1.5px solid #4fe3ff;color:#d8f6ff;font-family:' + HUD_FONT + ';' +
+          'font-weight:700;font-size:15px;letter-spacing:.01em;box-shadow:0 0 0 1px rgba(79,227,255,.15),0 0 24px rgba(79,227,255,.25),0 10px 30px rgba(0,0,0,.55);max-width:94vw;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)';
+        var t = document.createElement('span'); t.textContent = text; b.appendChild(t);
+        var g = document.createElement('button'); g.type = 'button'; g.textContent = btnText;
+        g.style.cssText = 'padding:10px 16px;min-height:44px;border-radius:10px;border:0;background:#4fe3ff;color:#04111c;font-weight:800;font-size:15px;font-family:inherit;white-space:nowrap;cursor:pointer';
+        g.onclick = function () { onBtn(b, g); };
+        var x = document.createElement('button'); x.type = 'button'; x.textContent = '✕'; x.setAttribute('aria-label', '닫기');
+        x.style.cssText = 'min-width:44px;min-height:44px;border:0;background:transparent;color:#7fb4c4;font-size:18px;cursor:pointer';
+        x.onclick = function () { b.remove(); if (onClose) onClose(); };
+        b.appendChild(g); b.appendChild(x);
+        var put = function () { (document.body || document.documentElement).appendChild(b); };
+        if (document.body) put(); else document.addEventListener('DOMContentLoaded', put);
+        return b;
+      }
+
+      // 서비스 워커(오프라인·빠른 시작): 갤탭 앱 모드 + https(또는 시험용 localhost)에서만. PC(127.0.0.1)는 여기까지 오지 않는다.
+      if (window.__TABLET_APP__ && 'serviceWorker' in navigator && window.isSecureContext) {
+        var askedUpdate = false, reloading = false;
+        var showUpdate = function (worker) {
+          if (!worker) return;
+          hudBar('swUpdateBar', '✨ 새 버전이 있어요', '지금 바꾸기', function (bar, btn) {
+            askedUpdate = true;
+            btn.textContent = '바꾸는 중…'; btn.disabled = true;
+            worker.postMessage({ type: 'SKIP_WAITING' });
+            setTimeout(function () { if (!reloading) { bar.remove(); } }, 8000);
+          }, null, 150);
+        };
+        navigator.serviceWorker.addEventListener('controllerchange', function () {
+          // 사용자가 "지금 바꾸기"를 눌렀을 때만, 그리고 딱 한 번만 새로고침 (무한 새로고침 방지)
+          if (!askedUpdate || reloading) return;
+          reloading = true;
+          try { if (window.__flushDashboardState) window.__flushDashboardState(); } catch (e) {}
+          location.reload();
+        });
+        window.addEventListener('load', function () {
+          navigator.serviceWorker.register('sw.js').then(function (reg) {
+            if (reg.waiting && navigator.serviceWorker.controller) showUpdate(reg.waiting);
+            reg.addEventListener('updatefound', function () {
+              var nw = reg.installing; if (!nw) return;
+              nw.addEventListener('statechange', function () {
+                if (nw.state === 'installed' && navigator.serviceWorker.controller) showUpdate(nw);
+              });
+            });
+            // 갤탭을 오래 켜 두어도 새 버전을 알아채도록: 화면으로 돌아올 때 확인 (최대 30분에 한 번)
+            var lastCheck = Date.now();
+            document.addEventListener('visibilitychange', function () {
+              if (document.visibilityState === 'visible' && Date.now() - lastCheck > 30 * 60 * 1000) { lastCheck = Date.now(); reg.update().catch(function () {}); }
+            });
+          }).catch(function () {});
+        });
       }
       // 수업 중 화면 꺼짐 방지 (앱으로 열었을 때)
-      var standalone = matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches;
+      var standalone = matchMedia('(display-mode: standalone), (display-mode: fullscreen), (display-mode: window-controls-overlay)').matches || navigator.standalone === true;
+      if (standalone) html.classList.add('pwa-standalone');
       function wake() { if (standalone && navigator.wakeLock && document.visibilityState === 'visible') navigator.wakeLock.request('screen').catch(function () {}); }
       document.addEventListener('visibilitychange', wake);
       window.addEventListener('load', wake);
-      // 설치 안내 막대
+      // 설치 안내 막대 (이미 앱으로 열었으면 보이지 않음)
       window.addEventListener('beforeinstallprompt', function (e) {
         e.preventDefault();
+        if (standalone) return;
         var ev = e;
         try { if (sessionStorage.getItem('APP_BAR_HIDE')) return; } catch (x) {}
-        var b = document.createElement('div');
-        b.style.cssText = 'position:fixed;left:50%;bottom:86px;transform:translateX(-50%);z-index:99999;display:flex;align-items:center;gap:12px;padding:12px 14px 12px 18px;border-radius:16px;background:#1a2640;border:1.5px solid #38bdf8;color:#f1f5f9;font-weight:800;font-size:15px;box-shadow:0 10px 30px rgba(0,0,0,.5);max-width:94vw';
-        b.innerHTML = '<span>📲 홈 화면에 대시보드 앱을 설치하면 주소창 없이 바로 열려요</span>';
-        var g = document.createElement('button'); g.textContent = '앱으로 설치';
-        g.style.cssText = 'padding:10px 16px;border-radius:12px;background:#38bdf8;color:#0b1220;font-weight:900;white-space:nowrap';
-        g.onclick = function () { ev.prompt(); ev.userChoice.finally(function () { b.remove(); }); };
-        var x = document.createElement('button'); x.textContent = '✕'; x.style.cssText = 'padding:6px 10px;color:#9fb0c6;font-size:16px';
-        x.onclick = function () { b.remove(); try { sessionStorage.setItem('APP_BAR_HIDE', '1'); } catch (y) {} };
-        b.appendChild(g); b.appendChild(x);
-        (document.body || document.documentElement).appendChild(b);
+        hudBar('appInstallBar', '📲 홈 화면에 앱으로 설치하면 주소창 없이 바로 열려요', '앱으로 설치', function (bar) {
+          ev.prompt();
+          ev.userChoice.then(function () { bar.remove(); }, function () { bar.remove(); });
+        }, function () { try { sessionStorage.setItem('APP_BAR_HIDE', '1'); } catch (y) {} }, 86);
       });
+      window.addEventListener('appinstalled', function () { var b = document.getElementById('appInstallBar'); if (b) b.remove(); });
     })();
   </script>
   <style>
@@ -466,7 +550,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin=""></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin=""></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- Babel(JSX 번역기)은 여기서 매번 받지 않는다: 맨 아래 「빠른 시작」 스크립트가 필요할 때만 불러온다 -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&family=Oxanium:wght@400;500;600;700&display=swap">
@@ -2005,6 +2089,317 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
       .topbar-glass .topbar-btn { padding-left: 10px; padding-right: 10px; }
     }
     @media (max-width: 520px) { .topbar-glass > div:first-child > span { display: none; } }
+
+    /* === JARVIS polish === (디자인 다듬기: 겉모습만. 기능 코드는 그대로)
+       1) 패널을 조금 더 진하게 → 뒤의 신경망 선이 글자를 가리지 않게
+       2) 흐린 글씨 대비 4.5:1 이상으로 올림 (계산값은 보고서 참고)
+       3) TV·멀리서 보는 핵심 정보(시각·남은 시간·지금 교시)를 크게
+       4) HUD 반응: 패널 부팅, 시간자 스캔선, 완료 체크 펄스, 알림 스캔-인
+       5) 갤탭(tablet-app): 글씨 16px 이상, 누르는 곳 44px 이상, 호버 없이도 수정·삭제 버튼 보이기 */
+    body.theme-jarvis {
+      --jv-panel: rgba(4, 18, 30, 0.86);
+      --jv-panel-2: rgba(3, 13, 22, 0.9);
+      --jv-dim: #9cc3d3;          /* 10.1:1 (예전 #86aebf 8.0:1) */
+      --jv-faint: #7fa6b8;        /* 5.5:1 이상 (예전 #5f8496 은 강조칸 위에서 3.5:1 → 부족) */
+      --wb-dim: var(--jv-dim);
+    }
+    /* 1) 패널 */
+    body.theme-jarvis .widget-container.glass-card,
+    body.theme-jarvis .widget-container.glass-card-warm {
+      background:
+        linear-gradient(180deg, rgba(79, 227, 255, 0.06), transparent 38px),
+        linear-gradient(180deg, var(--jv-panel), var(--jv-panel-2)) !important;
+      box-shadow: inset 0 1px 0 rgba(79, 227, 255, 0.14), inset 0 0 48px rgba(79, 227, 255, 0.045), 0 10px 30px -12px rgba(0, 0, 0, 0.8);
+      animation: jv-boot .42s cubic-bezier(.2, .7, .2, 1) backwards;
+    }
+    body.theme-jarvis .widget-container::before,
+    body.theme-jarvis .widget-container::after { transition: width .25s ease, height .25s ease, opacity .25s ease; }
+    body.theme-jarvis .widget-container:hover::before,
+    body.theme-jarvis .widget-container:hover::after { width: 26px; height: 26px; opacity: 1; }
+    @keyframes jv-boot {
+      0% { opacity: 0; clip-path: inset(0 0 100% 0); filter: brightness(1.8); }
+      60% { opacity: 1; filter: brightness(1.25); }
+      100% { opacity: 1; clip-path: inset(0 0 0 0); filter: none; }
+    }
+
+    /* 2) 글씨 대비 */
+    body.theme-jarvis .text-slate-400 { color: var(--jv-dim); }
+    body.theme-jarvis .text-slate-500,
+    body.theme-jarvis .text-slate-600 { color: var(--jv-faint); }
+    body.theme-jarvis .bg-rose-600 { background-color: #c22f3d; }   /* 흰 글씨 5.6:1 (예전 3.0:1) */
+    body.theme-jarvis .wb-title { font-size: 1rem; letter-spacing: 0.05em; }
+    body.theme-jarvis .topbar-glass > div:first-child > span { font-family: "Oxanium", "IBM Plex Sans KR", sans-serif; font-weight: 700; letter-spacing: 0.12em; }
+    body.theme-jarvis .wb-task { font-size: 0.95rem; }
+    body.theme-jarvis .wb-task .text-xs { font-size: 0.92rem; }
+    body.theme-jarvis .wb-task:hover { box-shadow: inset 2px 0 0 var(--jv-cyan); }
+    body.theme-jarvis input::placeholder, body.theme-jarvis textarea::placeholder { color: var(--jv-faint); opacity: 1; }
+    body.theme-jarvis input:focus, body.theme-jarvis textarea:focus, body.theme-jarvis select:focus {
+      border-color: var(--jv-cyan) !important; box-shadow: 0 0 0 1px var(--jv-cyan), 0 0 14px rgba(79, 227, 255, 0.28);
+    }
+
+    /* 3) 멀리서도 보이게: 시각 · 남은 시간 · 지금 교시 */
+    body.theme-jarvis .wb-band .wb-clock { font-size: clamp(2.2rem, min(16cqw, 30cqh), 7rem) !important; font-weight: 600; }
+    body.theme-jarvis .wb-next { padding: 10px 16px; }
+    body.theme-jarvis .wb-next-k { font-size: 0.85rem; letter-spacing: 0.08em; color: var(--jv-dim); }
+    body.theme-jarvis .wb-next-big { font-size: clamp(1.4rem, min(5cqw, 12cqh), 2.4rem); line-height: 1.05; text-shadow: 0 0 14px currentColor; }
+    body.theme-jarvis .wb-next-meta { font-size: 0.9rem; color: var(--jv-dim); }
+    body.theme-jarvis .wb-band-status { font-size: 1rem; letter-spacing: 0.02em; }
+    body.theme-jarvis .wb-next.is-now { animation: jv-live 2.8s ease-in-out infinite; }
+    @keyframes jv-live {
+      0%, 100% { box-shadow: inset 3px 0 0 var(--jv-green), 0 0 14px rgba(62, 230, 165, 0.10); }
+      50% { box-shadow: inset 3px 0 0 var(--jv-green), 0 0 26px rgba(62, 230, 165, 0.30); }
+    }
+    body.theme-jarvis .wb-next:active, body.theme-jarvis .dock-tool:active, body.theme-jarvis .topbar-btn:active { transform: scale(0.97); }
+
+    /* 4) HUD 반응 */
+    /* 시간자 위를 지나가는 스캔선 (7초에 한 번, 아주 옅게) */
+    body.theme-jarvis .wb-ruler-track { overflow: hidden; }
+    body.theme-jarvis .wb-ruler-track::after {
+      content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 18%; pointer-events: none;
+      background: linear-gradient(90deg, transparent, rgba(79, 227, 255, 0.10) 70%, rgba(190, 248, 255, 0.28) 98%, transparent);
+      transform: translateX(-120%); animation: jv-sweep 7s linear infinite;
+    }
+    @keyframes jv-sweep { 0% { transform: translateX(-120%); } 45%, 100% { transform: translateX(620%); } }
+    /* 할 일 완료: 다이아몬드 체크가 한 번 번쩍 */
+    body.theme-jarvis .wb-check.is-done { animation: jv-check .5s ease-out; }
+    body.theme-jarvis .wb-check.is-done::after {
+      content: ""; position: absolute; left: 4px; top: 1px; width: 4px; height: 8px;
+      border: solid #04121e; border-width: 0 2px 2px 0; transform: rotate(0deg);
+    }
+    @keyframes jv-check {
+      0% { transform: rotate(45deg) scale(.5); box-shadow: 0 0 0 0 rgba(62, 230, 165, .9); }
+      55% { transform: rotate(45deg) scale(1.05); box-shadow: 0 0 0 9px rgba(62, 230, 165, 0); }
+      100% { transform: rotate(45deg) scale(.82); box-shadow: 0 0 10px var(--jv-green); }
+    }
+    /* 알림 띠 */
+    body.theme-jarvis .jv-toast {
+      background: linear-gradient(90deg, rgba(4, 22, 36, 0.96), rgba(6, 28, 44, 0.96)) !important;
+      border: 1px solid var(--jv-line-hi) !important; border-radius: 4px !important;
+      color: var(--jv-ink) !important; font-size: 1rem;
+      box-shadow: 0 0 0 1px rgba(0,0,0,.5), 0 0 28px rgba(79, 227, 255, 0.22) !important;
+      animation: jv-toast-in .32s cubic-bezier(.2, .7, .2, 1) backwards;
+    }
+    body.theme-jarvis .jv-toast i { color: var(--jv-cyan) !important; }
+    @keyframes jv-toast-in { from { opacity: 0; clip-path: inset(0 50% 0 50%); } to { opacity: 1; clip-path: inset(0 0 0 0); } }
+    /* 위쪽 막대 아래 가는 빛줄 */
+    body.theme-jarvis .topbar-glass { box-shadow: 0 1px 0 rgba(79, 227, 255, 0.08), 0 8px 24px -16px rgba(79, 227, 255, 0.5); }
+    body.theme-jarvis .dock-tool { min-height: 56px; font-size: 13px; letter-spacing: 0.02em; }
+    body.theme-jarvis .dock-tool .ico { filter: drop-shadow(0 0 6px rgba(79, 227, 255, 0.35)); }
+
+    /* 5) 📲 갤탭 앱: 손가락·글씨 크기 (모든 테마 공통) */
+    html.tablet-app body { font-size: 16px; }
+    html.tablet-app .widget-container .text-xs,
+    html.tablet-app .widget-container .text-sm,
+    html.tablet-app .fixed .text-xs { font-size: 16px; line-height: 1.45; }
+    html.tablet-app .widget-container .text-\[11px\],
+    html.tablet-app .widget-container .text-\[10px\] { font-size: 14px; }
+    html.tablet-app .wb-title { font-size: 17px !important; }
+    html.tablet-app .topbar-btn { height: 44px; min-width: 44px; padding: 0 14px; font-size: 15px; justify-content: center; }
+    html.tablet-app .menu-item { min-height: 48px; font-size: 16px; }
+    html.tablet-app .widget-close,
+    html.tablet-app .fixed button.w-8 { min-width: 44px; min-height: 44px; }
+    html.tablet-app .drag-handle { min-height: 44px; display: inline-flex; align-items: center; }
+    html.tablet-app .widget-container :is(button, select, input:not([type="checkbox"]):not([type="radio"])) { min-height: 44px; }
+    html.tablet-app .widget-container .wb-task { min-height: 52px; }
+    html.tablet-app .wb-task .group-hover\:opacity-100 { opacity: 1; min-width: 44px; }   /* 갤탭엔 마우스 올리기가 없어서 늘 보이게 */
+    html.tablet-app .widget-container[data-w="gcal"] .group-hover\:opacity-100 { opacity: 1; min-width: 44px; }   /* 일정 삭제(✕) 버튼도 갤탭에서 늘 보이게 */
+    html.tablet-app .dock-tool { min-height: 60px; min-width: 72px; font-size: 14px; }
+    html.tablet-app .wb-next-meta { font-size: 16px; }
+    html.tablet-app .widget-container, html.tablet-app .fixed { word-break: keep-all; overflow-wrap: anywhere; }   /* 한글이 낱글자로 끊기지 않게 */
+
+    /* 움직임 줄이기: 이번에 더한 HUD 효과만 끈다.
+       (배경 신경망·교시 링·토끼/고양이는 원래 코드가 일부러 윈도우 설정을 따르지 않음 → ⚙ 설정의 '배경 신경망 움직임 끄기'·'토끼·고양이 숨기기'로 끈다) */
+    @media (prefers-reduced-motion: reduce) {
+      body.theme-jarvis .widget-container.glass-card,
+      body.theme-jarvis .widget-container.glass-card-warm,
+      body.theme-jarvis .wb-next.is-now,
+      body.theme-jarvis .wb-check.is-done,
+      body.theme-jarvis .jv-toast { animation: none !important; }
+      body.theme-jarvis .wb-ruler-track::after { display: none; }
+      body.theme-jarvis .widget-container::before,
+      body.theme-jarvis .widget-container::after { transition: none; }
+      body.theme-jarvis .wb-next:active, body.theme-jarvis .dock-tool:active, body.theme-jarvis .topbar-btn:active { transform: none; }
+    }
+
+    /* === JARVIS polish r2 === (2차 디자인 다듬기: 겉모습만. 기능 코드는 그대로)
+       1) 설정 메뉴·모든 설정 창·확인 창을 같은 HUD 틀로: 진한 판 + 하늘빛 테두리 + 네 모서리 괄호 + 머리띠 빛줄
+       2) 창 안 작은 글씨 키우기(12px → 13.5px), 입력칸·단추 모양 통일, 오류/성공 글에 기호(⚠ ✓)
+       3) 수업 화면·도구 창: 큰 숫자 더 크게, 고른 단추엔 색 말고도 밑줄·표시가 생김
+       4) 갤탭(800px)·작은 화면: 창이 화면 밖으로 안 나가고 안에서 스크롤, 아래 도구 막대는 안전 여백
+       5) 키보드 Tab 이동 때 하늘빛 테두리로 어디 있는지 보이게
+       ※ 새 움직임(창 열림 스캔)은 윈도우 '애니메이션 줄이기'가 켜져 있으면 꺼진다 */
+
+    /* ---------- 모든 테마 공통: 크기·접근성 ---------- */
+    .jv-dialog { max-width: 100% !important; }
+    .jv-dialog-scroll { max-height: calc(100dvh - 24px); overflow-y: auto; }
+    .jv-dialog-sm { width: min(380px, 100%); }
+    .jv-dialog .text-xs { font-size: 13.5px; line-height: 1.55; }
+    .jv-dialog .text-\[11px\], .jv-dialog .text-\[10px\] { font-size: 12.5px; }
+    .jv-menu { max-height: calc(100dvh - 72px); overflow-y: auto; }
+    /* 고른 탭: 색 말고도 밑줄로 표시 */
+    .jv-seg [aria-pressed="true"], .jv-tab[aria-pressed="true"] { box-shadow: inset 0 -3px 0 currentColor; }
+    /* 학생 화면 활동 순서: 지금 단계에 '◀ 지금' 표시 */
+    .jv-step[aria-current="step"]::after { content: "◀ 지금"; float: right; font-size: 12px; font-weight: 900; opacity: .85; }
+    /* 오류·주의·성공 글 앞 기호 (색만으로 알리지 않기) */
+    .jv-msg-ico.jv-msg-err::before { content: "⚠ "; }
+    .jv-msg-ico.jv-msg-warn::before { content: "! "; font-weight: 900; }
+    .jv-msg-ico.jv-msg-ok::before { content: "✓ "; font-weight: 900; }
+    .jv-msg:empty::before { content: none; }
+    /* 낙서장: 색·굵기 단추를 누르기 쉽게, 고른 색엔 ✓ */
+    .jv-swatch { width: 34px !important; height: 34px !important; position: relative; }
+    .jv-swatch[aria-pressed="true"]::after { content: "✓"; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 900; font-size: 16px; text-shadow: 0 0 3px #000; }
+    .jv-wbtool { min-width: 36px; min-height: 36px; }
+    div:has(> .jv-swatch) { padding: 4px 4px 2px; }
+    .jv-swatch[aria-pressed="true"] { border-color: #fff !important; }
+    /* 학생 화면 조종판: 좁을 때 제목줄이 낱글자로 끊기지 않게 */
+    .jv-stu { word-break: keep-all; }
+    .jv-stu .justify-between { flex-wrap: wrap; gap: 4px 8px; }
+    /* 갤탭 */
+    html.tablet-app .jv-dialog .text-sm { font-size: 16px; }
+    html.tablet-app .jv-dialog :is(button, input:not([type="checkbox"]):not([type="radio"]), select, summary) { min-height: 44px; }
+    html.tablet-app .jv-swatch { width: 44px !important; height: 44px !important; }
+    html.tablet-app .jv-wbtool { min-width: 44px; min-height: 44px; }
+    html.tablet-app .jv-stu button, html.tablet-app .jv-stu input:not([type="checkbox"]) { min-height: 44px; }
+    html.tablet-app .jv-stu .text-xs { font-size: 15px; }
+    html.tablet-app .jv-alert { font-size: 15px !important; }
+    html.tablet-app .wb-dock { bottom: calc(10px + env(safe-area-inset-bottom, 0px)); max-width: calc(100vw - 16px); }
+    html.tablet-app .jv-scrim { padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
+
+    /* ---------- 자비스 테마 ---------- */
+    /* 1) 창 틀 */
+    body.theme-jarvis .jv-scrim { background: rgba(1, 6, 12, 0.8) !important; backdrop-filter: blur(6px); }
+    body.theme-jarvis .jv-dialog,
+    body.theme-jarvis .jv-menu,
+    body.theme-jarvis #tabSet > div {
+      background:
+        linear-gradient(var(--jv-cyan), var(--jv-cyan)) top left / 20px 2px no-repeat,
+        linear-gradient(var(--jv-cyan), var(--jv-cyan)) top left / 2px 20px no-repeat,
+        linear-gradient(var(--jv-cyan), var(--jv-cyan)) bottom right / 20px 2px no-repeat,
+        linear-gradient(var(--jv-cyan), var(--jv-cyan)) bottom right / 2px 20px no-repeat,
+        linear-gradient(180deg, rgba(79, 227, 255, 0.07), transparent 72px),
+        linear-gradient(180deg, #061a28, #04111c) !important;
+      border: 1px solid var(--jv-line-hi) !important;
+      border-radius: 4px !important;
+      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 0 42px rgba(79, 227, 255, 0.16), 0 24px 60px -20px #000 !important;
+      color: var(--jv-ink);
+    }
+    body.theme-jarvis .jv-dialog { animation: jv-dlg-in .3s cubic-bezier(.2, .7, .2, 1) backwards; }
+    @keyframes jv-dlg-in {
+      0% { opacity: 0; clip-path: inset(48% 0 48% 0); filter: brightness(1.8); }
+      60% { opacity: 1; clip-path: inset(0 0 0 0); filter: brightness(1.2); }
+      100% { opacity: 1; clip-path: inset(0 0 0 0); filter: none; }
+    }
+    body.theme-jarvis .jv-dialog-head {
+      border-bottom: 1px solid transparent !important;
+      border-image: linear-gradient(90deg, var(--jv-cyan), rgba(79, 227, 255, 0.18) 45%, transparent) 1;
+    }
+    body.theme-jarvis .jv-dialog-head :is(h3, .text-xl, .text-sm.font-bold) {
+      color: var(--jv-ink) !important; letter-spacing: 0.04em; text-shadow: 0 0 12px rgba(79, 227, 255, 0.35);
+    }
+    body.theme-jarvis .jv-dialog-head h3 { font-size: 1.1rem; }
+    body.theme-jarvis .jv-sec { color: var(--jv-cyan) !important; letter-spacing: 0.05em; padding-left: 12px; position: relative; }
+    body.theme-jarvis .jv-sec::before {
+      content: ""; position: absolute; left: 0; top: 50%; width: 6px; height: 6px; margin-top: -3px;
+      background: var(--jv-cyan); transform: rotate(45deg); box-shadow: 0 0 8px var(--jv-cyan);
+    }
+    body.theme-jarvis .jv-dialog .bg-slate-900\/60,
+    body.theme-jarvis .jv-dialog .bg-slate-900\/70,
+    body.theme-jarvis .jv-dialog .bg-slate-900\/80 { background-color: rgba(79, 227, 255, 0.05); }
+    body.theme-jarvis .jv-dialog code { background: rgba(79, 227, 255, 0.12); color: var(--jv-ink); }
+    body.theme-jarvis .jv-dialog details summary { color: var(--jv-dim); }
+
+    /* 2) 입력칸 · 단추 */
+    body.theme-jarvis .jv-dialog :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea),
+    body.theme-jarvis #tabSet input {
+      background: rgba(1, 8, 14, 0.92) !important; border: 1px solid rgba(79, 227, 255, 0.32) !important;
+      border-radius: 3px !important; color: var(--jv-ink) !important;
+    }
+    body.theme-jarvis .jv-dialog input.text-xs { font-size: 14px; }
+    body.theme-jarvis .jv-btn-primary {
+      background: var(--jv-cyan) !important; color: #031019 !important; border: 1px solid var(--jv-cyan) !important;
+      border-radius: 3px !important; font-weight: 800; letter-spacing: 0.03em; min-height: 40px;
+      box-shadow: 0 0 16px rgba(79, 227, 255, 0.32); transition: background .15s, box-shadow .15s, transform .1s;
+    }
+    body.theme-jarvis .jv-btn-primary:hover { background: #8aeeff !important; box-shadow: 0 0 24px rgba(79, 227, 255, 0.5); }
+    body.theme-jarvis .jv-btn-primary:disabled { opacity: .55; box-shadow: none; cursor: progress; }
+    body.theme-jarvis .jv-btn-ghost {
+      background: rgba(79, 227, 255, 0.06) !important; color: var(--jv-ink) !important; border: 1px solid var(--jv-line) !important;
+      border-radius: 3px !important; min-height: 40px; transition: background .15s, border-color .15s, transform .1s;
+    }
+    body.theme-jarvis .jv-btn-ghost:hover { background: rgba(79, 227, 255, 0.14) !important; border-color: var(--jv-line-hi) !important; }
+    body.theme-jarvis .jv-close {
+      background: transparent !important; color: #ff8a95 !important; border: 1px solid rgba(255, 93, 108, 0.55) !important;
+      border-radius: 3px !important; width: 40px !important; height: 40px !important; font-size: 16px;
+    }
+    body.theme-jarvis .jv-close:hover { background: rgba(255, 93, 108, 0.2) !important; color: #fff !important; }
+    body.theme-jarvis :is(.jv-btn-primary, .jv-btn-ghost, .jv-close):active { transform: scale(0.97); }
+    body.theme-jarvis #tabSet button { border-radius: 3px !important; }
+    body.theme-jarvis #tsClose { background: var(--jv-cyan) !important; color: #031019 !important; }
+
+    /* 3) 알림 글 · 오류 띠 */
+    body.theme-jarvis .jv-msg {
+      display: inline-block; padding: 6px 10px; border-left: 3px solid currentColor; border-radius: 2px;
+      background: rgba(79, 227, 255, 0.06);
+    }
+    body.theme-jarvis .jv-msg:empty { padding: 0; border: 0; background: none; }
+    body.theme-jarvis .jv-msg-err { color: #ffb3ba !important; background: rgba(255, 93, 108, 0.1); }      /* 10.5:1 */
+    body.theme-jarvis .jv-msg-warn { color: var(--jv-amber) !important; background: rgba(255, 181, 71, 0.08); }
+    body.theme-jarvis .jv-msg-ok { color: var(--jv-green) !important; background: rgba(62, 230, 165, 0.08); }
+    body.theme-jarvis .jv-alert {
+      background: linear-gradient(90deg, rgba(255, 93, 108, 0.18), rgba(255, 93, 108, 0.05)) !important;
+      border: 1px solid rgba(255, 93, 108, 0.5) !important; border-left: 3px solid var(--jv-red) !important;
+      border-radius: 2px !important; color: #ffc2c8 !important;                                              /* 9.7:1 */
+      box-shadow: 0 0 16px -6px rgba(255, 93, 108, 0.6);
+    }
+    body.theme-jarvis .widget-container .jv-alert { font-size: 12.5px; font-weight: 600; }
+    body.theme-jarvis .jv-loading { color: var(--jv-cyan); letter-spacing: 0.04em; }
+
+    /* 4) 설정 메뉴 */
+    body.theme-jarvis .jv-menu { animation: jv-dlg-in .22s cubic-bezier(.2, .7, .2, 1) backwards; }
+    body.theme-jarvis .jv-menu-k { color: var(--jv-cyan) !important; opacity: .9; font-size: 12px; letter-spacing: 0.14em; }
+    body.theme-jarvis .jv-menu .border-slate-800 { border-color: var(--jv-line) !important; }
+    body.theme-jarvis .jv-menu .menu-item { border-radius: 3px; }
+    body.theme-jarvis .jv-menu .menu-item:hover { background: rgba(79, 227, 255, 0.12); box-shadow: inset 2px 0 0 var(--jv-cyan); }
+    body.theme-jarvis .jv-menu select { color: var(--jv-ink); }
+
+    /* 5) 탭 (학교 정보 · 캘린더 · 학생 화면 · 수업 관리) */
+    body.theme-jarvis .jv-seg { border-color: var(--jv-line) !important; background: rgba(1, 8, 14, 0.7) !important; border-radius: 3px !important; }
+    body.theme-jarvis .jv-seg button { color: var(--jv-dim); border-radius: 2px !important; }
+    body.theme-jarvis .jv-seg button:hover { color: var(--jv-ink); }
+    body.theme-jarvis :is(.jv-seg button, .jv-tab)[aria-pressed="true"] {
+      background: rgba(79, 227, 255, 0.18) !important; color: var(--jv-ink) !important;
+      border-color: var(--jv-line-hi) !important; box-shadow: inset 0 -2px 0 var(--jv-cyan), 0 0 12px rgba(79, 227, 255, 0.18);
+    }
+    body.theme-jarvis .jv-step[aria-current="step"] { background: rgba(79, 227, 255, 0.18) !important; color: var(--jv-ink) !important; box-shadow: inset 3px 0 0 var(--jv-cyan); }
+
+    /* 6) 수업 도구: 멀리서도 보이는 큰 숫자 */
+    body.theme-jarvis .jv-bignum {
+      font-family: "Oxanium", "IBM Plex Sans KR", sans-serif; font-variant-numeric: tabular-nums;
+      font-size: clamp(4.5rem, 11vw, 7.5rem); font-weight: 600; letter-spacing: 0.02em;
+      text-shadow: 0 0 22px currentColor, 0 0 2px currentColor;
+    }
+    body.theme-jarvis .jv-bignum-xl { font-size: clamp(6rem, 16vw, 10rem); }
+    body.theme-jarvis .jv-bignum-sm { font-size: clamp(3.2rem, min(6.5vw, 8vh), 5rem); line-height: 1.05; }
+    body.theme-jarvis .jv-noise-label { font-size: 1.9rem; letter-spacing: 0.02em; text-shadow: 0 0 14px currentColor; }
+    body.theme-jarvis .jv-tool .bg-slate-900:not(input),
+    body.theme-jarvis .jv-tool .bg-slate-900\/80,
+    body.theme-jarvis .jv-tool .bg-slate-900\/90 { background-color: rgba(79, 227, 255, 0.05); }
+    body.theme-jarvis .jv-stu { background: rgba(3, 14, 24, 0.82) !important; border-color: var(--jv-line) !important; border-radius: 4px !important; }
+    body.theme-jarvis .jv-swatch { border-radius: 3px !important; }
+    body.theme-jarvis .jv-swatch[aria-pressed="true"] { outline: 2px solid var(--jv-cyan); outline-offset: 2px; transform: none; }
+    body.theme-jarvis .jv-wbtool[aria-pressed="true"] { border-color: var(--jv-cyan) !important; background: rgba(79, 227, 255, 0.16) !important; color: var(--jv-ink) !important; }
+
+    /* 7) 키보드 포커스: 어디 있는지 늘 보이게 */
+    body.theme-jarvis :is(a, summary, select, [tabindex]:not([tabindex="-1"]), input[type="checkbox"], input[type="radio"]):focus-visible {
+      outline: 2px solid var(--jv-cyan); outline-offset: 2px;
+    }
+    body.theme-jarvis button:focus-visible { box-shadow: 0 0 0 4px rgba(79, 227, 255, 0.22), 0 0 16px rgba(79, 227, 255, 0.35); }
+    body.theme-jarvis .menu-item:focus-within { box-shadow: inset 0 0 0 1px var(--jv-cyan); }
+
+    @media (prefers-reduced-motion: reduce) {
+      body.theme-jarvis .jv-dialog, body.theme-jarvis .jv-menu { animation: none !important; }
+      body.theme-jarvis :is(.jv-btn-primary, .jv-btn-ghost, .jv-close):active { transform: none; }
+    }
   </style>
 </head>
 <body>
@@ -2040,6 +2435,9 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
       var origRemove = Storage.prototype.removeItem;
       var ready = false;
       var timer = null;
+      var DIRTY_KEY = 'MODONG_STATE_DIRTY';   // 파일에 아직 못 보낸 변경이 있다는 표시(KEYS에 넣지 않음 = 파일에 저장 안 됨)
+      var failCount = 0;                      // 연속 저장 실패 횟수(3번까지만 다시 시도)
+      var shownNotice = {};                   // 같은 안내는 한 번만 보여 주기
 
       function notice(msg) {
         var show = function () {
@@ -2063,14 +2461,20 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
         var res = xhr.status === 200 ? JSON.parse(xhr.responseText) : null;
         if (res && res.success) {
           if (res.data && typeof res.data === 'object') {
-            if (typeof res.data.GEMINI_API_KEY === 'string' && res.data.GEMINI_API_KEY && !ls.getItem('GEMINI_API_KEY')) {
-              origSet.call(ls, 'GEMINI_API_KEY', res.data.GEMINI_API_KEY);
+            // 지난번에 파일로 못 보낸 변경(DIRTY 표시)이 브라우저에 남아 있으면, 파일 값으로 덮어쓰지 않고 브라우저 값을 파일로 보낸다.
+            //  (단, 파일이 그 뒤에 저장됐으면(갤탭 리모컨 등) 파일 쪽이 더 새것이므로 평소처럼 파일 값을 쓴다)
+            var dirtyAt = parseInt(ls.getItem(DIRTY_KEY) || '0', 10) || 0;
+            var savedAtMs = res.savedAt ? Date.parse(res.savedAt) : NaN;   // 같은 PC의 현지 시각(초 단위)
+            var wasDirty = dirtyAt > 0 && !(savedAtMs > dirtyAt);
+            if (dirtyAt && !wasDirty) { try { origRemove.call(ls, DIRTY_KEY); } catch (e) {} }
+            if (!wasDirty) {
+              KEYS.forEach(function (k) {
+                if (typeof res.data[k] === 'string') origSet.call(ls, k, res.data[k]);
+                else origRemove.call(ls, k);
+              });
             }
-            KEYS.forEach(function (k) {
-              if (typeof res.data[k] === 'string') origSet.call(ls, k, res.data[k]);
-              else origRemove.call(ls, k);
-            });
             ready = true;
+            if (wasDirty) setTimeout(function () { saveNow(); }, 0);
           } else {
             // 저장 파일이 아직 없음(첫 실행): 지금 브라우저에 남아 있는 데이터로 파일을 새로 만든다.
             ready = true;
@@ -2094,6 +2498,11 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
         if (kres && kres.success) {
           if (kres.apiKey) {
             origSet.call(ls, 'GEMINI_API_KEY', kres.apiKey);
+          } else if (kres.hasKey) {
+            // 서버(config.json)에 키가 있으면 키는 서버만 갖는다.
+            // 브라우저에 남은 예전 키가 서버의 새 키를 덮어쓰지 않도록 지운다. (제미나이 호출은 서버가 자기 키로 함)
+            try { ls.removeItem('GEMINI_API_KEY'); } catch (e2) {}
+            window.__GEMINI_SERVER_KEY__ = { hasKey: true, masked: kres.masked || '' };
           } else {
             var localKey = (ls.getItem('GEMINI_API_KEY') || '').trim();
             if (localKey) {
@@ -2118,20 +2527,44 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
         return o;
       }
 
+      function noticeOnce(kind, msg) {
+        if (shownNotice[kind]) return;
+        shownNotice[kind] = true;
+        notice(msg);
+      }
+
+      function retryLater() {
+        failCount++;
+        if (failCount < 3) schedule();
+      }
+
       function saveNow(keepalive) {
         if (!ready) return Promise.resolve(false);
         if (timer) { clearTimeout(timer); timer = null; }
+        var dirtyAtStart = ls.getItem(DIRTY_KEY);
+        var body = JSON.stringify({ data: collect() });
         return fetch('/api/state', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'X-Dashboard-Token': token },
-          body: JSON.stringify({ data: collect() }),
-          keepalive: !!keepalive
-        }).then(function (r) { return r.ok; })
-          .catch(function (e) { console.warn('대시보드 저장 실패', e); return false; });
+          body: body,
+          keepalive: !!keepalive && body.length < 60000   // 크롬은 64KB가 넘는 keepalive 요청을 거부한다
+        }).then(function (r) {
+          if (r.ok) {
+            failCount = 0;
+            // 저장하는 동안 새 변경이 없었을 때만 DIRTY 표시를 지운다.
+            try { if (!timer && ls.getItem(DIRTY_KEY) === dirtyAtStart) origRemove.call(ls, DIRTY_KEY); } catch (e) {}
+            return true;
+          }
+          if (r.status === 400) noticeOnce('big', '⚠️ 데이터가 너무 커서 파일에 저장하지 못했어요. 오래된 자료를 조금 지워 주세요.');
+          else if (r.status === 401) noticeOnce('auth', '⚠️ 저장 권한이 만료됐어요. 대시보드를 다시 켜 주세요.');
+          retryLater();
+          return false;
+        }).catch(function (e) { console.warn('대시보드 저장 실패', e); retryLater(); return false; });
       }
 
       function schedule() {
         if (!ready) return;
+        try { origSet.call(ls, DIRTY_KEY, String(Date.now())); } catch (e) {}
         if (timer) clearTimeout(timer);
         timer = setTimeout(function () { saveNow(); }, 1000);
       }
@@ -2235,7 +2668,7 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
     function dashViewH() { var a = window.__safeArea || {}; return Math.max(240, window.innerHeight - (a.top || 0) - (a.bottom || 0)); }
   </script>
 
-  <script type="text/babel">
+  <script type="text/x-jsx" id="app-src">
     const { useState, useEffect, useRef, useCallback } = React;
 
     // 로컬 백엔드(run.pyw) 전용 API 호출 래퍼.
@@ -2283,7 +2716,7 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
       { label: '점심시간', start: '12:20', end: '13:20', isBreak: true },
       { label: '5교시', start: '13:20', end: '14:05' },
       { label: '6교시', start: '14:15', end: '15:00' },
-      { label: '7교시', start: '15:10', end: '16:55' }
+      { label: '7교시', start: '15:10', end: '15:55' }
     ];
 
     function getPeriodStatus(now) {
@@ -2471,6 +2904,8 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
         };
         const loop = () => {
           if (stopped) return;
+          // 창이 숨겨져 있으면(최소화·다른 탭) 그리지 않고 가끔만 확인한다
+          if (document.hidden) { timer = setTimeout(loop, 500); return; }
           try { draw(performance.now()); } catch (e) {}
           timer = setTimeout(loop, 42);   // 약 24장/초
         };
@@ -2597,6 +3032,8 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
         let timer = 0, last = performance.now(), stop = false;
         const tick = () => {
           if (stop) return;
+          // 창이 숨겨져 있으면 움직이지 않고 가끔만 확인한다
+          if (document.hidden) { last = performance.now(); timer = setTimeout(tick, 500); return; }
           const now = performance.now(), dt = Math.min(0.1, (now - last) / 1000); last = now;
           pets.forEach((p, i) => {
             if (!p.el) return;
@@ -2957,12 +3394,12 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
               <button onClick={startListening} className="px-7 py-4 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-2xl text-base shadow-lg transition">
                 측정 시작
               </button>
-              {errorMsg && <div className="text-xs text-rose-400 text-center px-4">{errorMsg}</div>}
+              {errorMsg && <div role="status" className="jv-msg jv-msg-ico jv-msg-err text-xs text-rose-400 text-center px-4">{errorMsg}</div>}
               <div className="text-xs text-slate-500 text-center px-6">마이크 권한을 허용하면 실시간 교실 소음 수준을 보여줍니다.<br/>측정한 소리는 저장·전송되지 않고 화면 표시에만 사용됩니다.</div>
             </>
           ) : (
             <>
-              <div className={`text-lg font-black ${zone.text}`}>{zone.label}</div>
+              <div className={`jv-noise-label text-lg font-black ${zone.text}`} role="status">{zone.label}</div>
               <div className="w-full px-2">
                 <div className="w-full h-8 bg-slate-900 rounded-full overflow-hidden border border-slate-700 relative">
                   <div className={`h-full ${zone.color} transition-all duration-100`} style={{ width: `${level}%` }} />
@@ -3045,7 +3482,9 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
               <button
                 key={c}
                 onClick={() => { setColor(c); setIsEraser(false); }}
-                className={`w-6 h-6 rounded-full border-2 transition ${!isEraser && color === c ? 'border-amber-300 scale-110' : 'border-slate-700'}`}
+                aria-pressed={!isEraser && color === c}
+                aria-label="펜 색"
+                className={`jv-swatch w-6 h-6 rounded-full border-2 transition ${!isEraser && color === c ? 'border-amber-300 scale-110' : 'border-slate-700'}`}
                 style={{ backgroundColor: c }}
               />
             ))}
@@ -3054,20 +3493,23 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
               <button
                 key={s}
                 onClick={() => setBrushSize(s)}
-                className={`w-7 h-7 rounded-lg flex items-center justify-center border transition ${brushSize === s ? 'border-amber-400 bg-slate-800' : 'border-slate-700'}`}
+                aria-pressed={brushSize === s}
+                aria-label={`굵기 ${s}`}
+                className={`jv-wbtool w-7 h-7 rounded-lg flex items-center justify-center border transition ${brushSize === s ? 'border-amber-400 bg-slate-800' : 'border-slate-700'}`}
               >
                 <span className="rounded-full bg-slate-300 block" style={{ width: s + 2, height: s + 2 }} />
               </button>
             ))}
             <button
               onClick={() => setIsEraser(!isEraser)}
-              className={`px-2.5 py-1.5 rounded-lg text-xs font-bold border transition ${isEraser ? 'border-amber-400 bg-slate-800 text-amber-300' : 'border-slate-700 text-slate-400'}`}
+              aria-pressed={isEraser}
+              className={`jv-wbtool px-2.5 py-1.5 rounded-lg text-xs font-bold border transition ${isEraser ? 'border-amber-400 bg-slate-800 text-amber-300' : 'border-slate-700 text-slate-400'}`}
             >
               🧽 지우개
             </button>
             <button
               onClick={handleClear}
-              className="ml-auto px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-800 hover:bg-rose-900/60 text-slate-300 hover:text-rose-300 border border-slate-700 transition"
+              className="jv-wbtool ml-auto px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-800 hover:bg-rose-900/60 text-slate-300 hover:text-rose-300 border border-slate-700 transition"
             >
               전체 지우기
             </button>
@@ -3165,15 +3607,15 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
       const tablet = !!window.__TABLET_APP__;
       const msgCls = msg.type === 'err' ? 'text-rose-300' : msg.type === 'warn' ? 'text-amber-300' : 'text-emerald-300';
       return (
-        <div className="fixed inset-0 z-[10016] bg-black/80 backdrop-blur-md flex items-center justify-center p-4" onPointerDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-          <div role="dialog" aria-modal="true" aria-labelledby="neis-title" className="w-[600px] max-w-full max-h-[92vh] overflow-y-auto custom-scroll bg-slate-950 border border-sky-500/70 rounded-3xl p-6 shadow-2xl flex flex-col gap-5 select-text">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div className="jv-scrim fixed inset-0 z-[10016] bg-black/80 backdrop-blur-md flex items-center justify-center p-4" onPointerDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+          <div role="dialog" aria-modal="true" aria-labelledby="neis-title" className="jv-dialog w-[600px] max-w-full max-h-[92vh] overflow-y-auto custom-scroll bg-slate-950 border border-sky-500/70 rounded-3xl p-5 sm:p-6 shadow-2xl flex flex-col gap-5 select-text">
+            <div className="jv-dialog-head flex items-center justify-between pb-3 border-b border-slate-800">
               <h3 id="neis-title" className="text-lg font-black text-slate-100">🏫 학교 정보(NEIS) 연결</h3>
-              <button onClick={onClose} className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-bold">닫기</button>
+              <button onClick={onClose} className="jv-btn-ghost px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-bold">닫기</button>
             </div>
 
             <section className="flex flex-col gap-2">
-              <div className="text-sm font-black text-slate-200">1. 우리 학교 고르기</div>
+              <div className="jv-sec text-sm font-black text-slate-200">1. 우리 학교 고르기</div>
               <div className="text-sm text-slate-300">
                 지금: <b className="text-sky-300">{cfg ? (cfg.region ? `${cfg.region} ` : '') + (cfg.name || '정해지지 않음') : '불러오는 중…'}</b>
                 {cfg && <span className="text-slate-500"> (교육청 {cfg.office} · 학교 {cfg.school})</span>}
@@ -3182,7 +3624,7 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
                 <input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') search(); }}
                   placeholder="학교 이름으로 찾기 (예: 모동중)" aria-label="학교 이름"
                   className="flex-1 min-w-0 bg-slate-900 border border-slate-700 focus:border-sky-400 rounded-xl px-3 py-2.5 text-sm text-slate-100 outline-none" />
-                <button onClick={search} disabled={searching} className="px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-sm font-bold disabled:opacity-60 whitespace-nowrap">{searching ? '찾는 중…' : '찾기'}</button>
+                <button onClick={search} disabled={searching} className="jv-btn-primary px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-sm font-bold disabled:opacity-60 whitespace-nowrap">{searching ? '찾는 중…' : '찾기'}</button>
               </div>
               {rows && rows.length > 0 && (
                 <div className="max-h-48 overflow-y-auto custom-scroll flex flex-col gap-1 rounded-xl border border-slate-800 p-1">
@@ -3195,8 +3637,8 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
                 </div>
               )}
               <details className="text-xs text-slate-400">
-                <summary className="cursor-pointer">코드를 직접 넣기</summary>
-                <div className="mt-2 grid grid-cols-3 gap-2">
+                <summary className="cursor-pointer py-1">코드를 직접 넣기</summary>
+                <div className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <label className="flex flex-col gap-1">교육청 코드<input value={office} onChange={(e) => setOffice(e.target.value)} placeholder="C10" className="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-sm text-slate-100 outline-none" /></label>
                   <label className="flex flex-col gap-1">학교 코드<input value={school} onChange={(e) => setSchool(e.target.value)} placeholder="7201026" className="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-sm text-slate-100 outline-none" /></label>
                   <label className="flex flex-col gap-1">학교 이름<input value={name} onChange={(e) => setName(e.target.value)} placeholder="모동중학교" className="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-sm text-slate-100 outline-none" /></label>
@@ -3205,7 +3647,7 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
             </section>
 
             <section className="flex flex-col gap-2">
-              <div className="text-sm font-black text-slate-200">2. NEIS 인증키</div>
+              <div className="jv-sec text-sm font-black text-slate-200">2. NEIS 인증키</div>
               <div className="text-sm">
                 {cfg && cfg.hasKey
                   ? <span className="text-emerald-300 font-bold">✔ 저장된 키 있음 <span className="font-mono text-slate-400 font-normal">({cfg.masked})</span></span>
@@ -3220,7 +3662,7 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
                       placeholder={cfg && cfg.hasKey ? '새 키로 바꿀 때만 붙여 넣기' : 'NEIS 오픈API 인증키 붙여 넣기'} aria-label="NEIS 인증키"
                       autoComplete="off" spellCheck={false}
                       className="flex-1 min-w-0 bg-slate-900 border border-slate-700 focus:border-sky-400 rounded-xl px-3 py-2.5 text-sm text-slate-100 font-mono outline-none" />
-                    <button onClick={() => setShowKey(v => !v)} className="px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold whitespace-nowrap">{showKey ? '가리기' : '보기'}</button>
+                    <button onClick={() => setShowKey(v => !v)} className="jv-btn-ghost px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold whitespace-nowrap">{showKey ? '가리기' : '보기'}</button>
                   </div>
                   <div className="text-xs text-slate-500 leading-relaxed">
                     키는 open.neis.go.kr → 마이페이지 → 인증키 발급에서 받아요.
@@ -3230,12 +3672,12 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
               )}
             </section>
 
-            <div className="flex items-center gap-2 pt-3 border-t border-slate-800">
-              <button onClick={() => save()} disabled={busy || !cfg} className="px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-sm font-black disabled:opacity-60">{busy ? '확인하는 중…' : '저장'}</button>
+            <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-slate-800">
+              <button onClick={() => save()} disabled={busy || !cfg} className="jv-btn-primary px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-sm font-black disabled:opacity-60">{busy ? '확인하는 중…' : '저장'}</button>
               {cfg && cfg.hasKey && !cfg.keyFromEnv && (
-                <button onClick={() => save({ clearKey: true })} disabled={busy} className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-rose-900/70 text-slate-300 text-sm font-bold">키 지우기</button>
+                <button onClick={() => save({ clearKey: true })} disabled={busy} className="jv-btn-ghost px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-rose-900/70 text-slate-300 text-sm font-bold">키 지우기</button>
               )}
-              <span role="status" className={`text-sm font-bold ${msgCls} min-w-0`}>{msg.text}</span>
+              <span role="status" className={`jv-msg jv-msg-ico jv-msg-${msg.type || 'none'} text-sm font-bold ${msgCls} min-w-0`}>{msg.text}</span>
             </div>
           </div>
         </div>
@@ -3396,10 +3838,10 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
               </span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="flex flex-shrink-0 whitespace-nowrap bg-slate-900/90 rounded-lg p-0.5 border border-slate-800 text-[11px]">
-                <button onClick={() => setTab('schedule')} className={`px-2 py-0.5 rounded font-bold transition ${tab === 'schedule' ? 'bg-sky-600 text-white' : 'text-slate-400 hover:text-slate-200'}`}>학사일정</button>
-                <button onClick={() => setTab('meal')} className={`px-2 py-0.5 rounded font-bold transition ${tab === 'meal' ? 'bg-sky-600 text-white' : 'text-slate-400 hover:text-slate-200'}`}>급식</button>
-                <button onClick={() => setTab('timetable')} className={`px-2 py-0.5 rounded font-bold transition ${tab === 'timetable' ? 'bg-sky-600 text-white' : 'text-slate-400 hover:text-slate-200'}`}>시간표</button>
+              <div className="jv-seg flex flex-shrink-0 whitespace-nowrap bg-slate-900/90 rounded-lg p-0.5 border border-slate-800 text-[11px]" role="group" aria-label="학교 정보 보기">
+                <button onClick={() => setTab('schedule')} aria-pressed={tab === 'schedule'} className={`px-2 py-0.5 rounded font-bold transition ${tab === 'schedule' ? 'bg-sky-600 text-white' : 'text-slate-400 hover:text-slate-200'}`}>학사일정</button>
+                <button onClick={() => setTab('meal')} aria-pressed={tab === 'meal'} className={`px-2 py-0.5 rounded font-bold transition ${tab === 'meal' ? 'bg-sky-600 text-white' : 'text-slate-400 hover:text-slate-200'}`}>급식</button>
+                <button onClick={() => setTab('timetable')} aria-pressed={tab === 'timetable'} className={`px-2 py-0.5 rounded font-bold transition ${tab === 'timetable' ? 'bg-sky-600 text-white' : 'text-slate-400 hover:text-slate-200'}`}>시간표</button>
               </div>
               {onCloseWidget && (
                 <button onClick={onCloseWidget} title="위젯 숨기기" className="widget-close w-6 h-6 rounded hover:bg-rose-900/60 text-slate-400 hover:text-rose-300 text-sm flex items-center justify-center">✕</button>
@@ -3417,7 +3859,7 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
           </div>
 
           {neisError && (
-            <div className="mb-1 px-2.5 py-1.5 rounded-xl bg-rose-950/80 border border-rose-700/70 text-[11px] text-rose-200 leading-snug break-all">
+            <div role="status" className="jv-alert mb-1 px-2.5 py-1.5 rounded-xl bg-rose-950/80 border border-rose-700/70 text-[11px] text-rose-200 leading-snug break-all">
               ⚠️ NEIS: {neisError}
             </div>
           )}
@@ -3453,7 +3895,7 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
 
           <div className="flex-1 overflow-y-auto custom-scroll pr-1 my-1">
             {loading ? (
-              <div className="h-full flex flex-col items-center justify-center text-sky-300 gap-2 text-xs py-8">
+              <div className="jv-loading h-full flex flex-col items-center justify-center text-sky-300 gap-2 text-xs py-8">
                 <i className="fa-solid fa-circle-notch fa-spin text-lg"></i>
                 <span>나이스(NEIS) 데이터를 동기화하는 중...</span>
               </div>
@@ -3584,7 +4026,7 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
       const [memo, setMemo] = useState('');
       const [viewMode, setViewMode] = useState('google');
 
-      const userEmail = localStorage.getItem('GCAL_USER_EMAIL') || 'olelxs2@gmail.com';
+      const userEmail = localStorage.getItem('GCAL_USER_EMAIL') || googleUserEmail || '';
 
       const handleAdd = async (e) => {
         e.preventDefault();
@@ -3662,10 +4104,10 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
           </div>
 
           <div className="flex items-center gap-1 mb-1.5 flex-shrink-0">
-            <button onClick={() => setViewMode('google')} className={`flex-1 text-[11px] font-bold py-1 rounded-lg border transition ${viewMode === 'google' ? 'bg-blue-600/80 border-blue-400 text-white' : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-slate-200'}`}>
+            <button onClick={() => setViewMode('google')} aria-pressed={viewMode === 'google'} className={`jv-tab flex-1 text-[11px] font-bold py-1 rounded-lg border transition ${viewMode === 'google' ? 'bg-blue-600/80 border-blue-400 text-white' : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-slate-200'}`}>
               🟢 실제 구글 캘린더
             </button>
-            <button onClick={() => setViewMode('local')} className={`flex-1 text-[11px] font-bold py-1 rounded-lg border transition ${viewMode === 'local' ? 'bg-amber-600/80 border-amber-400 text-white' : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-slate-200'}`}>
+            <button onClick={() => setViewMode('local')} aria-pressed={viewMode === 'local'} className={`jv-tab flex-1 text-[11px] font-bold py-1 rounded-lg border transition ${viewMode === 'local' ? 'bg-amber-600/80 border-amber-400 text-white' : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-slate-200'}`}>
               📝 로컬 메모
             </button>
           </div>
@@ -3691,7 +4133,7 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
                 <div className="text-center py-6 text-sm text-slate-400 font-medium">불러오는 중...</div>
               ) : gcalError ? (
                 <div className="flex flex-col items-center justify-center h-full text-center gap-2 py-4">
-                  <p className="text-xs text-rose-300 px-2">{gcalError}</p>
+                  <p className="jv-msg jv-msg-ico jv-msg-err text-xs text-rose-300 px-2">{gcalError}</p>
                   <button onClick={onGoogleLogin} className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-lg">다시 로그인</button>
                 </div>
               ) : gcalRealEvents.length === 0 ? (
@@ -3781,11 +4223,11 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
           </div>
 
           {showAddModal && (
-            <div className="fixed inset-0 z-[10020] bg-black/75 backdrop-blur-sm flex items-center justify-center p-3" onClick={(e) => e.stopPropagation()}>
-              <form onSubmit={handleAdd} className="bg-slate-950 border border-amber-500/70 rounded-2xl p-5 w-84 shadow-2xl flex flex-col gap-3 text-xs">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+            <div className="jv-scrim fixed inset-0 z-[10020] bg-black/75 backdrop-blur-sm flex items-center justify-center p-3" onClick={(e) => e.stopPropagation()}>
+              <form onSubmit={handleAdd} role="dialog" aria-modal="true" className="jv-dialog jv-dialog-sm bg-slate-950 border border-amber-500/70 rounded-2xl p-5 w-84 shadow-2xl flex flex-col gap-3 text-xs">
+                <div className="jv-dialog-head flex items-center justify-between border-b border-slate-800 pb-2">
                   <span className="font-bold text-amber-300 text-sm">📅 새 일정 추가 {viewMode === 'google' ? '(구글 캘린더)' : '(로컬 메모)'}</span>
-                  <button type="button" onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-white">✕</button>
+                  <button type="button" onClick={() => setShowAddModal(false)} aria-label="닫기" className="jv-close w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white">✕</button>
                 </div>
                 <div className="flex flex-col gap-2">
                   <div>
@@ -3826,8 +4268,8 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
                   )}
                 </div>
                 <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
-                  <button type="button" onClick={() => setShowAddModal(false)} className="px-3 py-1.5 bg-slate-800 text-slate-300 rounded-lg">취소</button>
-                  <button type="submit" disabled={addingReal} className="px-4 py-1.5 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white font-bold rounded-lg shadow">
+                  <button type="button" onClick={() => setShowAddModal(false)} className="jv-btn-ghost px-3 py-1.5 bg-slate-800 text-slate-300 rounded-lg">취소</button>
+                  <button type="submit" disabled={addingReal} className="jv-btn-primary px-4 py-1.5 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white font-bold rounded-lg shadow">
                     {addingReal ? '등록 중...' : '등록'}
                   </button>
                 </div>
@@ -3882,7 +4324,7 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
       useEffect(() => () => clearInterval(timerRef.current), []);
       return (
         <div className="flex flex-col items-center gap-3.5 py-3">
-          <div className="font-mono text-7xl font-black text-amber-400 leading-none">{fmt(remSec)}</div>
+          <div className="jv-bignum font-mono text-7xl font-black text-amber-400 leading-none" role="timer">{fmt(remSec)}</div>
           <div className="grid grid-cols-4 gap-3 w-full mt-2">
             {[60, 180, 300, 600].map(sec => (
               <button key={sec} onClick={() => setPreset(sec)} className="py-3 bg-slate-900 hover:bg-slate-800 text-sm font-bold text-slate-200 rounded-xl border border-slate-800">{sec/60}분</button>
@@ -3923,7 +4365,7 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
       useEffect(() => () => clearInterval(swRef.current), []);
       return (
         <div className="flex flex-col items-center gap-3.5 py-3">
-          <div className="font-mono text-7xl font-black text-emerald-400 leading-none">{fmtSw(elapsed)}</div>
+          <div className="jv-bignum font-mono text-7xl font-black text-emerald-400 leading-none" role="timer">{fmtSw(elapsed)}</div>
           <div className="w-full h-64 overflow-y-auto custom-scroll bg-slate-900/90 rounded-2xl p-3.5 border border-slate-800 space-y-2">
             {laps.length === 0 ? <div className="text-center text-slate-400 py-20 text-base">기록된 랩타임이 없습니다.</div> : laps.map((l, i) => (
               <div key={i} className="flex justify-between items-center px-4 py-3.5 bg-slate-950 rounded-xl border border-slate-800">
@@ -3980,11 +4422,11 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
       return (
         <div className="flex flex-col items-center gap-4 py-3">
           <div className="grid grid-cols-2 gap-3 w-full">
-            <input type="number" value={startNum} onChange={(e) => setStartNum(e.target.value)} className="bg-slate-900 px-4 py-3 rounded-xl border border-slate-800 font-bold text-white text-sm outline-none" placeholder="시작 번호" />
-            <input type="number" value={endNum} onChange={(e) => setEndNum(e.target.value)} className="bg-slate-900 px-4 py-3 rounded-xl border border-slate-800 font-bold text-white text-sm outline-none" placeholder="끝 번호" />
+            <input type="number" aria-label="시작 번호" value={startNum} onChange={(e) => setStartNum(e.target.value)} className="bg-slate-900 px-4 py-3 rounded-xl border border-slate-800 font-bold text-white text-sm outline-none" placeholder="시작 번호" />
+            <input type="number" aria-label="끝 번호" value={endNum} onChange={(e) => setEndNum(e.target.value)} className="bg-slate-900 px-4 py-3 rounded-xl border border-slate-800 font-bold text-white text-sm outline-none" placeholder="끝 번호" />
           </div>
           <div className="w-full py-12 bg-slate-900/90 rounded-2xl border-2 border-pink-500/50 text-center flex flex-col items-center justify-center">
-            <div className="font-mono text-9xl font-black text-pink-400 leading-none">{winner}</div>
+            <div className="jv-bignum jv-bignum-xl font-mono text-9xl font-black text-pink-400 leading-none" aria-live="polite">{winner}</div>
             <span className="text-xs text-pink-300 font-bold mt-4 tracking-widest uppercase">Lucky Number</span>
           </div>
           <button onClick={rollWinner} disabled={isRolling} className="w-full py-4 bg-pink-500 hover:bg-pink-400 text-slate-950 text-base font-black rounded-2xl shadow-xl transition">
@@ -4026,8 +4468,8 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
       return (
         <div className="flex flex-col gap-4 py-3">
           <div className="grid grid-cols-2 gap-3">
-            <input type="number" value={totalStu} onChange={(e) => setTotalStu(e.target.value)} className="bg-slate-900 px-4 py-3 rounded-xl border border-slate-800 font-bold text-white text-sm outline-none" placeholder="총 학생 수" />
-            <input type="number" value={groupCnt} onChange={(e) => setGroupCnt(e.target.value)} className="bg-slate-900 px-4 py-3 rounded-xl border border-slate-800 font-bold text-white text-sm outline-none" placeholder="편성 모둠 수" />
+            <input type="number" aria-label="총 학생 수" value={totalStu} onChange={(e) => setTotalStu(e.target.value)} className="bg-slate-900 px-4 py-3 rounded-xl border border-slate-800 font-bold text-white text-sm outline-none" placeholder="총 학생 수" />
+            <input type="number" aria-label="편성 모둠 수" value={groupCnt} onChange={(e) => setGroupCnt(e.target.value)} className="bg-slate-900 px-4 py-3 rounded-xl border border-slate-800 font-bold text-white text-sm outline-none" placeholder="편성 모둠 수" />
           </div>
           <div className="h-72 overflow-y-auto custom-scroll bg-slate-900/80 rounded-2xl p-4 border border-slate-800 grid grid-cols-2 gap-3 text-sm">
             {groups.length === 0 ? (
@@ -4311,14 +4753,14 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
       const planPreview = parseLessonPlan(plans[grade]);
 
       const tabBtn = (id, label) => (
-        <button onClick={() => setTab(id)} className={`px-4 py-2 rounded-xl text-sm font-bold transition ${tab === id ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}>{label}</button>
+        <button onClick={() => setTab(id)} aria-pressed={tab === id} className={`jv-tab px-4 py-2 rounded-xl text-sm font-bold transition ${tab === id ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}>{label}</button>
       );
 
       return (
-        <div className="fixed inset-0 z-[10020] bg-black/75 backdrop-blur-sm flex items-center justify-center p-6" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-          <div className="w-[1100px] max-w-[96vw] max-h-[90vh] bg-slate-950 border border-amber-500/60 rounded-3xl shadow-2xl flex flex-col overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
-              <div className="flex items-center gap-3">
+        <div className="jv-scrim fixed inset-0 z-[10020] bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+          <div role="dialog" aria-modal="true" className="jv-dialog w-[1100px] max-w-[96vw] max-h-[90vh] bg-slate-950 border border-amber-500/60 rounded-3xl shadow-2xl flex flex-col overflow-hidden">
+            <div className="jv-dialog-head flex items-center justify-between gap-3 px-4 sm:px-6 py-4 border-b border-slate-800">
+              <div className="flex items-center gap-3 flex-wrap min-w-0">
                 <span className="text-xl font-black text-amber-300">🎓 수업 관리</span>
                 <div className="flex gap-1.5 ml-3">
                   {tabBtn('timetable', '🗓️ 내 시간표')}
@@ -4326,7 +4768,7 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
                   {tabBtn('progress', '📈 반별 진도')}
                 </div>
               </div>
-              <button onClick={onClose} className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-sm">완료</button>
+              <button onClick={onClose} className="jv-btn-primary flex-shrink-0 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-sm">완료</button>
             </div>
 
             <div className="flex-1 overflow-y-auto custom-scroll p-6 select-text">
@@ -4374,7 +4816,7 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
                 <div className="flex flex-col gap-4">
                   <div className="flex items-center gap-2">
                     {grades.map(g => (
-                      <button key={g} onClick={() => setGrade(g)} className={`px-4 py-2 rounded-xl text-sm font-black ${grade === g ? 'bg-sky-500 text-slate-950' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}>{g}학년</button>
+                      <button key={g} onClick={() => setGrade(g)} aria-pressed={grade === g} className={`jv-tab px-4 py-2 rounded-xl text-sm font-black ${grade === g ? 'bg-sky-500 text-slate-950' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}>{g}학년</button>
                     ))}
                   </div>
                   <div className="text-sm text-slate-300 leading-relaxed bg-slate-900/80 border border-slate-800 rounded-2xl p-4">
@@ -4556,6 +4998,7 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
                         value={memoDraft}
                         onChange={(e) => setMemoDraft(e.target.value)}
                         placeholder="다음 시간을 위한 메모 (안 써도 돼요)"
+                        aria-label="다음 시간을 위한 메모"
                         className="w-full bg-slate-900 border border-slate-700 focus:border-emerald-400 rounded-xl px-4 py-2.5 text-sm text-slate-100 outline-none select-text"
                       />
                       <button onClick={advance} className={`w-full py-3.5 rounded-2xl font-black text-base transition ${doneToday ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950'}`}>
@@ -4628,8 +5071,8 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
       const [grpTotal, setGrpTotal] = useState(() => { try { return (JSON.parse(localStorage.getItem('MODONG_GROUP_DEFAULTS') || '{}').total) || 28; } catch (e) { return 28; } });
       const [grpCount, setGrpCount] = useState(() => { try { return (JSON.parse(localStorage.getItem('MODONG_GROUP_DEFAULTS') || '{}').count) || 6; } catch (e) { return 6; } });
       const makeGroups = () => {
-        const tot = Math.max(2, parseInt(grpTotal, 10) || 28);
-        const cnt = Math.max(1, Math.min(tot, parseInt(grpCount, 10) || 6));
+        const tot = Math.max(2, Math.min(200, parseInt(grpTotal, 10) || 28));
+        const cnt = Math.max(1, Math.min(tot, 200, parseInt(grpCount, 10) || 6));
         try { localStorage.setItem('MODONG_GROUP_DEFAULTS', JSON.stringify({ total: tot, count: cnt })); } catch (e) {}
         const arr = Array.from({ length: tot }, (_, i) => `${i + 1}번`);
         for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; }
@@ -4648,7 +5091,7 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
       const pkHistory = (stu.pick && stu.pick.history) || [];
       const rollPick = () => {
         if (pkRolling) return;
-        const to = Math.max(1, parseInt(pkTo, 10) || 28);
+        const to = Math.max(1, Math.min(200, parseInt(pkTo, 10) || 28));
         let pool = [];
         for (let i = 1; i <= to; i++) if (!pkNoRepeat || !pkHistory.includes(i)) pool.push(i);
         if (!pool.length) { setStu(s => ({ ...s, pick: { ...(s.pick || {}), history: [] } })); return; }
@@ -4665,11 +5108,11 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
       };
 
       const viewBtn = (id, label) => (
-        <button onClick={() => setStu(s => ({ ...s, view: id }))} className={`flex-1 py-2 px-1 rounded-xl text-xs font-black whitespace-nowrap transition ${stu.view === id ? 'bg-sky-500 text-slate-950' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}>{label}</button>
+        <button onClick={() => setStu(s => ({ ...s, view: id }))} aria-pressed={stu.view === id} className={`jv-tab flex-1 py-2 px-1 rounded-xl text-xs font-black whitespace-nowrap transition ${stu.view === id ? 'bg-sky-500 text-slate-950' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}>{label}</button>
       );
 
       return (
-        <div className="h-full rounded-3xl bg-slate-950/95 border border-slate-700 shadow-2xl p-5 flex flex-col gap-3 min-h-0">
+        <div className="jv-stu h-full rounded-3xl bg-slate-950/95 border border-slate-700 shadow-2xl p-4 xl:p-5 flex flex-col gap-3 min-h-0 overflow-y-auto custom-scroll">
           <div className="flex items-center justify-between">
             <span className="text-lg font-black text-slate-100 flex items-center gap-2">
               📺 학생 화면
@@ -4678,7 +5121,7 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
             </span>
             {open
               ? <button onClick={onClose} className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-rose-700 text-slate-200 text-sm font-bold">끄기</button>
-              : <button onClick={onOpen} className="px-3.5 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 text-sm font-black">켜기</button>}
+              : <button onClick={onOpen} className="pc-only px-3.5 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 text-sm font-black">켜기</button>}
           </div>
 
           <div className="flex gap-1.5">
@@ -4694,7 +5137,7 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
               <span className="text-xs font-black text-slate-400">⏳ 타이머</span>
               <span className={`text-xs font-bold ${running ? 'text-emerald-300' : (rem === 0 && stu.timer.totalMs ? 'text-rose-300' : 'text-slate-500')}`}>{running ? '진행 중' : (rem === 0 && stu.timer.totalMs ? '끝!' : '멈춤')}</span>
             </div>
-            <div className={`wb-num text-center font-mono font-black text-6xl leading-tight ${rem <= 10000 && running ? 'text-rose-400' : 'text-amber-300'}`}>{fmtMs(rem)}</div>
+            <div role="timer" className={`jv-bignum jv-bignum-sm wb-num text-center font-mono font-black text-6xl leading-tight ${rem <= 10000 && running ? 'text-rose-400' : 'text-amber-300'}`}>{fmtMs(rem)}</div>
             <div className="grid grid-cols-5 gap-1.5 mt-2">
               {[1, 3, 5, 10, 15].map(m => (
                 <button key={m} onClick={() => preset(m)} className="py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-bold">{m}분</button>
@@ -4708,14 +5151,14 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
           </div>
 
           {stu.view === 'pick' ? (
-            <div className="rounded-2xl bg-slate-900/90 border border-pink-700/60 p-4 flex-1 min-h-0 flex flex-col">
+            <div className="rounded-2xl bg-slate-900/90 border border-pink-700/60 p-4 flex-1 min-h-[200px] flex flex-col">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-black text-pink-300">🎯 발표자 뽑기 (학생 화면에 크게 보여요)</span>
                 <label className="text-xs font-bold text-slate-400 flex items-center gap-1 cursor-pointer"><input type="checkbox" checked={pkNoRepeat} onChange={(e) => setPkNoRepeat(e.target.checked)} className="accent-pink-500" />뽑힌 번호 빼기</label>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="text-xs font-bold text-slate-400">1번 ~</span>
-                <input type="number" min="1" value={pkTo} onChange={(e) => setPkTo(e.target.value)} className="w-16 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-sm font-bold text-white outline-none select-text" />
+                <input type="number" min="1" aria-label="마지막 번호" value={pkTo} onChange={(e) => setPkTo(e.target.value)} className="w-16 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-sm font-bold text-white outline-none select-text" />
                 <span className="text-xs font-bold text-slate-400">번</span>
                 <button onClick={rollPick} disabled={pkRolling} className="flex-1 py-2 rounded-lg bg-pink-500 hover:bg-pink-400 text-slate-950 text-sm font-black">{pkRolling ? '뽑는 중…' : '🎯 뽑기'}</button>
               </div>
@@ -4728,16 +5171,16 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
             </div>
           ) : stu.view === 'groups' ? (
             /* 모둠: 여기서 바로 편성하고, 학생 화면에 크게 보여 줌 */
-            <div className="rounded-2xl bg-slate-900/90 border border-sky-700/60 p-4 flex-1 min-h-0 flex flex-col">
+            <div className="rounded-2xl bg-slate-900/90 border border-sky-700/60 p-4 flex-1 min-h-[200px] flex flex-col">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-black text-sky-300">👥 모둠 편성 (학생 화면에 크게 보여요)</span>
                 {(stu.groups || []).length > 0 && <span className="text-xs font-bold text-slate-400">{stu.groups.length}모둠</span>}
               </div>
               <div className="flex items-center gap-1.5 mb-2">
                 <label className="text-xs font-bold text-slate-400">학생</label>
-                <input type="number" min="2" value={grpTotal} onChange={(e) => setGrpTotal(e.target.value)} className="w-16 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-sm font-bold text-white outline-none select-text" />
+                <input type="number" min="2" aria-label="학생 수" value={grpTotal} onChange={(e) => setGrpTotal(e.target.value)} className="w-16 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-sm font-bold text-white outline-none select-text" />
                 <label className="text-xs font-bold text-slate-400 ml-1">모둠</label>
-                <input type="number" min="1" value={grpCount} onChange={(e) => setGrpCount(e.target.value)} className="w-14 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-sm font-bold text-white outline-none select-text" />
+                <input type="number" min="1" aria-label="모둠 수" value={grpCount} onChange={(e) => setGrpCount(e.target.value)} className="w-14 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-sm font-bold text-white outline-none select-text" />
                 <button onClick={makeGroups} className="flex-1 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 text-sm font-black">🎲 {(stu.groups || []).length ? '다시 편성' : '편성하기'}</button>
               </div>
               <div className="flex-1 overflow-y-auto custom-scroll grid grid-cols-2 gap-1.5 content-start pr-1">
@@ -4753,7 +5196,7 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
             </div>
           ) : stu.view === 'blank' ? (
             /* 가리기 */
-            <div className="rounded-2xl bg-black border border-slate-700 p-4 flex-1 min-h-0 flex flex-col items-center justify-center gap-3 text-center">
+            <div className="rounded-2xl bg-black border border-slate-700 p-4 flex-1 min-h-[200px] flex flex-col items-center justify-center gap-3 text-center">
               <div className="text-5xl">🙈</div>
               <div className="text-lg font-black text-slate-100">학생 화면을 가리는 중</div>
               <div className="text-sm text-slate-400 leading-relaxed">아래 '한 줄 알림'에 글을 쓰면<br />검은 화면 가운데에 그 글이 크게 나와요.</div>
@@ -4761,7 +5204,7 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
             </div>
           ) : (
             /* 활동 순서 */
-          <div className="rounded-2xl bg-slate-900/90 border border-slate-800 p-4 flex-1 min-h-0 flex flex-col">
+          <div className="rounded-2xl bg-slate-900/90 border border-slate-800 p-4 flex-1 min-h-[200px] flex flex-col">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-black text-slate-400">🪜 활동 순서 (학생에게 보여요)</span>
               {canFill && <button onClick={onFillFromLesson} className="text-xs font-bold text-sky-300 hover:text-sky-200 underline">이 수업 내용으로 채우기</button>}
@@ -4770,7 +5213,7 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
               {(stu.steps || []).length === 0 ? (
                 <div className="text-sm text-slate-500 text-center my-auto">차시 계획에 활동을 적어 두면 여기에 나와요.</div>
               ) : stu.steps.map((s, i) => (
-                <button key={i} onClick={() => setStu(x => ({ ...x, stepIdx: i }))} className={`text-left px-3 py-2 rounded-xl text-sm font-bold transition ${i === stu.stepIdx ? 'bg-sky-500 text-slate-950' : i < stu.stepIdx ? 'text-slate-500 line-through' : 'text-slate-200 hover:bg-slate-800'}`}>
+                <button key={i} onClick={() => setStu(x => ({ ...x, stepIdx: i }))} aria-current={i === stu.stepIdx ? 'step' : undefined} className={`jv-step text-left px-3 py-2 rounded-xl text-sm font-bold transition ${i === stu.stepIdx ? 'bg-sky-500 text-slate-950' : i < stu.stepIdx ? 'text-slate-500 line-through' : 'text-slate-200 hover:bg-slate-800'}`}>
                   {i < stu.stepIdx ? '✓' : `${i + 1}.`} {s}
                 </button>
               ))}
@@ -4786,7 +5229,7 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
 
           {/* 한 줄 알림 */}
           <form onSubmit={(e) => { e.preventDefault(); setStu(s => ({ ...s, message: msgDraft.trim() })); }} className="flex gap-1.5">
-            <input value={msgDraft} onChange={(e) => setMsgDraft(e.target.value)} placeholder="학생 화면에 띄울 한 줄 (예: 공구 내려놓고 앞을 봐요)" className="flex-1 min-w-0 bg-slate-900 border border-slate-700 focus:border-sky-400 rounded-xl px-3 py-2 text-sm text-slate-100 outline-none select-text" />
+            <input value={msgDraft} onChange={(e) => setMsgDraft(e.target.value)} aria-label="학생 화면에 띄울 한 줄 알림" placeholder="학생 화면에 띄울 한 줄 (예: 공구 내려놓고 앞을 봐요)" className="flex-1 min-w-0 bg-slate-900 border border-slate-700 focus:border-sky-400 rounded-xl px-3 py-2 text-sm text-slate-100 outline-none select-text" />
             <button type="submit" className="px-3 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-sm font-black">띄우기</button>
             {stu.message && <button type="button" onClick={() => { setMsgDraft(''); setStu(s => ({ ...s, message: '' })); }} className="px-2.5 rounded-xl bg-slate-800 text-slate-300 text-sm font-bold">지우기</button>}
           </form>
@@ -4870,14 +5313,14 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
       const standaloneUrl = gasUrl ? `${gasUrl.split('?')[0]}?page=tablet` : '';
 
       return (
-        <div className="fixed inset-0 z-[10020] bg-black/75 backdrop-blur-sm flex items-center justify-center p-6" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-          <div className="w-[860px] max-w-[96vw] max-h-[92vh] overflow-y-auto custom-scroll bg-slate-950 border border-sky-500/60 rounded-3xl shadow-2xl p-6 flex flex-col gap-5 select-text">
-            <div className="flex items-center justify-between">
+        <div className="jv-scrim fixed inset-0 z-[10020] bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+          <div role="dialog" aria-modal="true" className="jv-dialog w-[860px] max-w-[96vw] max-h-[92vh] overflow-y-auto custom-scroll bg-slate-950 border border-sky-500/60 rounded-3xl shadow-2xl p-6 flex flex-col gap-5 select-text">
+            <div className="jv-dialog-head flex items-center justify-between pb-3">
               <span className="text-xl font-black text-sky-300">📱 휴대폰 · 태블릿 연결</span>
-              <button onClick={onClose} className="px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-black text-sm">닫기</button>
+              <button onClick={onClose} className="jv-btn-primary px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-black text-sm">닫기</button>
             </div>
 
-            <div className="flex gap-6 items-center">
+            <div className="flex flex-wrap sm:flex-nowrap gap-6 items-center">
               <div className="flex-shrink-0">
                 {busy ? <div className="w-[204px] h-[204px] rounded-2xl bg-slate-900 flex items-center justify-center text-slate-500 text-sm">준비 중…</div>
                   : (mainUrl ? <QrBox text={mainUrl} /> : <div className="w-[204px] h-[204px] rounded-2xl bg-slate-900 flex items-center justify-center text-rose-300 text-sm text-center p-4">이 컴퓨터의 인터넷 주소를 찾지 못했어요</div>)}
@@ -4894,7 +5337,7 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
             </div>
 
             {oldServer && (
-              <div className="rounded-2xl border border-rose-600/60 bg-rose-950/50 p-4 text-[15px] text-rose-200 font-bold leading-relaxed">
+              <div className="jv-alert rounded-2xl border border-rose-600/60 bg-rose-950/50 p-4 text-[15px] text-rose-200 font-bold leading-relaxed">
                 ⚠️ 지금 실행 중인 <b>run.pyw(또는 exe)가 예전 버전</b>이에요. 새 run.pyw로 바꾸고(exe면 build_exe.bat 다시 실행) 대시보드를 껐다 켜야 리모컨에서 할 일·진도가 PC로 저장돼요.
               </div>
             )}
@@ -4943,7 +5386,7 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
             </div>
 
             {info && info.firewallOk === false && (
-              <div className="rounded-2xl border border-rose-500/70 bg-rose-950/50 p-4 flex items-center justify-between gap-4">
+              <div className="jv-alert rounded-2xl border border-rose-500/70 bg-rose-950/50 p-4 flex flex-wrap sm:flex-nowrap items-center justify-between gap-4">
                 <div className="text-[15px] text-rose-100 leading-relaxed">
                   <b>🛡️ 윈도우 방화벽이 휴대폰·태블릿 연결을 막고 있을 수 있어요.</b><br />
                   <span className="text-sm text-rose-200/90">Tailscale이 '연결됨'이어도 이것 때문에 리모컨 주소가 안 열려요. 학교 노트북은 관리자 비밀번호가 필요할 수 있어요.</span>
@@ -5001,9 +5444,11 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
       }, []);
 
       const [toastMsg, setToastMsg] = useState(null);
+      const toastTimerRef = useRef(null);
       const showToast = (msg) => {
         setToastMsg(msg);
-        setTimeout(() => setToastMsg(null), 3000);
+        if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+        toastTimerRef.current = setTimeout(() => { toastTimerRef.current = null; setToastMsg(null); }, 3000);
       };
 
       // 현재 교시/쉬는시간 상태 계산 + 교시가 바뀌는 순간 종소리·알림
@@ -5515,6 +5960,7 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
       };
 
       const handleDeleteRealGoogleEvent = async (eventId) => {
+        if (!window.confirm('구글 캘린더에서 이 일정을 지울까요?')) return;
         if (!googleAccessToken) return;
         try {
           const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`, {
@@ -5568,7 +6014,10 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
 
       const handleDownloadHtml = () => {
         try {
-          const htmlContent = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+          const docClone = document.documentElement.cloneNode(true);
+          docClone.querySelectorAll('script[data-app-compiled], script[src*="@babel/standalone"]').forEach(n => n.remove());
+          const rootClone = docClone.querySelector('#root'); if (rootClone) rootClone.innerHTML = '';
+          const htmlContent = "<!DOCTYPE html>\n" + docClone.outerHTML;
           const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
@@ -5586,7 +6035,8 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
 
       // 키 창을 열 때 현재 키를 채워둔다. (빈칸 상태에서 '저장하기'를 누르면 키가 삭제되던 문제 방지)
       useEffect(() => {
-        if (showApiKeyModal) { setTempApiKeyInput(globalApiKey || ''); setApiKeyError(''); }
+        // PC에서는 키를 서버만 갖고 있으므로 입력칸은 비워 두고, 빈칸 저장은 아래에서 한 번 더 묻는다.
+        if (showApiKeyModal) { setTempApiKeyInput(window.__GEMINI_SERVER_KEY__ ? '' : (globalApiKey || '')); setApiKeyError(''); }
       }, [showApiKeyModal]);
 
       const [apiKeySaving, setApiKeySaving] = useState(false);
@@ -5596,6 +6046,8 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
         e.preventDefault();
         if (apiKeySaving) return;
         const val = tempApiKeyInput.trim();
+        const srvKey = window.__GEMINI_SERVER_KEY__;
+        if (!val && (globalApiKey || (srvKey && srvKey.hasKey)) && !window.confirm('등록된 제미나이 키를 삭제할까요?')) return;
         setApiKeyError('');
         setApiKeySaving(true);
         // 서버가 구글에 키를 실제로 확인한 뒤 config.json에 저장한다.
@@ -5605,9 +6057,16 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
           setApiKeyError(result.error || '키를 저장하지 못했습니다.');
           return;
         }
-        const savedKey = result.key != null ? result.key : val;
-        setGlobalApiKey(savedKey);
-        localStorage.setItem('GEMINI_API_KEY', savedKey);
+        const savedKey = val;
+        if (window.__TABLET_APP__) {
+          setGlobalApiKey(savedKey);
+          localStorage.setItem('GEMINI_API_KEY', savedKey);
+        } else {
+          // PC: 키는 서버(config.json)에만 두고, 화면에는 가린 모양만 기억한다.
+          window.__GEMINI_SERVER_KEY__ = savedKey ? { hasKey: true, masked: savedKey.slice(0, 4) + '…' + savedKey.slice(-4) } : null;
+          setGlobalApiKey('');
+          try { localStorage.removeItem('GEMINI_API_KEY'); } catch (e2) {}
+        }
         setShowApiKeyModal(false);
         if (!savedKey) showToast('🔑 API 키가 삭제되었습니다.');
         else if (result.warning) showToast(`🔑 ${result.warning}`);
@@ -5893,8 +6352,9 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
       // 항목(할 일·시간표·진도 …)마다 '마지막으로 바꾼 시각'을 기억해서,
       // 새 동기화 스크립트(Code.gs, _v:2)와 쓸 때는 더 최근에 바꾼 쪽 값만 남긴다.
       // 예전 스크립트를 쓰면 예전 방식(통째로 덮어쓰기) 그대로 동작한다.
-      const SYNC_FIELDS = ['todos', 'events', 'bookmarks', 'folders', 'currentTheme', 'globalApiKey', 'latestDocDigest', 'timetable', 'lessonPlans', 'classProgress', 'lessonVideos', 'savedVideos'];
-      const syncValues = { todos, events, bookmarks, folders, currentTheme, globalApiKey, latestDocDigest, timetable, lessonPlans: lessonPlans, classProgress: classProgress, lessonVideos, savedVideos };
+      // 제미나이 API 키(globalApiKey)는 비밀 정보라서 구글 시트로 보내지도, 받아오지도 않는다.
+      const SYNC_FIELDS = ['todos', 'events', 'bookmarks', 'folders', 'currentTheme', 'latestDocDigest', 'timetable', 'lessonPlans', 'classProgress', 'lessonVideos', 'savedVideos'];
+      const syncValues = { todos, events, bookmarks, folders, currentTheme, latestDocDigest, timetable, lessonPlans: lessonPlans, classProgress: classProgress, lessonVideos, savedVideos };
       const syncValuesRef = useRef(syncValues);
       syncValuesRef.current = syncValues;
       const keyTimesRef = useRef(loadJSONKey('MODONG_SYNC_KEYTIMES', {}));
@@ -5920,11 +6380,6 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
         bookmarks: (v) => Array.isArray(v) && setBookmarks(v),
         folders: (v) => Array.isArray(v) && setFolders(v),
         currentTheme: (v) => { if (typeof v === 'string' && v) { setCurrentTheme(v); localStorage.setItem('MODONG_THEME', v); } },
-        globalApiKey: (v) => {
-          if (typeof v !== 'string' || !v) return;
-          if (v !== localStorage.getItem('GEMINI_API_KEY')) saveGeminiKeyToServer(v, false);
-          setGlobalApiKey(v); localStorage.setItem('GEMINI_API_KEY', v);
-        },
         latestDocDigest: (v) => { if (v && typeof v === 'object') { setLatestDocDigest(v); localStorage.setItem('MODONG_LATEST_DOC_DIGEST', JSON.stringify(v)); } },
         timetable: (v) => v && typeof v === 'object' && !Array.isArray(v) && setTimetable(v),
         lessonPlans: (v) => v && typeof v === 'object' && !Array.isArray(v) && setLessonPlans(v),
@@ -5946,6 +6401,7 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
         try {
           const v = syncValuesRef.current;
           const payload = { _keyTimes: { ...keyTimesRef.current } };
+          delete payload._keyTimes.globalApiKey;
           SYNC_FIELDS.forEach(k => { payload[k] = v[k]; });
           await fetch(url, {
             method: 'POST',
@@ -5962,6 +6418,7 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
       const pullFromGoogleSheet = useCallback(async (targetUrl, isManual = false) => {
         const effectiveUrl = (targetUrl || gasUrl).trim();
         if (!effectiveUrl) {
+          isRemoteLoadingRef.current = false;
           if (isManual) showToast('⚠️ 등록된 구글 시트 Web App URL이 없습니다.');
           return;
         }
@@ -5972,10 +6429,13 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           const cloudData = await res.json();
 
+          const pullStartedAt = Date.now();
           if (cloudData && cloudData._v === 2) {
             // 새 방식: 항목별로 더 최근 것만 가져오고, 내 쪽이 더 최근이면 올려 보낸다
             const times = cloudData._keyTimes || {};
             let needPush = false;
+            // 받아 온 값을 화면에 넣는 동안에는 자동 업로드를 막는다 (방금 받은 걸 다시 올리지 않도록)
+            isRemoteLoadingRef.current = true;
             SYNC_FIELDS.forEach(k => {
               const lt = Number(keyTimesRef.current[k] || 0);
               if (!(k in cloudData)) { needPush = true; return; }
@@ -5985,6 +6445,11 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
               else if (lt > ct) needPush = true;
             });
             saveJSONKey('MODONG_SYNC_KEYTIMES', keyTimesRef.current);
+            setTimeout(() => {
+              isRemoteLoadingRef.current = false; remoteApplyRef.current.clear();
+              // 받아 오는 0.4초 사이에 이 기기에서 바꾼 것이 있으면 바로 올린다
+              if (!needPush && SYNC_FIELDS.some(k => Number(keyTimesRef.current[k] || 0) > pullStartedAt)) pushToGoogleSheet(effectiveUrl);
+            }, 400);
             setSyncStatus('connected');
             if (isManual) showToast('🟢 구글 시트로부터 최신 데이터를 불러왔습니다.');
             if (needPush) setTimeout(() => pushToGoogleSheet(effectiveUrl), 300);
@@ -5993,7 +6458,7 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
 
           // 예전 방식 (예전 Apps Script)
           isRemoteLoadingRef.current = true;
-          ['todos', 'events', 'bookmarks', 'folders', 'currentTheme', 'globalApiKey', 'latestDocDigest'].forEach(k => {
+          ['todos', 'events', 'bookmarks', 'folders', 'currentTheme', 'latestDocDigest'].forEach(k => {
             if (cloudData[k] != null) { remoteApplyRef.current.add(k); syncSetters[k](cloudData[k]); }
           });
           setSyncStatus('connected');
@@ -6027,7 +6492,7 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
         if (!gasUrl || isRemoteLoadingRef.current) return;
         const timer = setTimeout(() => pushToGoogleSheet(gasUrl), 1200);
         return () => clearTimeout(timer);
-      }, [todos, events, bookmarks, folders, currentTheme, globalApiKey, latestDocDigest, timetable, lessonPlans, classProgress, lessonVideos, savedVideos, gasUrl]);
+      }, [todos, events, bookmarks, folders, currentTheme, latestDocDigest, timetable, lessonPlans, classProgress, lessonVideos, savedVideos, gasUrl]);
 
       const handleSaveGasUrl = (e) => {
         e.preventDefault();
@@ -6036,6 +6501,7 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
         localStorage.setItem('MODONG_GAS_URL', cleaned);
         setShowSheetSyncModal(false);
         if (cleaned) {
+          isRemoteLoadingRef.current = true;   // 받아 오기 전에 빈 데이터를 올리지 않게
           pullFromGoogleSheet(cleaned, true);
         } else {
           setSyncStatus('idle');
@@ -6268,7 +6734,7 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
           {currentTheme === 'jarvis' && <NeuralBackdrop enabled={jvMotion} />}
           <Wanderers enabled={petsOn} />
           {toastMsg && (
-            <div className="fixed top-16 left-1/2 -translate-x-1/2 z-[10000] bg-slate-900/95 border border-amber-500/80 text-amber-200 px-5 py-2 rounded-2xl shadow-2xl text-sm font-bold backdrop-blur-md flex items-center gap-2">
+            <div className="jv-toast fixed top-16 left-1/2 -translate-x-1/2 z-[10000] bg-slate-900/95 border border-amber-500/80 text-amber-200 px-5 py-2 rounded-2xl shadow-2xl text-sm font-bold backdrop-blur-md flex items-center gap-2">
               <i className="fa-solid fa-bell text-amber-400"></i>
               <span>{toastMsg}</span>
             </div>
@@ -6346,8 +6812,8 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
                 {showSettingsMenu && (
                   <>
                     <div className="fixed inset-0 z-40" onClick={() => setShowSettingsMenu(false)} />
-                    <div className="absolute right-0 top-11 z-50 w-72 p-2 rounded-2xl bg-slate-900/98 border border-slate-700 shadow-2xl flex flex-col gap-0.5">
-                      <div className="px-3 pt-1 pb-1 text-[11px] font-bold text-slate-500">화면</div>
+                    <div className="jv-menu absolute right-0 top-11 z-50 w-72 p-2 rounded-2xl bg-slate-900/98 border border-slate-700 shadow-2xl flex flex-col gap-0.5" role="menu" aria-label="설정">
+                      <div className="jv-menu-k px-3 pt-1 pb-1 text-[11px] font-bold text-slate-500">화면</div>
                       <label className="menu-item cursor-pointer">
                         <i className="fa-solid fa-palette"></i>
                         <select value={currentTheme} onChange={(e) => handleThemeChange(e.target.value)} className="flex-1 bg-transparent text-slate-100 outline-none cursor-pointer">
@@ -6368,7 +6834,7 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
                         <i className="fa-solid fa-table-cells-large"></i> 위젯 기본 배치로 되돌리기
                       </button>
                       <div className="my-1 border-t border-slate-800"></div>
-                      <div className="px-3 pt-1 pb-1 text-[11px] font-bold text-slate-500">수업</div>
+                      <div className="jv-menu-k px-3 pt-1 pb-1 text-[11px] font-bold text-slate-500">수업</div>
                       <button className="menu-item" onClick={() => { setShowSettingsMenu(false); setClassSetupTab('timetable'); }}>
                         <i className="fa-solid fa-calendar-week"></i> 내 시간표 · 차시 계획 · 진도
                       </button>
@@ -6376,7 +6842,7 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
                         <i className="fa-solid fa-mobile-screen-button"></i> 휴대폰 · 태블릿 연결
                       </button>
                       <div className="my-1 border-t border-slate-800"></div>
-                      <div className="px-3 pt-1 pb-1 text-[11px] font-bold text-slate-500">연동 · 저장</div>
+                      <div className="jv-menu-k px-3 pt-1 pb-1 text-[11px] font-bold text-slate-500">연동 · 저장</div>
                       {currentTheme === 'jarvis' && (
                         <button className="menu-item" onClick={() => { setShowSettingsMenu(false); toggleJvMotion(); }}>
                           <i className="fa-solid fa-brain"></i> 배경 신경망 움직임 {jvMotion ? '끄기' : '켜기'}
@@ -6467,22 +6933,23 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
 
           {showNeisModal && <NeisSettingsModal onClose={() => setShowNeisModal(false)} onShowToast={showToast} />}
           {showSheetSyncModal && (
-            <div className="fixed inset-0 z-[10015] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-              <div style={{ width: '560px' }} className="bg-slate-950 border border-emerald-500/80 rounded-3xl p-6 shadow-2xl flex flex-col gap-4">
-                <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+            <div className="jv-scrim fixed inset-0 z-[10015] bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4">
+              <div style={{ width: '560px' }} role="dialog" aria-modal="true" className="jv-dialog jv-dialog-scroll bg-slate-950 border border-emerald-500/80 rounded-3xl p-5 sm:p-6 shadow-2xl flex flex-col gap-4">
+                <div className="jv-dialog-head flex items-center justify-between pb-3 border-b border-slate-800">
                   <div className="flex items-center gap-2.5">
                     <span className="text-2xl">📊</span>
                     <h3 className="text-base font-black text-slate-100">구글 스프레드시트 클라우드 동기화</h3>
                   </div>
-                  <button onClick={() => setShowSheetSyncModal(false)} className="w-8 h-8 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-sm font-bold flex items-center justify-center transition">✕</button>
+                  <button onClick={() => setShowSheetSyncModal(false)} aria-label="닫기" className="jv-close w-8 h-8 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-sm font-bold flex items-center justify-center transition">✕</button>
                 </div>
                 <form onSubmit={handleSaveGasUrl} className="flex flex-col gap-3.5 py-1 text-xs">
                   <p className="text-slate-300 leading-relaxed">
                     Apps Script 웹 앱 URL을 입력하여 모든 기기 간 데이터를 자동 동기화합니다.
                   </p>
                   <div>
-                    <label className="text-slate-400 font-bold block mb-1">Apps Script 웹 앱 URL</label>
+                    <label htmlFor="jv-gas-url" className="text-slate-400 font-bold block mb-1">Apps Script 웹 앱 URL</label>
                     <input
+                      id="jv-gas-url"
                       type="url"
                       value={tempGasUrl}
                       onChange={(e) => setTempGasUrl(e.target.value)}
@@ -6491,8 +6958,8 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
                     />
                   </div>
                   <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
-                    <button type="button" onClick={() => setShowSheetSyncModal(false)} className="px-5 py-2.5 bg-slate-800 text-slate-300 rounded-xl text-xs font-bold">취소</button>
-                    <button type="submit" className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow">연결 및 저장</button>
+                    <button type="button" onClick={() => setShowSheetSyncModal(false)} className="jv-btn-ghost px-5 py-2.5 bg-slate-800 text-slate-300 rounded-xl text-xs font-bold">취소</button>
+                    <button type="submit" className="jv-btn-primary px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow">연결 및 저장</button>
                   </div>
                 </form>
               </div>
@@ -6500,14 +6967,14 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
           )}
 
           {showApiKeyModal && (
-            <div className="fixed inset-0 z-[10010] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-              <div style={{ width: '480px' }} className="bg-slate-950 border border-amber-500/80 rounded-3xl p-6 shadow-2xl flex flex-col gap-4">
-                <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+            <div className="jv-scrim fixed inset-0 z-[10010] bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4">
+              <div style={{ width: '480px' }} role="dialog" aria-modal="true" className="jv-dialog jv-dialog-scroll bg-slate-950 border border-amber-500/80 rounded-3xl p-5 sm:p-6 shadow-2xl flex flex-col gap-4">
+                <div className="jv-dialog-head flex items-center justify-between pb-3 border-b border-slate-800">
                   <div className="flex items-center gap-2.5">
                     <span className="text-2xl">🔑</span>
                     <h3 className="text-base font-black text-slate-100">Gemini API 키 전역 설정</h3>
                   </div>
-                  <button onClick={() => setShowApiKeyModal(false)} className="w-8 h-8 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-sm font-bold flex items-center justify-center transition">✕</button>
+                  <button onClick={() => setShowApiKeyModal(false)} aria-label="닫기" className="jv-close w-8 h-8 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-sm font-bold flex items-center justify-center transition">✕</button>
                 </div>
                 <form onSubmit={handleSaveGlobalApiKey} className="flex flex-col gap-3.5 py-2">
                   <p className="text-xs text-slate-300 leading-relaxed">
@@ -6528,18 +6995,18 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
                       구글 계정으로 로그인 → [API 키 만들기] → 생성된 키(AQ.… 또는 AIza…)를 복사해서 아래 칸에 붙여넣으세요.
                     </span>
                   </div>
-                  {globalApiKey && (
-                    <p className="text-xs text-emerald-400 font-mono">
-                      ✅ 현재 등록된 키: {globalApiKey.slice(0, 6)}…{globalApiKey.slice(-4)} (지우고 저장하면 삭제됩니다)
+                  {(globalApiKey || (window.__GEMINI_SERVER_KEY__ && window.__GEMINI_SERVER_KEY__.hasKey)) && (
+                    <p className="jv-msg jv-msg-ok text-xs text-emerald-400 font-mono">
+                      ✅ 현재 등록된 키: {globalApiKey ? (globalApiKey.slice(0, 6) + '…' + globalApiKey.slice(-4)) : (window.__GEMINI_SERVER_KEY__.masked || '등록됨')} (새 키를 넣을 때만 붙여 넣으세요)
                     </p>
                   )}
-                  <input type="password" value={tempApiKeyInput} onChange={(e) => { setTempApiKeyInput(e.target.value); setApiKeyError(''); }} placeholder="AQ.… 또는 AIza…" className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-amber-400 font-mono" />
+                  <input type="password" aria-label="Gemini API 키" value={tempApiKeyInput} onChange={(e) => { setTempApiKeyInput(e.target.value); setApiKeyError(''); }} placeholder="AQ.… 또는 AIza…" className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-amber-400 font-mono" />
                   {apiKeyError && (
-                    <p className="text-xs text-rose-400 leading-relaxed break-all">⚠️ {apiKeyError}</p>
+                    <p role="status" className="jv-msg jv-msg-err text-xs text-rose-400 leading-relaxed break-all">⚠️ {apiKeyError}</p>
                   )}
                   <div className="flex justify-end gap-2 pt-2">
-                    <button type="button" onClick={() => setShowApiKeyModal(false)} className="px-5 py-2.5 bg-slate-800 text-slate-300 rounded-xl text-xs font-bold">취소</button>
-                    <button type="submit" disabled={apiKeySaving} className="px-6 py-2.5 bg-amber-600 hover:bg-amber-500 disabled:opacity-60 text-white rounded-xl text-xs font-bold shadow">{apiKeySaving ? '키 확인 중...' : '저장하기'}</button>
+                    <button type="button" onClick={() => setShowApiKeyModal(false)} className="jv-btn-ghost px-5 py-2.5 bg-slate-800 text-slate-300 rounded-xl text-xs font-bold">취소</button>
+                    <button type="submit" disabled={apiKeySaving} className="jv-btn-primary px-6 py-2.5 bg-amber-600 hover:bg-amber-500 disabled:opacity-60 text-white rounded-xl text-xs font-bold shadow">{apiKeySaving ? '키 확인 중...' : '저장하기'}</button>
                   </div>
                 </form>
               </div>
@@ -6547,14 +7014,14 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
           )}
 
           {showGcalSetupModal && (
-            <div className="fixed inset-0 z-[10010] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-              <div style={{ width: '520px' }} className="bg-slate-950 border border-amber-500/80 rounded-3xl p-6 shadow-2xl flex flex-col gap-4 max-h-[88vh] overflow-y-auto custom-scroll">
-                <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+            <div className="jv-scrim fixed inset-0 z-[10010] bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4">
+              <div style={{ width: '520px' }} role="dialog" aria-modal="true" className="jv-dialog jv-dialog-scroll bg-slate-950 border border-amber-500/80 rounded-3xl p-5 sm:p-6 shadow-2xl flex flex-col gap-4 max-h-[88vh] overflow-y-auto custom-scroll">
+                <div className="jv-dialog-head flex items-center justify-between pb-3 border-b border-slate-800">
                   <div className="flex items-center gap-2.5">
                     <span className="text-2xl">📅</span>
                     <h3 className="text-base font-black text-slate-100">구글 캘린더 실제 연동 설정</h3>
                   </div>
-                  <button onClick={() => setShowGcalSetupModal(false)} className="w-8 h-8 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-sm font-bold flex items-center justify-center transition">✕</button>
+                  <button onClick={() => setShowGcalSetupModal(false)} aria-label="닫기" className="jv-close w-8 h-8 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-sm font-bold flex items-center justify-center transition">✕</button>
                 </div>
                 <div className="text-xs text-slate-300 leading-relaxed space-y-2 bg-slate-900/60 border border-slate-800 rounded-xl p-3.5">
                   <p className="font-bold text-amber-300">최초 1회만 설정하면 됩니다.</p>
@@ -6563,18 +7030,19 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
                     <li>상단 <b>"API 및 서비스 &gt; 라이브러리"</b>에서 <b>Google Calendar API</b> 검색 후 사용 설정</li>
                     <li><b>"사용자 인증 정보 만들기 &gt; OAuth 클라이언트 ID"</b> 선택, 애플리케이션 유형은 <b>"웹 애플리케이션"</b></li>
                     <li><b>승인된 자바스크립트 원본</b>에 <code className="bg-slate-800 px-1 rounded">http://127.0.0.1:58245</code> 와 <code className="bg-slate-800 px-1 rounded">http://localhost:58245</code> 두 개를 모두 추가</li>
+                    {window.__TABLET_APP__ && (<li className="text-cyan-300">📲 갤탭 앱에서 쓰려면 <b>승인된 자바스크립트 원본</b>에 이 주소도 추가: <code className="bg-slate-800 px-1 rounded select-all">{window.location.origin}</code> (끝에 / 없이)</li>)}
                     <li>생성된 <b>클라이언트 ID</b>(...apps.googleusercontent.com 형태)를 아래에 붙여넣기</li>
                     <li>테스트 사용자 화면이 뜨면 본인 구글 계정을 "테스트 사용자"로 추가</li>
                   </ol>
                 </div>
                 <form onSubmit={handleSaveGcalClientId} className="flex flex-col gap-3.5 py-1">
-                  <input type="text" value={tempGcalClientId} onChange={(e) => setTempGcalClientId(e.target.value)} placeholder="xxxxxxxxxx-xxxxxxxxxxxxxxxx.apps.googleusercontent.com" className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-amber-400 font-mono" />
+                  <input type="text" aria-label="OAuth 클라이언트 ID" value={tempGcalClientId} onChange={(e) => setTempGcalClientId(e.target.value)} placeholder="xxxxxxxxxx-xxxxxxxxxxxxxxxx.apps.googleusercontent.com" className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-amber-400 font-mono" />
                   {googleClientId && (
                     <p className="text-[11px] text-slate-500">현재 저장된 클라이언트 ID: <span className="font-mono text-slate-400">{googleClientId.slice(0, 24)}...</span></p>
                   )}
                   <div className="flex justify-end gap-2 pt-2">
-                    <button type="button" onClick={() => setShowGcalSetupModal(false)} className="px-5 py-2.5 bg-slate-800 text-slate-300 rounded-xl text-xs font-bold">취소</button>
-                    <button type="submit" className="px-6 py-2.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold shadow">저장하기</button>
+                    <button type="button" onClick={() => setShowGcalSetupModal(false)} className="jv-btn-ghost px-5 py-2.5 bg-slate-800 text-slate-300 rounded-xl text-xs font-bold">취소</button>
+                    <button type="submit" className="jv-btn-primary px-6 py-2.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold shadow">저장하기</button>
                   </div>
                 </form>
               </div>
@@ -6582,7 +7050,7 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
           )}
 
           {activeToolModal && (
-            <div className="fixed inset-0 z-[10005] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5">
+            <div className="jv-scrim fixed inset-0 z-[10005] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5">
               <div 
                 style={{ 
                   width: activeToolModal === 'evalRubric' ? '96vw' : (activeToolModal === 'docDigest' ? '1380px' : (activeToolModal === 'group' ? '920px' : (activeToolModal === 'whiteboard' ? '1800px' : '580px'))), 
@@ -6590,9 +7058,10 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
                   height: activeToolModal === 'evalRubric' ? '94vh' : (activeToolModal === 'docDigest' ? '92vh' : (activeToolModal === 'whiteboard' ? '1280px' : 'auto')),
                   maxHeight: '96vh' 
                 }} 
-                className="bg-slate-950 border border-amber-500/80 rounded-3xl p-5 shadow-2xl flex flex-col gap-3 overflow-hidden"
+                role="dialog" aria-modal="true"
+                className="jv-dialog jv-tool bg-slate-950 border border-amber-500/80 rounded-3xl p-4 sm:p-5 shadow-2xl flex flex-col gap-3 overflow-hidden"
               >
-                <div className="flex items-center justify-between pb-2.5 border-b border-slate-800 flex-shrink-0">
+                <div className="jv-dialog-head flex items-center justify-between pb-2.5 border-b border-slate-800 flex-shrink-0">
                   <div className="flex items-center gap-3">
                     <span className="text-2xl">
                       {activeToolModal === 'evalRubric' && '📊'}
@@ -6615,10 +7084,10 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
                       {activeToolModal === 'whiteboard' && '디지털 낙서장'}
                     </h3>
                   </div>
-                  <button onClick={closeToolModal} className="w-8 h-8 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-sm font-bold flex items-center justify-center transition">✕</button>
+                  <button onClick={closeToolModal} aria-label="닫기" className="jv-close w-8 h-8 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-sm font-bold flex items-center justify-center transition">✕</button>
                 </div>
                 
-                <div className="flex-1 overflow-hidden py-1">
+                <div className="flex-1 min-h-0 overflow-y-auto custom-scroll py-1">
                   {activeToolModal === 'evalRubric' && (
                     <EvalSystemEmbedViewer />
                   )}
@@ -6635,7 +7104,7 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
                     {activeToolModal === 'evalRubric' && '✨ 엑셀 업로드, 채점표 점수 입력, 성적 환산 및 Gemini 기반 세특 자동 생성이 모두 지원됩니다.'}
                     {activeToolModal === 'docDigest' && '✨ Gemini 모델이 추출한 결과는 [TODAY TASKS] 및 [구글 캘린더]에 즉시 등록됩니다.'}
                   </div>
-                  <button onClick={closeToolModal} className="px-5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold">닫기</button>
+                  <button onClick={closeToolModal} className="jv-btn-ghost px-5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold">닫기</button>
                 </div>
               </div>
             </div>
@@ -6646,6 +7115,195 @@ body.theme-jarvis .text-emerald-400 { color: var(--jv-green); }
 
     const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(<App />);
+  </script>
+
+  <!--
+    ⚡ 빠른 시작
+    - 위 화면 코드(JSX)를 매번 Babel로 번역하면 느리다(번역기 3MB + 번역 1~3초).
+    - 한 번 번역한 결과를 이 브라우저 안(IndexedDB 'modong-jsx-cache')에 넣어 두고, 코드가 그대로면 번역 없이 바로 실행한다.
+    - 코드가 한 글자라도 바뀌면(지문 값이 달라지면) 자동으로 다시 번역한다. 최근 2개만 보관한다.
+    - 저장본이 고장 나 있거나 IndexedDB를 못 쓰면 예전처럼 Babel로 번역한다. 그래도 안 되면 #root에 안내를 띄운다.
+  -->
+  <script>
+    (function () {
+      var BABEL_URL = 'https://unpkg.com/@babel/standalone@7/babel.min.js';
+      var FORMAT = 'jsx1|react|strict';   // 번역 방식이 바뀌면 이 글자를 바꾼다 → 예전 저장본은 안 쓰게 됨
+      var DB_NAME = 'modong-jsx-cache', STORE = 'code', KEEP = 2;
+      var NOCACHE_FLAG = 'MODONG_JSX_NOCACHE';
+      var t0 = (window.performance && performance.now) ? performance.now() : Date.now();
+      function now() { return (window.performance && performance.now) ? performance.now() : Date.now(); }
+
+      var srcEl = document.getElementById('app-src');
+      var src = srcEl ? srcEl.textContent : '';
+
+      // 지문(해시): FNV-1a 두 번(시작값 다르게) + 글자 수
+      function fnv(s, seed) {
+        var h = seed >>> 0;
+        for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); }
+        return (h >>> 0).toString(16);
+      }
+      var key = FORMAT + ':' + fnv(src, 0x811c9dc5) + fnv(src, 0x01234567) + ':' + src.length;
+
+      function rootEl() { return document.getElementById('root'); }
+      function showProblem(title, detail, retry) {
+        var r = rootEl(); if (!r) return;
+        r.innerHTML = '';
+        var box = document.createElement('div');
+        box.setAttribute('role', 'alert');
+        box.style.cssText = 'min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;background:#04111c;color:#d8f6ff;font-family:\'IBM Plex Sans KR\',system-ui,sans-serif;text-align:center';
+        var inner = document.createElement('div');
+        inner.style.cssText = 'max-width:560px;border:1.5px solid #4fe3ff;border-radius:18px;padding:28px 24px;background:rgba(79,227,255,.06);box-shadow:0 0 30px rgba(79,227,255,.18)';
+        var h = document.createElement('div'); h.textContent = title; h.style.cssText = 'font-size:20px;font-weight:800;margin-bottom:10px';
+        var p = document.createElement('div'); p.textContent = detail; p.style.cssText = 'font-size:15px;color:#8fb7c7;line-height:1.6;white-space:pre-line';
+        var b = document.createElement('button'); b.type = 'button'; b.textContent = '다시 시도';
+        b.style.cssText = 'margin-top:18px;padding:12px 26px;min-height:48px;border-radius:12px;border:0;background:#4fe3ff;color:#04111c;font-weight:800;font-size:16px;cursor:pointer';
+        b.onclick = function () { b.disabled = true; b.textContent = '다시 여는 중…'; retry(); };
+        inner.appendChild(h); inner.appendChild(p); inner.appendChild(b); box.appendChild(inner); r.appendChild(box);
+      }
+
+      // ---- IndexedDB (실패하면 조용히 null) ----
+      function openDb() {
+        return new Promise(function (resolve) {
+          var done = false;
+          var finish = function (v) { if (!done) { done = true; resolve(v); } };
+          setTimeout(function () { finish(null); }, 1500);   // 어떤 브라우저는 IndexedDB가 멈춰 있을 때가 있다
+          try {
+            var rq = indexedDB.open(DB_NAME, 1);
+            rq.onupgradeneeded = function () { var db = rq.result; if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE, { keyPath: 'key' }); };
+            rq.onsuccess = function () { finish(rq.result); };
+            rq.onerror = function () { finish(null); };
+            rq.onblocked = function () { finish(null); };
+          } catch (e) { finish(null); }
+        });
+      }
+      function dbGet(db, k) {
+        return new Promise(function (resolve) {
+          try {
+            var rq = db.transaction(STORE, 'readonly').objectStore(STORE).get(k);
+            rq.onsuccess = function () { resolve(rq.result || null); };
+            rq.onerror = function () { resolve(null); };
+          } catch (e) { resolve(null); }
+        });
+      }
+      function dbPut(db, rec) {
+        return new Promise(function (resolve) {
+          try {
+            var tx = db.transaction(STORE, 'readwrite');
+            var st = tx.objectStore(STORE);
+            st.put(rec);
+            var all = st.getAll();
+            all.onsuccess = function () {
+              var list = (all.result || []).sort(function (a, b) { return (b.t || 0) - (a.t || 0); });
+              for (var i = KEEP; i < list.length; i++) st['delete'](list[i].key);
+            };
+            tx.oncomplete = function () { resolve(true); };
+            tx.onerror = tx.onabort = function () { resolve(false); };
+          } catch (e) { resolve(false); }
+        });
+      }
+      function dbDelete(db, k) {
+        return new Promise(function (resolve) {
+          try { var tx = db.transaction(STORE, 'readwrite'); tx.objectStore(STORE)['delete'](k); tx.oncomplete = tx.onerror = tx.onabort = function () { resolve(); }; }
+          catch (e) { resolve(); }
+        });
+      }
+
+      // ---- 실행: Babel이 하던 것처럼 <script> 요소로 붙인다 (오류 위치 표시도 그대로) ----
+      function execute(code) {
+        window.__APP_BOOTED__ = false;
+        var err = null;
+        var onErr = function (ev) { if (!err) err = ev.error || new Error(ev.message || 'script error'); };
+        window.addEventListener('error', onErr);
+        var s = document.createElement('script');
+        s.setAttribute('data-app-compiled', '1');
+        s.textContent = code + '\n;window.__APP_BOOTED__ = true;\n//# sourceURL=app.jsx.js';
+        try { document.body.appendChild(s); } finally { window.removeEventListener('error', onErr); }
+        return window.__APP_BOOTED__ === true ? null : (err || new Error('화면 코드가 끝까지 실행되지 않았어요'));
+      }
+
+      // ---- Babel로 번역 ----
+      var babelPromise = null;
+      function loadBabel() {
+        if (window.Babel && window.Babel.transform) return Promise.resolve(window.Babel);
+        if (babelPromise) return babelPromise;
+        babelPromise = new Promise(function (resolve, reject) {
+          var s = document.createElement('script');
+          s.src = BABEL_URL;
+          s.onload = function () { window.Babel && window.Babel.transform ? resolve(window.Babel) : reject(new Error('Babel 없음')); };
+          s.onerror = function () { s.remove(); reject(new Error('Babel을 받지 못함')); };
+          document.head.appendChild(s);
+        });
+        babelPromise.catch(function () { babelPromise = null; });
+        return babelPromise;
+      }
+      function compile(B) {
+        // 예전 text/babel 과 같은 결과: JSX → React.createElement, 엄격 모드("use strict")
+        var out = B.transform(src, { presets: ['react'], filename: 'app.jsx', sourceType: 'script', retainLines: true }).code;
+        return '"use strict";' + out;   // 줄 번호를 원본과 같게(오류 위치 찾기 쉽게)
+      }
+
+      function report(source) {
+        var ms = Math.round(now() - t0);
+        window.__FAST_START__ = { source: source, ms: ms, key: key };
+        try { console.info('[빠른 시작] ' + (source === 'cache' ? '저장본으로 바로 실행' : 'Babel로 새로 번역') + ' · ' + ms + 'ms'); } catch (e) {}
+      }
+
+      function fresh(db) {
+        return loadBabel().then(function (B) {
+          var code;
+          try { code = compile(B); }
+          catch (e) {
+            console.error(e);
+            showProblem('화면 코드에 문법 오류가 있어요', String(e && e.message || e).slice(0, 400), function () { location.reload(); });
+            return;
+          }
+          var r = rootEl(); if (r) r.innerHTML = '';
+          var err = execute(code);
+          if (err) {
+            console.error(err);
+            showProblem('화면을 여는 중 문제가 생겼어요', String(err && err.message || err).slice(0, 400), function () { location.reload(); });
+            return;
+          }
+          report('babel');
+          if (db) dbPut(db, { key: key, code: code, t: Date.now() });
+        }, function () {
+          var r = rootEl(); if (r) r.innerHTML = '';
+          showProblem('처음 한 번은 인터넷이 필요해요',
+            '화면을 만드는 프로그램(Babel)을 받지 못했어요.\n와이파이·인터넷 연결을 확인한 뒤 「다시 시도」를 눌러 주세요.',
+            function () { fresh(db); });
+        });
+      }
+
+      function start(db) {
+        // React가 없으면(CDN을 못 받음) 저장본·Babel 둘 다 소용없다 → 저장본은 지우지 말고 안내만
+        if (!window.React || !window.ReactDOM) {
+          showProblem('인터넷 연결이 필요해요',
+            '화면을 그리는 프로그램(React)을 받지 못했어요.\n와이파이·인터넷 연결을 확인한 뒤 「다시 시도」를 눌러 주세요.',
+            function () { location.reload(); });
+          return;
+        }
+        var skipCache = false;
+        try { skipCache = sessionStorage.getItem(NOCACHE_FLAG) === key; sessionStorage.removeItem(NOCACHE_FLAG); } catch (e) {}
+        if (!db || skipCache) { fresh(db); return; }
+        dbGet(db, key).then(function (rec) {
+          if (!rec || typeof rec.code !== 'string' || rec.code.indexOf('"use strict";') !== 0) { fresh(db); return; }
+          var err = execute(rec.code);
+          if (!err) { report('cache'); return; }
+          // 저장본이 고장: 지우고, 저장본 없이 다시 연다 (이미 일부 실행돼서 같은 이름이 남아 있으므로 새로고침)
+          console.warn('[빠른 시작] 저장본 실행 실패 → 새로 번역합니다', err);
+          dbDelete(db, key).then(function () {
+            try { sessionStorage.setItem(NOCACHE_FLAG, key); location.reload(); }
+            catch (e) { showProblem('화면을 여는 중 문제가 생겼어요', String(err && err.message || err), function () { location.reload(); }); }
+          });
+        });
+      }
+
+      // IndexedDB 조회는 지금 바로 시작하고, 실행은 예전 Babel처럼 문서를 다 읽은 뒤(DOMContentLoaded)에 한다
+      var dbReady = (window.indexedDB ? openDb() : Promise.resolve(null));
+      function go() { dbReady.then(start, function () { fresh(null); }); }
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go);
+      else go();
+    })();
   </script>
 </body>
 </html>

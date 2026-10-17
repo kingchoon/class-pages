@@ -2,18 +2,37 @@
   "id": "./",
   "name": "모동중 기술 교육 OS",
   "short_name": "기술 OS",
-  "description": "교무실 대시보드를 갤럭시탭에서 앱으로",
+  "description": "모동중 기술 수업용 대시보드 — 시간표, 급식, 수업 도구를 한 화면에서",
   "lang": "ko",
-  "start_url": "./",
+  "dir": "ltr",
+  "start_url": "./?source=pwa",
   "scope": "./",
   "display": "standalone",
-  "display_override": ["fullscreen", "standalone"],
   "orientation": "any",
-  "background_color": "#0b1220",
-  "theme_color": "#0b1220",
+  "background_color": "#04111c",
+  "theme_color": "#04111c",
+  "categories": [
+    "education",
+    "productivity"
+  ],
   "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ]
 }

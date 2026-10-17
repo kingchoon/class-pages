@@ -1,0 +1,436 @@
+/* =====================================================================
+   📲 tablet.css — 갤럭시 탭 S11 울트라 앱 화면 (html.tablet-app 일 때만 읽음)
+   - 겉모습만 바꾼다. JS·id·class·data-* 는 그대로 (기능 코드 손대지 않음)
+   - 자비스 HUD 모양(JARVIS polish / r2)과 같은 색·선·글꼴을 그대로 쓴다
+   - Tailwind Play CDN 이 이 파일보다 뒤에 <style> 을 넣을 수 있어서
+     모든 규칙을 html.tablet-app 아래에 두고(점수 올리기), 인라인 style·Tailwind 를
+     이겨야 하는 곳만 !important 를 쓴다.
+
+   화면 폭별 배치
+   ┌ 1200px 이상 (가로 전체 화면, DeX 큰 창)  ┐  오늘 띠(가로 전체) + 아래 3칸
+   │ 1000~1199 가로                            │  (할 일 · 캘린더 · 학교 정보)
+   ├ 900~1199 (세로 · 화면 확대)               ┤  오늘 띠 + 2칸 (왼쪽 할 일/캘린더, 오른쪽 학교 정보)
+   ├ 600~899  (화면 반 나누기 · 좁은 세로)      ┤  1칸으로 쌓기, 위 막대 짧게, 아래 도구 막대는 막대 안에서만 옆으로 밀기
+   └ 600 미만 (화면 3분의 1)                   ┘  1칸, 위 막대는 아이콘만, 토끼·고양이·신경망·스캔선 숨김
+   ===================================================================== */
+
+/* ---------------------------------------------------------------------
+   0) 공통 값
+   --------------------------------------------------------------------- */
+html.tablet-app {
+  --tab-top: 52px;                 /* 위 막대 높이 (원래 값) */
+  --tab-gap: 12px;
+  --tab-pad-x: 12px;
+  --tab-dock-h: 92px;              /* 아래 도구 막대 + 여백 */
+  --tab-hero-h: clamp(270px, 33dvh, 320px);
+  --sa-t: env(safe-area-inset-top, 0px);
+  --sa-r: env(safe-area-inset-right, 0px);
+  --sa-b: env(safe-area-inset-bottom, 0px);
+  --sa-l: env(safe-area-inset-left, 0px);
+}
+
+/* ---------------------------------------------------------------------
+   1) 앱처럼: 당겨서 새로고침 막기 · 누를 때 파란 번쩍임 없애기 · 두 번 눌러 확대 지연 없애기
+   --------------------------------------------------------------------- */
+html.tablet-app,
+html.tablet-app body {
+  overscroll-behavior: none;                 /* 수업 중 화면을 아래로 당겨도 새로고침 안 됨 */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+html.tablet-app body { -webkit-touch-callout: none; }
+html.tablet-app :is(button, a, label, summary, select, [role="button"], [role="menuitem"], .dock-tool, .topbar-btn, .menu-item, .wb-task, .wb-next) {
+  touch-action: manipulation;
+  -webkit-user-select: none; user-select: none;
+}
+/* 글 쓰는 칸·메모는 길게 눌러 고르기·붙여넣기가 되게 */
+html.tablet-app :is(input, textarea, [contenteditable="true"], .select-text, .allow-context) {
+  -webkit-user-select: text !important; user-select: text !important;
+  -webkit-touch-callout: default;
+}
+
+/* 안전 여백: 상태 표시줄·카메라 구멍·제스처 막대를 피해서 그린다.
+   #root 는 transform 이 있어서 안쪽의 fixed(도구 막대·창)도 모두 이 영역을 기준으로 놓인다. */
+html.tablet-app #root {
+  top: var(--sa-t) !important;
+  left: var(--sa-l) !important;
+  right: var(--sa-r) !important;
+  bottom: 0 !important;                      /* 아래는 막대·스크롤 여백에서 따로 비운다 */
+}
+
+/* 흐림(backdrop-filter)은 큰 AMOLED 에서 무겁다 → 모두 끄고, 대신 판을 더 진하게 */
+html.tablet-app #root *,
+html.tablet-app #root *::before,
+html.tablet-app #root *::after,
+html.tablet-app #tabSet {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+html.tablet-app body.theme-jarvis .topbar-glass {
+  background: linear-gradient(180deg, rgba(3, 14, 24, 0.98), rgba(3, 14, 24, 0.92)) !important;
+}
+html.tablet-app body.theme-jarvis .wb-dock { background: rgba(3, 14, 24, 0.95) !important; }
+html.tablet-app body.theme-jarvis .jv-scrim { background: rgba(1, 6, 12, 0.9) !important; }
+html.tablet-app .jv-scrim { background-color: rgba(0, 0, 0, 0.86); }
+html.tablet-app .dock-pill, html.tablet-app .topbar-glass { background-color: rgba(6, 12, 22, 0.96); }
+
+/* ---------------------------------------------------------------------
+   2) 위젯: PC의 '끌어 놓은 자리(절대 위치)' 대신 화면 폭에 맞춰 흐르는 격자
+   - PC 배치(x·y·폭·높이)는 인라인 style 로 들어오므로 !important 로 무시한다
+   - 그래서 갤탭에서는 '배치'(끌어 옮기기) 단추를 숨긴다 (아래 4번)
+   --------------------------------------------------------------------- */
+html.tablet-app #root > div > div.w-full.h-full.relative.overflow-hidden {
+  display: grid;
+  gap: var(--tab-gap);
+  align-content: stretch;
+  padding: calc(var(--tab-top) + 8px) var(--tab-pad-x) calc(var(--tab-dock-h) + var(--sa-b)) var(--tab-pad-x);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(79, 227, 255, 0.35) transparent;
+}
+html.tablet-app #root > div > div.w-full.h-full.relative.overflow-hidden > .widget-container {
+  position: relative !important;
+  left: auto !important; top: auto !important;
+  width: auto !important; height: auto !important;
+  min-width: 0; min-height: 0;
+  z-index: 1;
+}
+html.tablet-app #root .widget-container:hover { z-index: 1; }
+/* '오늘' 띠는 크기 컨테이너(container-type: size)라서 높이를 꼭 정해 줘야 한다 */
+html.tablet-app #root > div > div.w-full.h-full.relative.overflow-hidden > .widget-container[data-w="clock"] {
+  height: var(--tab-hero-h) !important;
+}
+html.tablet-app .widget-container[data-w="clock"]  { order: 0; }
+html.tablet-app .widget-container[data-w="tasks"]  { order: 1; }
+html.tablet-app .widget-container[data-w="gcal"]   { order: 2; }
+html.tablet-app .widget-container[data-w="school"] { order: 3; }
+
+/* 2-1) 넓은 가로 화면: 오늘 띠 + 아래 3칸 */
+@media (min-width: 1200px), (min-width: 1000px) and (orientation: landscape) {
+  html.tablet-app #root > div > div.w-full.h-full.relative.overflow-hidden {
+    grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: var(--tab-hero-h) minmax(300px, 1fr);
+    padding-left: calc(var(--tab-pad-x) + 4px); padding-right: calc(var(--tab-pad-x) + 4px);
+  }
+  html.tablet-app .widget-container[data-w="clock"] { grid-column: 1 / -1; grid-row: 1; }
+  html.tablet-app .widget-container:not([data-w="clock"]) { grid-row: 2; }
+  /* 위젯을 하나 숨겼으면 남은 칸이 넓게 */
+  html.tablet-app #root > div > div.w-full.h-full.relative.overflow-hidden:is(:not(:has(> [data-w="tasks"])), :not(:has(> [data-w="gcal"])), :not(:has(> [data-w="school"]))) {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  html.tablet-app #root > div > div.w-full.h-full.relative.overflow-hidden:not(:has(> [data-w="clock"])) {
+    grid-template-rows: minmax(300px, 1fr);
+  }
+  html.tablet-app #root > div > div.w-full.h-full.relative.overflow-hidden:not(:has(> [data-w="clock"])) > .widget-container { grid-row: 1; }
+}
+
+/* 2-2) 세로 화면 · 확대한 화면 (900~1199): 오늘 띠 + 2칸 */
+@media (min-width: 900px) and (max-width: 1199.98px) and (orientation: portrait),
+       (min-width: 900px) and (max-width: 999.98px) {
+  html.tablet-app #root > div > div.w-full.h-full.relative.overflow-hidden {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    grid-template-rows: var(--tab-hero-h) minmax(260px, 1fr) minmax(240px, 1fr);
+  }
+  html.tablet-app .widget-container[data-w="clock"]  { grid-column: 1 / -1; grid-row: 1; }
+  html.tablet-app .widget-container[data-w="tasks"]  { grid-column: 1; grid-row: 2; }
+  html.tablet-app .widget-container[data-w="gcal"]   { grid-column: 1; grid-row: 3; }
+  html.tablet-app .widget-container[data-w="school"] { grid-column: 2; grid-row: 2 / span 2; }
+  /* 숨긴 위젯이 있을 때 빈칸 없애기 */
+  html.tablet-app #root > div > div.w-full.h-full.relative.overflow-hidden:not(:has(> [data-w="school"])) > [data-w="tasks"] { grid-column: 1; grid-row: 2 / span 2; }
+  html.tablet-app #root > div > div.w-full.h-full.relative.overflow-hidden:not(:has(> [data-w="school"])) > [data-w="gcal"]  { grid-column: 2; grid-row: 2 / span 2; }
+  html.tablet-app #root > div > div.w-full.h-full.relative.overflow-hidden:not(:has(> [data-w="gcal"])) > [data-w="tasks"],
+  html.tablet-app #root > div > div.w-full.h-full.relative.overflow-hidden:not(:has(> [data-w="tasks"])) > [data-w="gcal"] { grid-row: 2 / span 2; }
+  html.tablet-app #root > div > div.w-full.h-full.relative.overflow-hidden:not(:has(> [data-w="clock"])) {
+    grid-template-rows: minmax(260px, 1fr) minmax(240px, 1fr);
+  }
+  html.tablet-app #root > div > div.w-full.h-full.relative.overflow-hidden:not(:has(> [data-w="clock"])) > [data-w="tasks"] { grid-row: 1; }
+  html.tablet-app #root > div > div.w-full.h-full.relative.overflow-hidden:not(:has(> [data-w="clock"])) > [data-w="gcal"] { grid-row: 2; }
+  html.tablet-app #root > div > div.w-full.h-full.relative.overflow-hidden:not(:has(> [data-w="clock"])) > [data-w="school"] { grid-row: 1 / span 2; }
+}
+
+/* 2-3) 화면 반 나누기 · 좁은 세로 (900 미만): 1칸으로 쌓고 화면을 위아래로 민다 */
+@media (max-width: 899.98px) {
+  html.tablet-app {
+    --tab-gap: 10px;
+    --tab-pad-x: 10px;
+    --tab-hero-h: clamp(250px, 34dvh, 300px);
+  }
+  html.tablet-app #root > div > div.w-full.h-full.relative.overflow-hidden {
+    grid-template-columns: minmax(0, 1fr);
+    grid-auto-rows: max-content;     /* 내용만큼 (auto 면 칸 높이가 모자랄 때 위젯이 납작해진다) */
+    align-content: start;
+  }
+  /* '오늘' 띠: 높이를 정하지 않고 내용만큼 → 폭 기준 컨테이너로 바꾼다 (높이 기준 줄 숨김 규칙도 꺼짐) */
+  html.tablet-app #root > div > div.w-full.h-full.relative.overflow-hidden > .widget-container[data-w="clock"] {
+    container-type: inline-size;
+    height: auto !important;
+  }
+  html.tablet-app .widget-container[data-w="clock"] .wb-band { flex: none; overflow: visible; }
+  /* 쌓는 순서: 오늘 → 할 일 → 학교 정보(급식·시간표) → 캘린더 */
+  html.tablet-app .widget-container[data-w="school"] { order: 2; }
+  html.tablet-app .widget-container[data-w="gcal"]   { order: 3; }
+  html.tablet-app #root > div > div.w-full.h-full.relative.overflow-hidden > .widget-container[data-w="tasks"]  { min-height: 340px; }
+  html.tablet-app #root > div > div.w-full.h-full.relative.overflow-hidden > .widget-container[data-w="school"] { min-height: 440px; }
+  html.tablet-app #root > div > div.w-full.h-full.relative.overflow-hidden > .widget-container[data-w="gcal"]   { min-height: 300px; }
+  /* 할 일 목록은 너무 길어지면 위젯 안에서 스크롤 */
+  html.tablet-app .widget-container[data-w="tasks"] .custom-scroll { max-height: 52dvh; }
+  /* 숫자는 그대로 크게 (TV 미러링으로 멀리서 봐도) */
+  html.tablet-app body.theme-jarvis .wb-next-big { font-size: clamp(1.6rem, 7cqw, 2.4rem); }
+}
+
+/* 2-4) 화면 3분의 1 (600 미만): '오늘' 띠를 위아래로 */
+@media (max-width: 599.98px) {
+  html.tablet-app {
+    --tab-gap: 8px;
+    --tab-pad-x: 8px;
+    --tab-top: 52px;
+  }
+  html.tablet-app .wb-band { grid-template-columns: minmax(0, 1fr) !important; gap: 10px; align-items: stretch; }
+  html.tablet-app body.theme-jarvis .wb-band-time { justify-content: flex-start; }
+  html.tablet-app body.theme-jarvis .wb-band .wb-clock { font-size: clamp(3rem, 19cqw, 4.6rem) !important; }
+  html.tablet-app body.theme-jarvis .jv-ring { width: clamp(78px, 24cqw, 108px); }
+  html.tablet-app .wb-next { padding: 10px 14px; }
+  html.tablet-app .wb-band-date { font-size: 0.95rem !important; }
+  html.tablet-app .widget-container { padding: 12px !important; }
+}
+
+/* ---------------------------------------------------------------------
+   3) 위 막대
+   --------------------------------------------------------------------- */
+html.tablet-app .topbar-glass {
+  padding-left: calc(12px + 0px); padding-right: 12px;
+  gap: 8px; flex-wrap: nowrap;
+}
+html.tablet-app .topbar-glass > div { flex-wrap: nowrap; min-width: 0; }
+html.tablet-app .topbar-glass > div:first-child { flex: 0 1 auto; overflow: hidden; }
+html.tablet-app .topbar-glass > div:first-child > span { overflow: hidden; text-overflow: ellipsis; }
+html.tablet-app .topbar-glass > div:last-child { flex: 0 0 auto; gap: 8px; }
+html.tablet-app .topbar-btn { white-space: nowrap; flex-shrink: 0; }
+html.tablet-app .topbar-btn i { font-size: 16px; }
+/* 설정 메뉴: 손가락으로 고르기 쉽게, 화면 밖으로 안 나가게 */
+html.tablet-app .jv-menu {
+  max-height: calc(100dvh - var(--sa-t) - var(--tab-top) - 24px - var(--sa-b));
+  max-width: calc(100vw - var(--sa-l) - var(--sa-r) - 16px);
+  overscroll-behavior: contain;
+}
+html.tablet-app .jv-menu select { min-height: 44px; font-size: 16px; }
+html.tablet-app .jv-menu .menu-item i { font-size: 16px; }
+
+/* 600~899: 아이콘 + 짧은 글자 (한 줄 유지) */
+@media (max-width: 899.98px) {
+  html.tablet-app .topbar-btn { padding: 0 12px; gap: 6px; font-size: 14.5px; }
+  html.tablet-app .topbar-glass > div:first-child { font-size: 14px; }
+}
+
+/* 600 미만: 아이콘만. 글자는 DOM 에 그대로 두고(title·화면 읽기 프로그램용) 보이지만 않게 */
+@media (max-width: 599.98px) {
+  html.tablet-app .topbar-glass { padding-left: 10px; padding-right: 8px; }
+  html.tablet-app .topbar-glass > div:last-child { gap: 6px; }
+  html.tablet-app .topbar-btn { font-size: 0 !important; padding: 0 !important; width: 48px; min-width: 48px; gap: 0; }
+  html.tablet-app .topbar-btn > span:not([class*="rounded-full"]) {
+    position: absolute !important; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0;
+    overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+  }
+  html.tablet-app .topbar-btn > span[class*="rounded-full"] { width: 12px; height: 12px; }
+  html.tablet-app .topbar-btn i { font-size: 19px !important; }
+  html.tablet-app .topbar-btn i.fa-chevron-down { display: none; }
+  html.tablet-app .topbar-glass > div:first-child > span {
+    display: inline-block !important;
+    position: absolute !important; width: 1px; height: 1px; margin: -1px; overflow: hidden;
+    clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+  }
+  html.tablet-app .topbar-glass > div:first-child i { font-size: 20px; }
+  html.tablet-app .jv-menu { position: fixed !important; top: calc(var(--tab-top) + 4px) !important; right: 8px !important; left: 8px !important; width: auto !important; }
+}
+
+/* ---------------------------------------------------------------------
+   4) 갤탭에서 숨기거나 끄는 것
+   --------------------------------------------------------------------- */
+/* '배치'(위젯 끌어 옮기기)는 절대 위치로만 움직여서 격자 화면에선 쓸 수 없다 → 단추 숨김.
+   (혹시 편집 상태로 열렸다면 '완료' 단추는 보이게 남겨서 고정할 수 있게 한다) */
+html.tablet-app .topbar-btn[title="위젯 위치 편집하기"] { display: none !important; }
+html.tablet-app #root .drag-handle,
+html.tablet-app #root .handle-right,
+html.tablet-app #root .handle-bottom,
+html.tablet-app #root .handle-corner { display: none !important; }
+html.tablet-app:not(.widgets-locked) #root .widget-container { outline: 0; }
+/* PC 전용 '세특' 단추가 숨겨져 혼자 남는 구분선 */
+html.tablet-app .wb-dock > .w-px { display: none; }
+
+/* 600 미만: 꾸밈은 빼고 내용에 자리를 준다 */
+@media (max-width: 599.98px) {
+  html.tablet-app #root .pets { display: none !important; }        /* 토끼·고양이 */
+  html.tablet-app #root .jv-neural { display: none; }              /* 배경 신경망 */
+  html.tablet-app body.theme-jarvis .wb-ruler-track::after { display: none; }   /* 시간자 스캔선 */
+  html.tablet-app body.theme-jarvis::before {
+    background:
+      radial-gradient(ellipse 80% 50% at 50% 40%, rgba(20, 110, 160, 0.18), transparent 70%),
+      var(--jv-bg) !important;
+  }
+}
+
+/* ---------------------------------------------------------------------
+   5) 손가락 · S Pen : 누르는 곳 44×44 이상, 호버 없이도 보이게
+   (S Pen 은 hover 가 된다고 알려서 @media(hover:none) 만으로는 부족 → 조건 없이 적용)
+   --------------------------------------------------------------------- */
+html.tablet-app .widget-container :is(button, select, [role="button"]),
+html.tablet-app #root .z-\[35\] :is(button, select, input:not([type="checkbox"]):not([type="radio"])),
+html.tablet-app .jv-dialog :is(button, select) {
+  min-height: 44px; min-width: 44px;
+}
+html.tablet-app .widget-container .text-\[11px\],
+html.tablet-app .widget-container .text-\[10px\] { line-height: 1.35; }
+/* 마우스를 올려야 보이던 단추(수정·삭제 등)는 늘 보이게 */
+html.tablet-app #root .group .opacity-0[class*="group-hover:opacity-100"] { opacity: 1 !important; }
+/* 손을 뗀 뒤에도 남는 '호버' 들뜸 없애기 */
+html.tablet-app .dock-tool:hover { transform: none; }
+html.tablet-app body.theme-jarvis .widget-container:hover::before,
+html.tablet-app body.theme-jarvis .widget-container:hover::after { width: 16px; height: 16px; }
+/* 눌렀을 때 반응은 hover 대신 :active 로 */
+html.tablet-app body.theme-jarvis :is(.dock-tool, .topbar-btn, .wb-task, .menu-item):active { background: rgba(79, 227, 255, 0.16) !important; }
+
+/* 할 일: '수정'과 '삭제' 사이를 벌려서 잘못 누르지 않게, 삭제는 빨간 테두리로 구분 */
+html.tablet-app .wb-task > div:last-child { gap: 10px; }
+html.tablet-app .wb-task button[title="수정"],
+html.tablet-app .wb-task button[title="삭제"] {
+  min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 3px; border: 1px solid transparent; font-size: 16px;
+}
+html.tablet-app .wb-task button[title="삭제"] { margin-left: 6px; border-color: rgba(255, 93, 108, 0.35); color: #ff8a95; }
+html.tablet-app body.theme-jarvis .wb-task button[title="수정"] { border-color: var(--jv-line); }
+html.tablet-app .wb-check { flex-shrink: 0; }
+/* 다음 수업 카드: 줄이 서로 겹치지 않게 (칸이 모자라면 줄이지 말고 아래 줄부터 잘림) */
+html.tablet-app .wb-next > * { flex-shrink: 0; }
+
+/* ---------------------------------------------------------------------
+   6) 아래 도구 막대: 안전 여백, 좁으면 막대 안에서만 옆으로 밀기
+   --------------------------------------------------------------------- */
+html.tablet-app .wb-dock {
+  bottom: calc(10px + var(--sa-b)) !important;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  touch-action: pan-x;
+}
+html.tablet-app .wb-dock::-webkit-scrollbar { display: none; }
+html.tablet-app .dock-tool { flex-shrink: 0; }
+@media (max-width: 899.98px) {
+  html.tablet-app .wb-dock {
+    left: 8px !important; right: 8px !important;
+    transform: none !important; --tw-translate-x: 0 !important;
+    max-width: none !important;
+    justify-content: safe center;
+    padding-left: 8px !important; padding-right: 8px !important;
+    gap: 6px !important;
+  }
+}
+@media (max-width: 599.98px) {
+  html.tablet-app { --tab-dock-h: 84px; }
+  html.tablet-app .wb-dock { left: 6px !important; right: 6px !important; padding: 6px !important; gap: 4px !important; justify-content: flex-start; }
+  html.tablet-app .dock-tool { min-width: 64px; min-height: 58px; padding: 0 4px; font-size: 13px; letter-spacing: 0; }
+  html.tablet-app .dock-tool .ico { font-size: 19px; }
+}
+
+/* ---------------------------------------------------------------------
+   7) 수업 화면 (ClassFocusPanel)
+   - 원래 absolute 라서 위젯 칸을 스크롤하면 같이 밀린다 → fixed 로 (#root 기준이라 자리 그대로)
+   --------------------------------------------------------------------- */
+html.tablet-app #root .absolute.inset-0.z-\[34\] { position: fixed !important; }
+/* 흐림을 껐으니 뒤 위젯이 비치지 않게 진하게 */
+html.tablet-app #root .absolute.inset-0.z-\[34\] { background: radial-gradient(ellipse 70% 60% at 50% 40%, #061623, #03090f 75%) !important; }
+html.tablet-app #root .absolute.z-\[35\] {
+  position: fixed !important;
+  top: calc(var(--tab-top) + 8px) !important;
+  bottom: calc(var(--tab-dock-h) - 6px + var(--sa-b)) !important;
+  left: var(--tab-pad-x) !important; right: var(--tab-pad-x) !important;
+  gap: var(--tab-gap) !important;
+}
+/* 좁아서 위아래로 쌓일 때(780px 미만) 이번 차시 칸이 납작해지던 문제: 줄 높이를 내용만큼 */
+html.tablet-app #root .z-\[35\] > .grid.content-start {
+  grid-auto-rows: max-content;
+  overscroll-behavior: contain;
+  padding-bottom: 4px;
+}
+html.tablet-app #root .z-\[35\] > .grid.content-start > div:first-child { min-height: 0; overflow: visible; }
+/* 남은 시간 숫자는 어느 폭에서나 크게 */
+html.tablet-app body.theme-jarvis .wb-cf-count .wb-num { font-size: clamp(2.6rem, 5.2vw, 3.6rem); }
+html.tablet-app .wb-cf-band .wb-display { font-size: clamp(2.4rem, 5.4vw, 4rem) !important; }
+html.tablet-app #root .z-\[35\] input { font-size: 16px; }
+@media (max-width: 599.98px) {
+  html.tablet-app #root .z-\[35\] .wb-cf-band { padding: 12px !important; }
+  html.tablet-app #root .z-\[35\] .wb-cf-band > .flex { flex-wrap: wrap; gap: 8px; }
+  html.tablet-app #root .z-\[35\] .wb-cf-band > .flex > div:last-child { flex-direction: row; align-items: center; width: 100%; justify-content: space-between; }
+  html.tablet-app #root .z-\[35\] .p-5, html.tablet-app #root .z-\[35\] .p-4 { padding: 12px; }
+}
+
+/* ---------------------------------------------------------------------
+   8) 창(모달): 화면 높이 안에서 안쪽만 스크롤, 600 미만은 아래에서 올라오는 시트
+   --------------------------------------------------------------------- */
+html.tablet-app .jv-scrim {
+  padding-top: 12px !important;
+  padding-bottom: calc(12px + var(--sa-b)) !important;
+  overscroll-behavior: contain;
+}
+html.tablet-app .jv-dialog {
+  max-height: calc(100dvh - var(--sa-t) - var(--sa-b) - 24px) !important;
+  max-width: 100% !important;
+  overscroll-behavior: contain;
+}
+html.tablet-app .jv-dialog :is(input, textarea, select) { font-size: 16px; }   /* 16px 미만이면 확대되는 기기가 있음 */
+html.tablet-app #tabSet {
+  padding: calc(12px + env(safe-area-inset-top, 0px)) calc(12px + var(--sa-r)) calc(12px + var(--sa-b)) calc(12px + var(--sa-l)) !important;
+  overscroll-behavior: contain;
+}
+html.tablet-app #tabSet > div { max-height: 100% !important; }
+html.tablet-app #tabSet button { min-height: 44px; }
+
+@media (max-width: 599.98px) {
+  html.tablet-app .jv-scrim {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+  html.tablet-app .jv-scrim > .jv-dialog {
+    width: 100% !important;
+    max-height: calc(100dvh - var(--sa-t) - 16px) !important;
+    border-radius: 10px 10px 0 0 !important;
+    border-bottom-width: 0 !important;
+    padding-bottom: calc(16px + var(--sa-b)) !important;
+  }
+  html.tablet-app body.theme-jarvis .jv-scrim > .jv-dialog { animation: tab-sheet-up .26s cubic-bezier(.2, .7, .2, 1) backwards; }
+  html.tablet-app .jv-dialog .flex.justify-end { flex-wrap: wrap; }
+  /* 창 머리: 제목 아래로 탭이 내려가고, 탭 글자는 한 줄로 */
+  html.tablet-app .jv-dialog-head .ml-3 { margin-left: 0; }
+  html.tablet-app .jv-dialog-head button { white-space: nowrap; }
+  html.tablet-app .jv-dialog-head .flex.gap-1\.5 > button { padding-left: 10px; padding-right: 10px; }
+  html.tablet-app .jv-dialog .flex > button:not([class*="flex-1"]):not([class*="w-full"]) { white-space: nowrap; flex-shrink: 0; }
+  html.tablet-app .jv-dialog .flex.justify-end > button { flex: 1 1 140px; }
+  html.tablet-app #tabSet { align-items: flex-end !important; padding: calc(8px + env(safe-area-inset-top, 0px)) 0 0 0 !important; }
+  html.tablet-app #tabSet > div {
+    width: 100% !important; max-width: none !important; max-height: 100% !important;
+    border-radius: 10px 10px 0 0 !important; padding-bottom: calc(22px + var(--sa-b)) !important;
+  }
+}
+@keyframes tab-sheet-up { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* ---------------------------------------------------------------------
+   9) 가벼운 화면: 좁은 폭(900 미만) 또는 '애니메이션 줄이기'에서 무거운 효과 끄기
+   --------------------------------------------------------------------- */
+@media (max-width: 899.98px) {
+  html.tablet-app body.theme-jarvis .widget-container.glass-card,
+  html.tablet-app body.theme-jarvis .widget-container.glass-card-warm { animation: none !important; box-shadow: inset 0 1px 0 rgba(79, 227, 255, 0.14), 0 6px 18px -10px rgba(0, 0, 0, 0.8); }
+  html.tablet-app body.theme-jarvis .wb-next.is-now { animation: none; }
+  html.tablet-app .jv-ring-ticks, html.tablet-app .jv-ring-inner { animation: none; }
+  html.tablet-app body.theme-jarvis .widget-container::before,
+  html.tablet-app body.theme-jarvis .widget-container::after { filter: none; transition: none; }
+  html.tablet-app body.theme-jarvis .wb-clock { text-shadow: 0 0 12px rgba(79, 227, 255, 0.45); }
+}
+@media (prefers-reduced-motion: reduce) {
+  html.tablet-app #root *, html.tablet-app #root *::before, html.tablet-app #root *::after {
+    animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important;
+  }
+  html.tablet-app body.theme-jarvis .wb-ruler-track::after { display: none; }
+}
