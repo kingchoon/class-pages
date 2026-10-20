@@ -442,6 +442,8 @@ const hostOf=u=>{try{return new URL(u).hostname.replace(/^www\./,'');}catch(e){r
 const extOf=n=>{const m=/\.([A-Za-z0-9]+)$/.exec(String(n||''));return m?m[1].toLowerCase():'';};
 const fmtSize=b=>!b?'':b<1024?b+'B':b<1048576?Math.round(b/1024)+'KB':(b/1048576).toFixed(1)+'MB';
 function fileIcon(n){const e=extOf(n);return /^(png|jpe?g|gif|webp|bmp)$/.test(e)?'🖼️':/^(mp3|m4a|wav)$/.test(e)?'🎵':/^(mp4|mov|avi|webm)$/.test(e)?'🎬':/^(xls|xlsx|csv)$/.test(e)?'📊':/^(ppt|pptx)$/.test(e)?'📽️':/^(zip|7z|rar)$/.test(e)?'🗜️':/^(hwp|hwpx|doc|docx)$/.test(e)?'📝':e==='pdf'?'📕':/^(html?|xhtml)$/.test(e)?'🌐':/^(sb3|ent|py|ino)$/.test(e)?'🧩':/^(stl|obj)$/.test(e)?'🧊':'📄';}
+const isHtml=n=>/^(html?|xhtml)$/.test(extOf(n));
+const runUrl=id=>API_URL.trim()+'?run='+encodeURIComponent(id);
 const dlUrl=id=>'https://drive.google.com/uc?export=download&id='+encodeURIComponent(id);
 const viewUrl=id=>'https://drive.google.com/file/d/'+encodeURIComponent(id)+'/view';
 const thumbUrl=(id,w)=>'https://drive.google.com/thumbnail?id='+encodeURIComponent(id)+'&sz=w'+(w||800);
@@ -465,6 +467,7 @@ function kindOf(it){
     if(/(^|\.)(netlify\.app|vercel\.app|github\.io|web\.app|pages\.dev)$/.test(host))return{label:'웹앱',emoji:'⚡'};
     return{label:'링크',emoji:'🔗'};
   }
+  if(it.files.some(f=>isHtml(f.name)))return{label:'웹앱',emoji:'⚡'};
   if(it.files.length)return{label:'파일 '+it.files.length,emoji:fileIcon(it.files[0].name)};
   if(it.imageId)return{label:'사진',emoji:'🖼️'};
   return{label:'메모',emoji:'🗒️'};
@@ -589,13 +592,16 @@ function cardEl(it){
       u&&linkA(u,'열기 ↗','btn primary sm'),
       u&&h('button',{class:'btn sm',type:'button',onclick:e=>{stop(e);copyText(u);}},'링크 복사'),
       u&&h('button',{class:'btn sm',type:'button',onclick:e=>{stop(e);showQR(u,titleOf(it));}},'QR'),
-      !u&&it.files.length===1&&h('a',{class:'btn primary sm',href:dlUrl(it.files[0].id),target:'_blank',rel:'noopener',onclick:stop},'⬇ 내려받기'),
+      !u&&it.files.length===1&&isHtml(it.files[0].name)&&[linkA(runUrl(it.files[0].id),'▶ 실행','btn primary sm'),
+        h('button',{class:'btn sm',type:'button',onclick:e=>{stop(e);copyText(runUrl(it.files[0].id),'실행 주소를 복사했어요.');}},'링크 복사'),
+        h('button',{class:'btn sm',type:'button',onclick:e=>{stop(e);showQR(runUrl(it.files[0].id),titleOf(it));}},'QR')],
+      !u&&it.files.length===1&&!isHtml(it.files[0].name)&&h('a',{class:'btn primary sm',href:dlUrl(it.files[0].id),target:'_blank',rel:'noopener',onclick:stop},'⬇ 내려받기'),
       !u&&it.files.length>1&&h('button',{class:'btn primary sm',type:'button',onclick:e=>{stop(e);openDetail(it.id);}},'파일 '+it.files.length+'개 보기')));
   el.addEventListener('click',()=>openDetail(it.id));
   el.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target===el)openDetail(it.id);});
   return el;
 }
-function fileChip(f){return h('a',{class:'file-chip',href:dlUrl(f.id),target:'_blank',rel:'noopener',title:f.name+' 내려받기',onclick:stop},
+function fileChip(f){const r=isHtml(f.name);return h('a',{class:'file-chip',href:r?runUrl(f.id):dlUrl(f.id),target:'_blank',rel:'noopener',title:f.name+(r?' 실행':' 내려받기'),onclick:stop},
   h('span',{'aria-hidden':'true'},fileIcon(f.name)),h('span',{class:'nm'},f.name),h('span',{class:'sz'},fmtSize(f.size)));}
 
 /* ---------- 자세히 보기 ---------- */
@@ -618,7 +624,11 @@ function drawDetail(){
         h('button',{class:'btn sm',onclick:()=>showQR(u,titleOf(it))},'QR 코드 띄우기'))),
       it.files.length>0&&h('div',{class:'file-chips'},it.files.map(f=>h('div',{class:'file-row'},
         h('span',{'aria-hidden':'true',style:'font-size:20px'},fileIcon(f.name)),h('span',{class:'nm'},f.name),h('span',{class:'sz'},fmtSize(f.size)),
-        h('span',{class:'acts'},linkA(viewUrl(f.id),/^(html?|xhtml)$/.test(extOf(f.name))?'코드 보기':'미리보기','btn sm'),h('a',{class:'btn primary sm',href:dlUrl(f.id),target:'_blank',rel:'noopener'},'⬇ 내려받기'))))),
+        h('span',{class:'acts'},isHtml(f.name)?[linkA(runUrl(f.id),'▶ 실행','btn primary sm'),
+          h('button',{class:'btn sm',onclick:()=>copyText(runUrl(f.id),'실행 주소를 복사했어요.')},'링크 복사'),
+          h('button',{class:'btn sm',onclick:()=>showQR(runUrl(f.id),f.name)},'QR'),
+          h('a',{class:'btn sm',href:dlUrl(f.id),target:'_blank',rel:'noopener'},'⬇ 내려받기')]
+          :[linkA(viewUrl(f.id),'미리보기','btn sm'),h('a',{class:'btn primary sm',href:dlUrl(f.id),target:'_blank',rel:'noopener'},'⬇ 내려받기')])))),
       h('div',{class:'meta'},'올린 날 '+ago(it.createdAt)+(it.updatedAt&&it.updatedAt-it.createdAt>60000?' · 고친 날 '+ago(it.updatedAt):'')),
       S.admin&&h('div',{class:'admin-row'},
         h('button',{class:'btn sm',onclick:()=>{$('#detail').close();openEditor(it);}},'✏️ 고치기'),

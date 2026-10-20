@@ -46,7 +46,9 @@ function setup() {
 function showAdminCode() { Logger.log('관리 코드: ' + props_().getProperty('ADMIN_CODE')); }
 
 /* ---------- 웹 앱 ---------- */
-function doGet() {
+function doGet(e) {
+  const runId = e && e.parameter && e.parameter.run;
+  if (runId) return runHtml_(String(runId));
   let html;
   try { html = HtmlService.createHtmlOutputFromFile('Index').getContent(); }
   catch (e) {
@@ -55,6 +57,23 @@ function doGet() {
   html = html.replace(PLACEHOLDER, ScriptApp.getService().getUrl());
   return HtmlService.createHtmlOutput(html)
     .setTitle(board_().title)
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1, viewport-fit=cover')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+/* 올린 HTML 파일을 웹페이지로 실행하기: …/exec?run=파일ID
+   드라이브는 HTML을 실행해 주지 않아서, 이 웹 앱이 파일 내용을 읽어 화면으로 띄워 줘요.
+   (보관함 폴더 안에 있는 .html 파일만 실행돼요) */
+function runHtml_(id) {
+  const f = /^[\w-]{10,100}$/.test(id) ? driveFile_(id) : null;
+  if (!f || !/\.(html?|xhtml)$/i.test(f.getName())) {
+    return HtmlService.createHtmlOutput('<p style="font-family:sans-serif;padding:24px">실행할 HTML 파일을 찾을 수 없어요. 지워졌거나 주소가 바뀌었을 수 있어요.</p>').setTitle('파일 없음');
+  }
+  const src = f.getBlob().getDataAsString('UTF-8');
+  const m = /<title[^>]*>([\s\S]*?)<\/title>/i.exec(src);
+  const title = ((m && m[1]) || f.getName().replace(/\.[^.]+$/, '')).replace(/\s+/g, ' ').trim().slice(0, 100) || '웹앱';
+  return HtmlService.createHtmlOutput(src)
+    .setTitle(title)
     .addMetaTag('viewport', 'width=device-width, initial-scale=1, viewport-fit=cover')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
