@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>내 주식</title>
+<meta name="theme-color" content="#f3f5f4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111816" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<style>
+/* 설치 앱 껍데기: 앱스 스크립트 웹 앱을 전체 화면으로 띄우고, 처음 한 번 주소만 받는다 */
+:root{--bg:#f3f5f4;--card:#fff;--fg:#17201d;--muted:#5d6b66;--line:#d9e0dd;--accent:#0f6b55;--soft:#dcefe8;--warn:#fbeee6;--warnfg:#b4532a;
+  --sans:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#111816;--card:#18221f;--fg:#e6ece9;--muted:#97a7a1;--line:#2a3733;--accent:#4cc39f;--soft:#1d3a31;--warn:#3a2419;--warnfg:#e8875c;color-scheme:dark}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:var(--sans)}
+#frame{position:fixed;inset:0;width:100%;height:100%;border:0;padding-top:env(safe-area-inset-top,0px);background:var(--bg)}
+.setup{max-width:520px;margin:0 auto;padding:max(28px,env(safe-area-inset-top,0px)) 18px 32px;display:flex;flex-direction:column;gap:14px}
+.logo{display:flex;align-items:center;gap:12px}
+.logo img{width:52px;height:52px;border-radius:14px}
+h1{font-size:22px;margin:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+.card h2{font-size:16px;margin:0 0 8px}
+ol{margin:0;padding-left:20px;font-size:14px;line-height:1.6;display:flex;flex-direction:column;gap:4px}
+label{font-size:13px;color:var(--muted);display:block;margin-bottom:6px}
+input{width:100%;font:inherit;font-size:15px;padding:12px;border:2px solid var(--line);border-radius:10px;background:var(--bg);color:var(--fg)}
+input:focus{outline:none;border-color:var(--accent)}
+.btn{font:inherit;font-size:15px;font-weight:700;padding:12px 18px;border-radius:10px;border:0;background:var(--accent);color:#fff;cursor:pointer;width:100%;margin-top:10px}
+.btn.sub{background:var(--soft);color:var(--accent)}
+.err{background:var(--warn);color:var(--warnfg);border-radius:10px;padding:10px 12px;font-size:13px}
+.hint{position:fixed;left:12px;right:12px;bottom:calc(90px + env(safe-area-inset-bottom,0px));z-index:5;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;box-shadow:0 8px 24px rgba(0,0,0,.18);font-size:13px;line-height:1.5}
+.hint b{display:block;font-size:14px;margin-bottom:4px}
+.hint .row{display:flex;gap:8px;margin-top:8px}
+.hint .row .btn{margin:0;padding:9px 10px;font-size:13px}
+</style>
+</head>
+<body>
+<div class="setup" id="setup" hidden>
+  <div class="logo"><img src="icon-192.png" alt=""><div><h1>내 주식</h1><div style="font-size:13px;color:var(--muted)">처음 한 번만 연결하면 돼요</div></div></div>
+  <section class="card">
+    <h2>웹 앱 주소 넣기</h2>
+    <ol>
+      <li>컴퓨터에서 쓰는 '내 주식 분석기' 웹 앱 주소를 복사하세요. (앱스 스크립트 → 배포 → 배포 관리 → 웹 앱 URL)</li>
+      <li>주소는 <b>https://script.google.com/macros/s/…/exec</b> 모양이에요.</li>
+      <li>휴대폰 크롬에 같은 구글 계정으로 로그인돼 있어야 해요.</li>
+    </ol>
+  </section>
+  <section class="card">
+    <label for="url">웹 앱 주소</label>
+    <input id="url" type="url" inputmode="url" autocomplete="off" placeholder="https://script.google.com/macros/s/.../exec">
+    <div id="msg" style="margin-top:10px" hidden></div>
+    <button class="btn" id="save" type="button">연결하기</button>
+  </section>
+</div>
+
+<iframe id="frame" title="내 주식" hidden allow="clipboard-write"></iframe>
+
+<div class="hint" id="hint" hidden>
+  <b>화면이 비어 있거나 로그인 화면이 막히나요?</b>
+  크롬에서 이 앱을 만든 구글 계정으로 로그인했는지 확인하세요. 그래도 안 되면 브라우저로 한 번 열어 로그인한 뒤 앱을 다시 켜 보세요.
+  <div class="row"><button class="btn sub" id="openTab" type="button">브라우저로 열기</button><button class="btn sub" id="reset" type="button">주소 다시 넣기</button><button class="btn" id="ok" type="button">잘 보여요</button></div>
+</div>
+
+<script>
+(function(){
+  var KEY="kp_shell_url", SEEN="kp_shell_ok";
+  function get(k){try{return localStorage.getItem(k);}catch(e){return null;}}
+  function set(k,v){try{if(v==null)localStorage.removeItem(k);else localStorage.setItem(k,v);}catch(e){}}
+  var $=function(id){return document.getElementById(id);};
+  var okUrl=function(u){return /^https:\/\/script\.google\.com\/(a\/[^\/]+\/)?macros\/s\/[A-Za-z0-9_\-]+\/exec(\?.*)?$/.test(u);};
+  var wantSetup=/[?&]setup\b/.test(location.search);
+
+  function showSetup(){ $("frame").hidden=true; $("hint").hidden=true; $("setup").hidden=false; $("url").value=get(KEY)||""; }
+  function openApp(u){
+    $("setup").hidden=true; var f=$("frame"); f.hidden=false; f.src=u;
+    if(get(SEEN)!=="1") setTimeout(function(){ $("hint").hidden=false; }, 6000);
+  }
+  $("save").onclick=function(){
+    var u=$("url").value.trim().split("#")[0];
+    if(!okUrl(u)){ var m=$("msg"); m.hidden=false; m.className="err"; m.textContent="주소가 https://script.google.com/macros/s/…/exec 모양인지 확인해 주세요."; return; }
+    set(KEY,u); set(SEEN,null); history.replaceState(null,"",location.pathname); openApp(u);
+  };
+  $("ok").onclick=function(){ set(SEEN,"1"); $("hint").hidden=true; };
+  $("reset").onclick=showSetup;
+  $("openTab").onclick=function(){ var u=get(KEY); if(u) window.open(u,"_blank"); };
+
+  var saved=get(KEY);
+  if(saved && okUrl(saved) && !wantSetup) openApp(saved); else showSetup();
+  if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(function(){});
+})();
+</script>
+</body>
+</html>
