@@ -1,0 +1,617 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>EV GRAND PRIX 공개수업</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Chakra+Petch:ital,wght@0,500;0,700;1,700&family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+<style>
+/* Layout: a fixed 1920×1080 stage scaled to the window; slides stacked inside, one visible; click/keys reveal fragments one at a time; auto-hiding control bar below */
+:root {
+  --bg: #070B14; --panel: #121C30; --fg: #EEF4FA; --muted: #A9BCD0; --dim: #6F8399;
+  --cyan: #2BE4F0; --yellow: #FFD23F; --red: #FF2D55; --pink: #FF6E8A;
+  --display: 'Chakra Petch', 'Arial Black', Arial, sans-serif;
+  --title: 'Black Han Sans', 'Noto Sans KR', sans-serif;
+  --body: 'Noto Sans KR', 'Apple SD Gothic Neo', Arial, sans-serif;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body { margin: 0; background: #03060C; color: var(--fg); font-family: var(--body); overflow: hidden; user-select: none; -webkit-user-select: none; }
+* { box-sizing: border-box; }
+p, h1, h2, h3 { margin: 0; }
+h1, h2, h3 { font-weight: 400; }
+#viewport { position: fixed; inset: 0; overflow: hidden; cursor: pointer; }
+#stage { position: absolute; left: 50%; top: 50%; width: 1920px; height: 1080px; transform-origin: 0 0; }
+.slide { position: absolute; inset: 0; overflow: hidden; color: var(--fg); font-family: var(--body); visibility: hidden; opacity: 0; transition: opacity .55s ease, transform .55s cubic-bezier(.2,.8,.2,1), visibility 0s linear .55s; transform: translateX(60px); }
+.slide.active { visibility: visible; opacity: 1; transform: none; transition: opacity .55s ease, transform .55s cubic-bezier(.2,.8,.2,1), visibility 0s; }
+.slide.past { transform: translateX(-60px); }
+.slide img.bg, .slide video.bg { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; object-fit: cover; }
+.stripe { position: absolute; left: 0; top: 0; width: 1920px; height: 8px; background: linear-gradient(90deg, #FF2D55, #FFD23F, #2BE4F0); }
+.eyebrow { font-family: var(--display); font-size: 28px; font-weight: 700; letter-spacing: 5px; }
+.foot { position: absolute; left: 128px; bottom: 64px; width: 1664px; font-family: var(--display); font-size: 24px; letter-spacing: 2px; color: var(--dim); }
+.notes { display: none; }
+
+/* fragments: hidden until revealed, then rise in */
+.f { opacity: 0; transform: translateY(36px) scale(.98); transition: opacity .5s ease, transform .6s cubic-bezier(.2,.9,.25,1.15); }
+.f.on { opacity: 1; transform: none; }
+.f.pop { transform: scale(.6); }
+.f.pop.on { transform: none; }
+.f.left { transform: translateX(-80px); }
+.f.left.on { transform: none; }
+/* intro animations that play when a slide opens */
+.slide.active .intro { animation: intro .8s cubic-bezier(.2,.9,.25,1) both; }
+.slide.active .intro.d1 { animation-delay: .15s; } .slide.active .intro.d2 { animation-delay: .35s; } .slide.active .intro.d3 { animation-delay: .55s; } .slide.active .intro.d4 { animation-delay: .75s; }
+@keyframes intro { from { opacity: 0; transform: translateX(-70px); } to { opacity: 1; transform: none; } }
+
+/* cover speed streaks */
+.streaks { position: absolute; inset: 0; pointer-events: none; }
+.streaks i { position: absolute; left: 0; height: 3px; border-radius: 3px; background: linear-gradient(90deg, rgba(43,228,240,0), #2BE4F0); box-shadow: 0 0 12px #2BE4F0; animation: zoom linear infinite; }
+.streaks i.r { background: linear-gradient(90deg, rgba(255,45,85,0), #FF2D55); box-shadow: 0 0 12px #FF2D55; }
+@keyframes zoom { from { transform: translateX(-520px); } to { transform: translateX(2440px); } }
+
+.arrow { width: 0; height: 0; border-top: 26px solid transparent; border-bottom: 26px solid transparent; border-left: 44px solid var(--yellow); flex: none; filter: drop-shadow(0 0 10px rgba(255,210,63,.6)); }
+.tri-up { width: 0; height: 0; border-left: 24px solid transparent; border-right: 24px solid transparent; border-bottom: 40px solid var(--cyan); }
+table.grid { border-collapse: separate; border-spacing: 0 8px; }
+table.grid th, table.grid td { padding: 18px 32px; text-align: left; }
+table.grid th { font-weight: 700; color: var(--muted); }
+table.grid tr > :first-child { border-radius: 14px 0 0 14px; }
+table.grid tr > :last-child { border-radius: 0 14px 14px 0; }
+
+/* in-slide timer */
+.timer { position: absolute; display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 26px 24px; background: rgba(7,11,20,.92); border: 3px solid var(--tc); border-radius: 28px; box-shadow: 0 0 40px color-mix(in srgb, var(--tc) 55%, transparent); cursor: default; transition: border-color .3s, box-shadow .3s; }
+.timer .dial { position: relative; width: 250px; height: 250px; border: 0; padding: 0; background: none; cursor: pointer; border-radius: 50%; color: inherit; }
+.timer .dial svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+.timer .track { fill: none; stroke: #1E2A40; stroke-width: 12; }
+.timer .ring { fill: none; stroke: var(--tc); stroke-width: 12; stroke-linecap: round; filter: drop-shadow(0 0 8px var(--tc)); transition: stroke .3s; }
+.timer .face { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+.timer .time { font-family: var(--display); font-style: italic; font-weight: 700; font-size: 72px; line-height: 1; color: var(--tc); text-shadow: 0 0 22px var(--tc); font-variant-numeric: tabular-nums; }
+.timer .state { font-family: var(--display); font-weight: 700; font-size: 20px; letter-spacing: 4px; color: var(--muted); }
+.timer .hint { font-size: 18px; color: var(--muted); }
+.timer.compact { gap: 12px; padding: 20px 22px; }
+.timer.compact .dial { width: auto; height: auto; border-radius: 16px; padding: 4px 12px; }
+.timer.compact .dial svg { display: none; }
+.timer.compact .face { position: static; }
+.timer.compact .time { font-size: 92px; }
+.timer.compact button.tb { font-size: 20px; padding: 6px 12px; }
+.timer.compact button.tb.go { min-width: 100px; }
+.timer .bar { width: 100%; height: 10px; border-radius: 5px; background: #1E2A40; overflow: hidden; }
+.timer .bar b { display: block; height: 100%; width: 100%; background: linear-gradient(90deg, var(--red), var(--tc)); box-shadow: 0 0 10px var(--tc); }
+.timer .ctrl { display: flex; gap: 10px; }
+.timer button.tb { font-family: var(--body); font-weight: 700; font-size: 24px; padding: 8px 16px; border-radius: 12px; border: 2px solid #2B3B55; background: #121C30; color: var(--fg); cursor: pointer; }
+.timer button.tb.go { background: var(--tc); border-color: var(--tc); color: #070B14; min-width: 120px; }
+.timer button:focus-visible { outline: 3px solid var(--cyan); outline-offset: 3px; }
+.timer.warn { --tc: #FF2D55 !important; animation: tpulse 1s ease-in-out infinite; }
+.timer.done { --tc: #FF2D55 !important; }
+.timer.done .time { animation: tblink .5s steps(1) infinite; }
+@keyframes tpulse { 50% { box-shadow: 0 0 80px rgba(255,45,85,.8); } }
+@keyframes tblink { 50% { opacity: .2; } }
+
+/* control bar */
+#bar { position: fixed; left: 50%; bottom: max(14px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 16px; background: rgba(10,16,28,.86); border: 1px solid rgba(43,228,240,.35); box-shadow: 0 10px 30px rgba(0,0,0,.5); backdrop-filter: blur(10px); transition: opacity .35s, transform .35s; z-index: 20; max-width: calc(100% - 32px); }
+body.idle #bar { opacity: 0; transform: translate(-50%, 20px); pointer-events: none; }
+body.idle #viewport { cursor: none; }
+#bar button { font-family: var(--body); font-weight: 700; font-size: 15px; color: var(--fg); background: #17233A; border: 1px solid #2B3B55; border-radius: 10px; padding: 8px 14px; cursor: pointer; white-space: nowrap; }
+#bar button:hover { border-color: var(--cyan); }
+#bar button:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+#bar button.main { background: var(--cyan); border-color: var(--cyan); color: #070B14; }
+#bar button[disabled] { opacity: .35; cursor: default; }
+#count { font-family: var(--display); font-weight: 700; font-size: 16px; color: var(--muted); min-width: 64px; text-align: center; font-variant-numeric: tabular-nums; }
+#progress { position: fixed; left: 0; top: 0; height: 4px; background: linear-gradient(90deg, var(--red), var(--yellow), var(--cyan)); box-shadow: 0 0 10px var(--cyan); transition: width .4s; z-index: 21; }
+#stepdots { display: flex; gap: 4px; padding: 0 4px; }
+#stepdots i { width: 7px; height: 7px; border-radius: 50%; background: #2B3B55; }
+#stepdots i.on { background: var(--yellow); box-shadow: 0 0 6px var(--yellow); }
+#notes { position: fixed; left: 50%; bottom: 76px; transform: translateX(-50%); width: min(900px, calc(100% - 32px)); max-height: 40vh; overflow: auto; padding: 18px 22px; border-radius: 14px; background: rgba(10,16,28,.94); border: 1px solid #FFD23F; color: var(--fg); font-size: 17px; line-height: 1.6; z-index: 22; cursor: auto; user-select: text; }
+#notes b { color: var(--yellow); display: block; margin-bottom: 6px; font-family: var(--display); letter-spacing: 2px; }
+#help { position: fixed; top: 14px; right: max(14px, env(safe-area-inset-right, 0px)); font-size: 13px; color: var(--dim); z-index: 20; transition: opacity .35s; }
+body.idle #help { opacity: 0; }
+@media (max-width: 640px) { #bar .label { display: none; } #help { display: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .slide, .slide.active, .f { transition: opacity .2s; transform: none !important; }
+  .slide.active .intro { animation: none; }
+  .streaks { display: none; }
+  .timer.warn, .timer.done .time { animation: none; }
+}
+</style>
+
+</head>
+<body>
+<div id="progress"></div>
+<div id="help">클릭 · → · 스페이스 = 다음 &nbsp; ← = 이전 &nbsp; F = 전체화면 &nbsp; N = 노트</div>
+<div id="viewport"><div id="stage">
+
+<!-- 1. cover -->
+<section class="slide" data-title="EV GRAND PRIX" style="background:#070B14">
+  <video class="bg" id="coverVideo" autoplay muted loop playsinline aria-hidden="true"></video>
+  <div style="position:absolute;inset:0;background:linear-gradient(90deg, rgba(7,11,20,0.96) 0%, rgba(7,11,20,0.82) 45%, rgba(7,11,20,0.25) 100%)"></div>
+  <div class="streaks" id="streaks"></div>
+  <p class="intro" style="position:absolute;left:128px;top:128px;width:auto;font-family:var(--display);font-size:28px;font-weight:700;letter-spacing:4px;color:#070B14;background:#2BE4F0;padding:10px 24px;border-radius:8px;box-shadow:0 0 28px rgba(43,228,240,0.6)">IB MYP DESIGN · CRITERION D</p>
+  <h1 class="intro d1" style="position:absolute;left:128px;top:290px;width:1500px;font-family:var(--display);font-size:180px;font-weight:700;font-style:italic;line-height:1.05;letter-spacing:-2px;background:linear-gradient(90deg, #FFFFFF 0%, #2BE4F0 55%, #FF2D55 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 30px rgba(43,228,240,0.35))">EV GRAND PRIX</h1>
+  <div class="intro d2" style="position:absolute;left:128px;top:510px;width:980px;height:12px;border-radius:6px;background:linear-gradient(90deg, #FF2D55 0%, #FFD23F 50%, #2BE4F0 100%);box-shadow:0 0 30px rgba(255,45,85,0.7)"></div>
+  <h2 class="intro d3" style="position:absolute;left:128px;top:568px;width:1500px;font-family:var(--title);font-size:88px;line-height:1.15;color:#EEF4FA">내 전기자동차, 목표를 달성했을까?</h2>
+  <p class="intro d4" style="position:absolute;left:128px;top:700px;width:1400px;font-size:36px;line-height:1.4;color:#A9BCD0">시험 데이터로 평가하고, 더 빠르게 개선하기</p>
+  <p class="foot" style="font-size:26px;font-weight:500;color:#A9BCD0">중학교 2학년 기술·가정 | 수송 기술 · 전기자동차 &nbsp;&nbsp;/&nbsp;&nbsp; 2026. 11. 25 공개수업</p>
+  <div class="notes">입장 전 전자칠판에 띄워 두는 표지. 학생들이 앉으면 바로 다음 슬라이드(질문)로 넘어간다.</div>
+</section>
+
+<!-- 2. question -->
+<section class="slide" data-title="어떤 전기자동차가 가장 잘 만든 차일까?" style="background:#14060c">
+  <img class="bg" src="poster.jpg" alt="" style="filter:saturate(1.3)">
+  <div style="position:absolute;inset:0;background:linear-gradient(180deg, #14060c8c 0%, #780a28d1 55%, #14060cf5 100%)"></div>
+  <p class="intro" style="position:absolute;top:150px;left:128px;width:900px;font-family:var(--display);font-size:32px;font-weight:700;letter-spacing:6px;color:#ffd23f">QUESTION · 생각해 볼까요?</p>
+  <h1 class="intro d1" style="position:absolute;top:380px;left:128px;width:1664px;font-family:var(--title);font-size:128px;line-height:1.15;color:#fff3f5;text-shadow:0 0 40px #ff2d55cc, 0 6px 0 #00000080">어떤 전기자동차가<br>가장 잘 만든 차일까?</h1>
+  <div style="position:absolute;top:740px;left:128px;width:1664px;display:flex;gap:40px;justify-content:center">
+    <p class="f pop" style="padding:22px 48px;font-size:48px;font-weight:700;color:#14060c;background:#2be4f0;box-shadow:0 0 30px #2be4f099;border-radius:256px">⚡ 직선 속도 1위</p>
+    <p class="f pop" style="padding:22px 48px;font-size:48px;font-weight:700;color:#14060c;background:#ffd23f;box-shadow:0 0 30px #ffd23f99;border-radius:256px">📏 직진 안정성 1위</p>
+    <p class="f pop" style="padding:22px 48px;font-size:48px;font-weight:700;color:#fff3f5;background:#ff2d55;box-shadow:0 0 30px #ff2d5599;border-radius:256px">⛰️ 등판 1위</p>
+  </div>
+  <div class="notes">도입 (0~5분). 이 슬라이드를 띄우고 바로 전자칠판 리더보드 탭으로 전환해 부문별 1위를 비교한다. 대부분 반에서 1위 차가 서로 다르다. 학생 의견을 2~3명 듣고, 답은 주지 않는다. “좋은 차의 기준은 순위가 아니라 내가 정한 설계 목표다”는 결론은 정리 단계에서 다시 연결.</div>
+</section>
+
+<!-- 3. mission -->
+<section class="slide" data-title="오늘의 목표" style="background:linear-gradient(160deg, #0d1526 0%, #070b14 70%)">
+  <div class="stripe"></div>
+  <p class="eyebrow" style="position:absolute;top:128px;left:128px;color:#2be4f0">TODAY’S MISSION</p>
+  <h2 style="position:absolute;top:207px;left:128px;width:1664px;font-family:var(--title);font-size:76px;line-height:1.1">오늘의 목표</h2>
+  <div style="position:absolute;top:331px;left:128px;width:1664px;height:324px;display:flex;gap:40px">
+    <div class="f" style="display:flex;flex-direction:column;gap:20px;flex:1;padding:48px;background:#121c30;border-left:10px solid #2be4f0;border-radius:24px;box-shadow:0 0 40px #2be4f02e">
+      <p style="font-family:var(--display);font-size:96px;font-weight:700;font-style:italic;line-height:1;color:#2be4f0;text-shadow:0 0 24px #2be4f099">01</p>
+      <p style="font-size:40px;font-weight:700;line-height:1.4">시험 데이터를 근거로 내 자동차가 설계 목표를 <span style="color:#2be4f0">달성했는지 판단</span>한다</p>
+    </div>
+    <div class="f" style="display:flex;flex-direction:column;gap:20px;flex:1;padding:48px;background:#121c30;border-left:10px solid #ff2d55;border-radius:24px;box-shadow:0 0 40px #ff2d552e">
+      <p style="font-family:var(--display);font-size:96px;font-weight:700;font-style:italic;line-height:1;color:#ff2d55;text-shadow:0 0 24px #ff2d5599">02</p>
+      <p style="font-size:40px;font-weight:700;line-height:1.4">못 미친 원인을 차의 구조와 연결해 <span style="color:#ff6e8a">개선 방안</span>을 마련한다.</p>
+    </div>
+  </div>
+  <div class="f" style="position:absolute;top:768px;left:128px;width:1664px;display:flex;align-items:center;gap:40px">
+    <p style="padding:8px 20px;font-family:var(--display);font-size:40px;font-weight:700;letter-spacing:2px;color:#070b14;background:#ffd23f;border-radius:8px;white-space:nowrap">MYP 기준 D</p>
+    <p style="font-size:50px;color:#a9bcd0;white-space:nowrap">① 시험 방법 설명 &nbsp;·&nbsp; ② 설계 목표 대비 평가 &nbsp;·&nbsp; ③ 개선 방안 제시</p>
+  </div>
+  <p class="foot">EV GRAND PRIX &nbsp;|&nbsp; 도입</p>
+  <div class="notes">학습 목표 2개를 읽고, 오늘 쓰는 답은 모두 “숫자 근거”가 있어야 한다고 강조. 기준 D 세 요소가 학습지 ②~⑤와 연결된다고 짧게 안내.</div>
+</section>
+
+<!-- 4. formula -->
+<section class="slide" data-title="좋은 평가는 이 순서로 씁니다" style="background:linear-gradient(160deg, #0d1526 0%, #070b14 70%)">
+  <div class="stripe"></div>
+  <p class="eyebrow" style="position:absolute;top:128px;left:128px;color:#2be4f0">HOW TO EVALUATE</p>
+  <h2 style="position:absolute;top:207px;left:128px;width:1664px;font-family:var(--title);font-size:76px;line-height:1.1">좋은 평가는 이 순서로 씁니다</h2>
+  <div style="position:absolute;top:331px;left:128px;width:1664px;height:344px;display:flex;gap:24px;align-items:center">
+    <div class="f" style="display:flex;flex-direction:column;gap:16px;flex:1;padding:44px;background:#121c30;border-top:8px solid #2be4f0;border-radius:24px">
+      <p style="font-family:var(--display);font-size:28px;font-weight:700;letter-spacing:4px;color:#2be4f0">STEP 1 · DATA</p>
+      <h3 style="font-family:var(--title);font-size:72px">숫자</h3>
+      <p style="font-size:32px;line-height:1.4;color:#a9bcd0">3회 기록과 평균<br>“평균 1.41초”</p>
+    </div>
+    <div class="f pop arrow"></div>
+    <div class="f" style="display:flex;flex-direction:column;gap:16px;flex:1;padding:44px;background:#121c30;border-top:8px solid #ffd23f;border-radius:24px" data-with="prev">
+      <p style="font-family:var(--display);font-size:28px;font-weight:700;letter-spacing:4px;color:#ffd23f">STEP 2 · JUDGE</p>
+      <h3 style="font-family:var(--title);font-size:72px">판단</h3>
+      <p style="font-size:32px;line-height:1.4;color:#a9bcd0">목표와 비교<br>“목표 1.45초 — 달성”</p>
+    </div>
+    <div class="f pop arrow"></div>
+    <div class="f" style="display:flex;flex-direction:column;gap:16px;flex:1;padding:44px;background:#121c30;border-top:8px solid #ff2d55;border-radius:24px" data-with="prev">
+      <p style="font-family:var(--display);font-size:28px;font-weight:700;letter-spacing:4px;color:#ff6e8a">STEP 3 · UPGRADE</p>
+      <h3 style="font-family:var(--title);font-size:72px">개선</h3>
+      <p style="font-size:32px;line-height:1.4;color:#a9bcd0">원인과 바꿀 점<br>“바퀴 정렬을 고친다”</p>
+    </div>
+  </div>
+  <p class="f" style="position:absolute;top:730px;left:128px;width:1664px;font-size:60px;line-height:1.4">“잘 됐다 / 안 됐다”로 끝나면 <span style="color:#ff6e8a">느낌</span>, &nbsp;&nbsp;&nbsp;데이터가 들어가면 <span style="color:#2be4f0">평가</span>입니다.</p>
+  <p class="foot">EV GRAND PRIX &nbsp;|&nbsp; 전개 1 · 데이터 읽는 법</p>
+  <div class="notes">전개 1 시작 (5분). 오늘 모든 답의 틀. 판서 가운데에 이 순서를 적어 두고 수업 내내 가리킨다.</div>
+</section>
+
+<!-- 5. tests -->
+<section class="slide" data-title="세 가지 시험" style="background:linear-gradient(160deg, #0D1526 0%, #070B14 70%);padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+  <div class="stripe"></div>
+  <p class="eyebrow" style="color:#2BE4F0">3 TEST STAGES</p>
+  <h2 style="font-family:var(--title);font-size:76px;line-height:1.1">세 가지 시험, 모두 <span style="color:#FFD23F">작을수록</span> 좋은 기록</h2>
+  <div style="display:flex;gap:32px">
+    <div class="f" style="flex:1;display:flex;flex-direction:column;gap:18px;background:#121C30;padding:44px;border-radius:24px;box-shadow:0 0 0 2px rgba(43,228,240,0.35), 0 0 40px rgba(43,228,240,0.15)">
+      <p style="font-size:72px;line-height:1">⚡</p>
+      <h3 style="font-family:var(--title);font-size:52px;color:#2BE4F0">직선 속도</h3>
+      <p style="font-size:32px;line-height:1.4;color:#A9BCD0">1m를 통과하는 데 걸린 시간</p>
+      <p style="font-family:var(--display);font-size:44px;font-weight:700">단위: 초 ↓</p>
+    </div>
+    <div class="f" style="flex:1;display:flex;flex-direction:column;gap:18px;background:#121C30;padding:44px;border-radius:24px;box-shadow:0 0 0 2px rgba(255,210,63,0.35), 0 0 40px rgba(255,210,63,0.15)">
+      <p style="font-size:72px;line-height:1">📏</p>
+      <h3 style="font-family:var(--title);font-size:52px;color:#FFD23F">직진 안정성</h3>
+      <p style="font-size:32px;line-height:1.4;color:#A9BCD0">가운데 선에서 옆으로 벗어난 거리</p>
+      <p style="font-family:var(--display);font-size:44px;font-weight:700">단위: cm ↓</p>
+    </div>
+    <div class="f" style="flex:1;display:flex;flex-direction:column;gap:18px;background:#121C30;padding:44px;border-radius:24px;box-shadow:0 0 0 2px rgba(255,45,85,0.35), 0 0 40px rgba(255,45,85,0.15)">
+      <p style="font-size:72px;line-height:1">⛰️</p>
+      <h3 style="font-family:var(--title);font-size:52px;color:#FF6E8A">15° 등판</h3>
+      <p style="font-size:32px;line-height:1.4;color:#A9BCD0">15도 경사로를 올라가는 데 걸린 시간</p>
+      <p style="font-family:var(--display);font-size:44px;font-weight:700">단위: 초 ↓</p>
+    </div>
+  </div>
+  <p class="foot">EV GRAND PRIX &nbsp;|&nbsp; 전개 1 · 데이터 읽는 법</p>
+  <div class="notes">학습지 ① 설계 목표 칸을 이때 채우게 한다(1분). 세 항목 모두 숫자가 작을수록 좋다는 점을 확인. 직선 시험 한 번의 영상으로 속도와 직진성을 함께 잰다.</div>
+</section>
+
+<!-- 6. three -->
+<section class="slide" data-title="왜 세 번 잴까?" style="background:#070b14">
+  <img class="bg" src="f7.jpg" alt="" style="opacity:0.5">
+  <div style="position:absolute;inset:0;background:linear-gradient(90deg, #070b1459 0%, #070b14eb 48%, #070b14f7 100%)"></div>
+  <div class="stripe"></div>
+  <p class="intro" style="position:absolute;top:250px;left:128px;width:760px;font-family:var(--display);font-size:360px;font-weight:700;font-style:italic;line-height:1;color:#2be4f0;text-shadow:0 0 60px rgba(43,228,240,0.8), 0 0 120px rgba(43,228,240,0.4)">×3</p>
+  <p class="eyebrow" style="position:absolute;top:150px;left:960px;width:832px;color:#2be4f0">WHY 3 TRIALS?</p>
+  <h2 style="position:absolute;top:210px;left:960px;width:832px;font-family:var(--title);font-size:76px;line-height:1.15">왜 한 번이 아니라<br>세 번 잴까?</h2>
+  <div style="position:absolute;top:440px;left:960px;width:832px;display:flex;flex-direction:column;gap:20px">
+    <p class="f" style="padding:24px 32px;font-size:36px;line-height:1.4;background:#121c30e6;border-left:8px solid #ff2d55;border-radius:16px">한 번은 <b>우연</b>이거나 <b>실수</b>일 수 있어요</p>
+    <p class="f" style="padding:24px 32px;font-size:36px;line-height:1.4;background:#121c30e6;border-left:8px solid #ffd23f;border-radius:16px">여러 번 재서 <b>평균</b>을 내면</p>
+    <p class="f" style="padding:24px 32px;font-size:36px;line-height:1.4;background:#121c30e6;border-left:8px solid #2be4f0;border-radius:16px"><span style="color:#2be4f0"><b>믿을 만한 값 = 신뢰성</b></span>이 생겨요</p>
+  </div>
+  <p class="foot">EV GRAND PRIX &nbsp;|&nbsp; 전개 1 · 데이터 읽는 법</p>
+  <div class="notes">발문: “왜 한 번이 아니라 3번 쟀을까?” 학생 답을 듣고 세 줄을 차례로 띄운다. 학습지 ②의 ‘생각해 보기’ 답이 여기서 나온다 (기준 D-① 시험 방법).</div>
+</section>
+
+<!-- 7. outlier -->
+<section class="slide" data-title="튀는 값 찾기" style="background:linear-gradient(160deg, #0D1526 0%, #070B14 70%);padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+  <div class="stripe"></div>
+  <p class="eyebrow" style="color:#FFD23F">⚠ OUTLIER DETECTED</p>
+  <h2 style="font-family:var(--title);font-size:76px;line-height:1.1">하나만 튀는 기록, 찾았나요?</h2>
+  <div style="display:flex;gap:56px;align-items:center">
+    <div style="flex:3;display:flex;flex-direction:column;gap:28px">
+      <div class="f left" style="display:flex;gap:24px;align-items:center">
+        <p style="width:120px;font-family:var(--display);font-size:32px;font-weight:700;color:#A9BCD0">1회</p>
+        <div style="width:417px;height:72px;border-radius:12px;background:linear-gradient(90deg, #0F5F6A, #2BE4F0);box-shadow:0 0 24px rgba(43,228,240,0.4)"></div>
+        <p style="font-family:var(--display);font-size:44px;font-weight:700">1.40초</p>
+      </div>
+      <div class="f left" style="display:flex;gap:24px;align-items:center">
+        <p style="width:120px;font-family:var(--display);font-size:32px;font-weight:700;color:#A9BCD0">2회</p>
+        <div style="width:423px;height:72px;border-radius:12px;background:linear-gradient(90deg, #0F5F6A, #2BE4F0);box-shadow:0 0 24px rgba(43,228,240,0.4)"></div>
+        <p style="font-family:var(--display);font-size:44px;font-weight:700">1.42초</p>
+      </div>
+      <div class="f left" style="display:flex;gap:24px;align-items:center">
+        <p style="width:120px;font-family:var(--display);font-size:32px;font-weight:700;color:#FFD23F">3회</p>
+        <div style="width:560px;height:72px;border-radius:12px;background:linear-gradient(90deg, #7A5C00, #FFD23F);box-shadow:0 0 36px rgba(255,210,63,0.7)"></div>
+        <p style="font-family:var(--display);font-size:44px;font-weight:700;color:#FFD23F">1.88초</p>
+      </div>
+    </div>
+    <div class="f" style="flex:2;display:flex;flex-direction:column;gap:16px;background:#121C30;padding:40px;border-radius:24px;border:2px solid #FFD23F;box-shadow:0 0 40px rgba(255,210,63,0.25)">
+      <h3 style="font-family:var(--title);font-size:44px;color:#FFD23F">이렇게 찾아요</h3>
+      <p style="font-size:30px;line-height:1.5">가운데 값(중앙값) <b>1.42초</b></p>
+      <p style="font-size:30px;line-height:1.5">3회는 0.46초 = <b>32%</b> 차이</p>
+      <p style="font-size:30px;line-height:1.5">기준 20%를 넘음 → <span style="color:#FFD23F"><b>튀는 값</b></span></p>
+    </div>
+  </div>
+  <p class="f" style="font-size:32px;line-height:1.4;color:#A9BCD0">웹앱이 노란색으로 표시해 줍니다. 하지만 <b>버릴지 말지</b>는 여러분이 판단해야 해요.</p>
+  <p class="foot">EV GRAND PRIX &nbsp;|&nbsp; 전개 1 · 데이터 읽는 법</p>
+  <div class="notes">예시 학생 화면을 웹앱으로 같이 띄워도 좋다. 막대 길이는 기록(초)에 비례. 중앙값 1.42초에서 0.46초 차이 = 약 32%, [설정] 시트 기준 20%를 넘어서 튀는 값. 발문: “노란 값은 빼고 평가해도 될까?” → 다음 슬라이드에서 영상으로 판단.</div>
+</section>
+
+<!-- 8. video -->
+<section class="slide" data-title="영상으로 원인 확인" style="background:linear-gradient(160deg, #0D1526 0%, #070B14 70%);padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+  <div class="stripe"></div>
+  <p class="eyebrow" style="color:#2BE4F0">▶ CHECK THE REPLAY</p>
+  <h2 style="font-family:var(--title);font-size:76px;line-height:1.1">튀는 값, 영상으로 원인을 확인해요</h2>
+  <div style="display:flex;gap:40px">
+    <div class="f" style="flex:1;display:flex;flex-direction:column;gap:22px;background:#121C30;padding:48px;border-radius:24px;border-top:10px solid #2BE4F0">
+      <div style="display:flex;gap:20px;align-items:center"><p style="font-size:60px;line-height:1">⏱️</p><h3 style="font-family:var(--title);font-size:56px;color:#2BE4F0">측정 실수</h3></div>
+      <p style="font-size:34px;line-height:1.5">출발 신호가 늦었다<br>스톱워치를 늦게 눌렀다</p>
+      <p style="font-size:34px;font-weight:700;color:#070B14;background:#2BE4F0;padding:14px 28px;border-radius:12px">→ 빼고 평가해도 돼요</p>
+    </div>
+    <div class="f" style="flex:1;display:flex;flex-direction:column;gap:22px;background:#121C30;padding:48px;border-radius:24px;border-top:10px solid #FF2D55">
+      <div style="display:flex;gap:20px;align-items:center"><p style="font-size:60px;line-height:1">🔧</p><h3 style="font-family:var(--title);font-size:56px;color:#FF6E8A">차의 문제</h3></div>
+      <p style="font-size:34px;line-height:1.5">바퀴가 걸렸다, 전선이 빠졌다<br>배터리가 약해졌다</p>
+      <p style="font-size:34px;font-weight:700;color:#FFF3F5;background:#C8143C;padding:14px 28px;border-radius:12px">→ 빼면 안 돼요, 고칠 점이에요</p>
+    </div>
+  </div>
+  <p class="foot">EV GRAND PRIX &nbsp;|&nbsp; 전개 1 · 데이터 읽는 법</p>
+  <div class="notes">예시 학생의 3회차 영상을 실제로 재생해 함께 판단한다. 차의 문제를 빼 버리면 차가 실제보다 좋아 보인다는 점을 짚는다. 학습지 ② 체크 칸과 연결.</div>
+</section>
+
+<!-- 9. speed -->
+<section class="slide" data-title="평균 속력" style="background:radial-gradient(ellipse at 50% 60%, #102A44 0%, #070B14 70%);padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px;align-items:center">
+  <div class="stripe"></div>
+  <p class="eyebrow" style="color:#2BE4F0">SPEED FORMULA</p>
+  <h2 style="font-family:var(--title);font-size:76px;line-height:1.1;text-align:center">평균 속력 = 거리 ÷ 시간</h2>
+  <div style="display:flex;gap:32px;align-items:center;background:rgba(18,28,48,0.9);padding:48px 64px;border-radius:32px;border:2px solid rgba(43,228,240,0.6);box-shadow:0 0 60px rgba(43,228,240,0.3)">
+    <p style="font-family:var(--display);font-size:104px;font-weight:700;white-space:nowrap">1 m</p>
+    <p style="font-family:var(--display);font-size:96px;font-weight:700;color:#FFD23F">÷</p>
+    <p style="font-family:var(--display);font-size:104px;font-weight:700;white-space:nowrap">1.40 s</p>
+    <p class="f pop" style="font-family:var(--display);font-size:96px;font-weight:700;color:#FFD23F">=</p>
+    <p class="f pop" style="font-family:var(--display);font-size:104px;font-weight:700;font-style:italic;color:#2BE4F0;white-space:nowrap;text-shadow:0 0 40px rgba(43,228,240,0.8)" data-with="prev">0.71 m/s</p>
+  </div>
+  <div style="display:flex;gap:32px">
+    <p class="f" style="font-size:36px;font-weight:700;background:#121C30;padding:18px 36px;border-radius:999px;border:2px solid #FFD23F">통과 시간 <span style="color:#FFD23F">작을수록</span> 빠름</p>
+    <p class="f" style="font-size:36px;font-weight:700;background:#121C30;padding:18px 36px;border-radius:999px;border:2px solid #2BE4F0">속력 <span style="color:#2BE4F0">클수록</span> 빠름</p>
+  </div>
+  <p class="foot">EV GRAND PRIX &nbsp;|&nbsp; 전개 1 · 데이터 읽는 법</p>
+  <div class="notes">학습지 ③. 1 ÷ 1.40 = 0.714… → 0.71 m/s. 시간과 속력은 반대로 움직인다는 오개념을 이때 정리한다. 웹앱의 ‘평균 속력’ 값과 직접 계산한 값이 같은지 확인하게 한다.</div>
+</section>
+
+<!-- 10. verdict -->
+<section class="slide" data-title="같은 차, 다른 결론" style="background:linear-gradient(160deg, #0D1526 0%, #070B14 70%);padding:128px 128px 160px;display:flex;flex-direction:column;gap:36px">
+  <div class="stripe"></div>
+  <p class="eyebrow" style="color:#2BE4F0">SAME CAR · DIFFERENT VERDICT</p>
+  <h2 style="font-family:var(--title);font-size:76px;line-height:1.1">같은 차, 목표 <span style="color:#FFD23F">1.45초</span> — 결론은?</h2>
+  <div style="display:flex;gap:40px">
+    <div class="f" style="flex:1;display:flex;flex-direction:column;gap:14px;background:#1A0F18;padding:44px;border-radius:24px;border:2px solid #FF2D55;box-shadow:0 0 40px rgba(255,45,85,0.25)">
+      <p style="font-size:32px;color:#FFC9D4">3회 모두 넣은 평균</p>
+      <p style="font-family:var(--display);font-size:120px;font-weight:700;line-height:1.05;color:#FF6E8A">1.57<span style="color:#FFC9D4">초</span></p>
+      <p style="font-size:36px;font-weight:700;color:#FFF3F5;background:#C8143C;padding:12px 28px;border-radius:12px">미달 · 0.12초 초과</p>
+    </div>
+    <div class="f" style="flex:1;display:flex;flex-direction:column;gap:14px;background:#0E1E26;padding:44px;border-radius:24px;border:2px solid #2BE4F0;box-shadow:0 0 40px rgba(43,228,240,0.25)">
+      <p style="font-size:32px;color:#BFEFF3">튀는 값(측정 실수) 뺀 평균</p>
+      <p style="font-family:var(--display);font-size:120px;font-weight:700;line-height:1.05;color:#2BE4F0">1.41<span style="color:#BFEFF3">초</span></p>
+      <p style="font-size:36px;font-weight:700;color:#070B14;background:#2BE4F0;padding:12px 28px;border-radius:12px">달성 · 0.04초 여유</p>
+    </div>
+  </div>
+  <p class="f" style="font-size:38px;font-weight:700;line-height:1.4">근거에 따라 결론이 바뀝니다. 그래서 <span style="color:#FFD23F">왜 그 평균을 썼는지</span>까지 써야 해요.</p>
+  <p class="foot">EV GRAND PRIX &nbsp;|&nbsp; 전개 1 · 데이터 읽는 법</p>
+  <div class="notes">예시 기록 1.40 / 1.42 / 1.88초. 3회 평균 4.70 ÷ 3 = 1.567 → 1.57초, 목표보다 0.12초 느림. 3회가 측정 실수로 확인되면 (1.40+1.42) ÷ 2 = 1.41초, 목표보다 0.04초 빠름. 학습지 ④ ‘판단 근거’ 칸이 바로 이 부분. 여기까지가 전개 1 (13분 지점).</div>
+</section>
+
+<!-- 11. mission 1 -->
+<section class="slide" data-title="내 머신을 분석하라!" style="background:#070b14">
+  <img src="f7.jpg" alt="" style="position:absolute;top:0;left:960px;width:960px;height:1080px;object-fit:cover">
+  <div style="position:absolute;inset:0;background:linear-gradient(90deg, #070b14 0%, #070b14fa 48%, #070b148c 68%, #070b1426 100%)"></div>
+  <div class="stripe"></div>
+  <p class="eyebrow" style="position:absolute;top:128px;left:128px;color:#ffd23f">MISSION 01 · 개인 분석</p>
+  <h2 class="intro" style="position:absolute;top:180px;left:128px;width:1000px;font-family:var(--title);font-size:88px;line-height:1.1">내 머신을 분석하라!</h2>
+  <div style="position:absolute;top:330px;left:128px;width:960px;display:flex;flex-direction:column;gap:20px">
+    <div class="f left" style="display:flex;gap:24px;align-items:center;padding:22px 32px;background:#121c30eb;border-left:8px solid #2be4f0;border-radius:16px"><p style="font-family:var(--display);font-size:48px;font-weight:700;color:#2be4f0">1</p><p style="font-size:34px;line-height:1.35">웹앱 접속 → 수업코드 <span style="color:#ffd23f"><b>[수업코드]</b></span> 입력</p></div>
+    <div class="f left" style="display:flex;gap:24px;align-items:center;padding:22px 32px;background:#121c30eb;border-left:8px solid #2be4f0;border-radius:16px"><p style="font-family:var(--display);font-size:48px;font-weight:700;color:#2be4f0">2</p><p style="font-size:34px;line-height:1.35">내 <b>엔트리 번호</b> 선택</p></div>
+    <div class="f left" style="display:flex;gap:24px;align-items:center;padding:22px 32px;background:#121c30eb;border-left:8px solid #ffd23f;border-radius:16px"><p style="font-family:var(--display);font-size:48px;font-weight:700;color:#ffd23f">3</p><p style="font-size:34px;line-height:1.35">노란 <b>튀는 값</b>이 있으면 그 회차 영상 확인</p></div>
+    <div class="f left" style="display:flex;gap:24px;align-items:center;padding:22px 32px;background:#121c30eb;border-left:8px solid #ff2d55;border-radius:16px"><p style="font-family:var(--display);font-size:48px;font-weight:700;color:#ff6e8a">4</p><p style="font-size:34px;line-height:1.35">학습지 <b>② 기록표 → ③ 속력 → ④ 평가</b></p></div>
+  </div>
+  <div class="timer" data-min="17" style="--tc:#FFD23F;top:96px;left:1352px;width:440px"></div>
+  <p class="foot">EV GRAND PRIX &nbsp;|&nbsp; 전개 2 · 개인 분석 (13~30분)</p>
+  <div class="notes">[수업코드] 자리에 참관 반 코드를 적어 둘 것. 순회하며 “그렇게 판단한 숫자는?”으로 근거를 묻는다. 데이터가 없는 학생은 모둠원 차량으로 함께 분석. 먼저 끝난 학생에게는 학습지 ④의 ‘더 생각해 보기’(목표가 적절했나)를 예고. 타이머: 시계를 누르면 시작/일시정지.</div>
+</section>
+
+<!-- 12. frame -->
+<section class="slide" data-title="평가 문장 틀" style="background:linear-gradient(160deg, #0D1526 0%, #070B14 70%);padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+  <div class="stripe"></div>
+  <p class="eyebrow" style="color:#2BE4F0">DRIVER’S REPORT</p>
+  <h2 style="font-family:var(--title);font-size:76px;line-height:1.1">평가 문장, 이 틀에 맞춰 쓰세요</h2>
+  <div style="display:flex;flex-direction:column;gap:28px;background:#121C30;padding:56px 64px;border-radius:28px;border:2px solid rgba(43,228,240,0.5);box-shadow:0 0 50px rgba(43,228,240,0.18)">
+    <p class="f" style="font-size:44px;line-height:1.6">내 차는 <b><span style="color:#2BE4F0">( 항목 )</span></b>에서 평균 <b><span style="color:#2BE4F0">( 숫자 )</span></b>로,<br>목표 <b><span style="color:#FFD23F">( 숫자 )</span></b>보다 <b><span style="color:#FFD23F">( 차이 )</span></b>만큼 좋았다 / 부족했다.</p>
+    <div class="f" style="border-top:2px dashed #2B3B55" data-with="next"></div>
+    <p class="f" style="font-size:44px;line-height:1.6">원인은 <b><span style="color:#FF6E8A">( 차의 부분 )</span></b>이고,<br><b><span style="color:#FF6E8A">( 바꿀 점 )</span></b>을 바꾸면 <b><span style="color:#FF6E8A">( 얼마나 )</span></b> 좋아질 것이다.</p>
+  </div>
+  <div class="f" style="display:flex;gap:24px">
+    <p style="font-size:30px;font-weight:700;color:#070B14;background:#2BE4F0;padding:10px 24px;border-radius:999px">숫자</p>
+    <p style="font-size:30px;font-weight:700;color:#070B14;background:#FFD23F;padding:10px 24px;border-radius:999px">판단</p>
+    <p style="font-size:30px;font-weight:700;color:#FFF3F5;background:#C8143C;padding:10px 24px;border-radius:999px">개선</p>
+  </div>
+  <p class="foot">EV GRAND PRIX &nbsp;|&nbsp; 전개 2 · 개인 분석</p>
+  <div class="notes">학습지 ④ ‘한 문장 평가’와 발표 때 쓰는 틀. 미션 1 진행 중 이 화면을 띄워 둔다. 윗줄은 기준 D-②(목표 대비 평가), 아랫줄은 D-③(개선 방안).</div>
+</section>
+
+<!-- 13. mission 2 -->
+<section class="slide" data-title="어디를 고치면 빨라질까?" style="background:linear-gradient(160deg, #1a0a14 0%, #070b14 70%)">
+  <div class="stripe"></div>
+  <div class="timer compact" data-min="8" style="--tc:#FF6E8A;top:48px;left:1412px;width:380px"></div>
+  <p class="eyebrow" style="position:absolute;top:128px;left:128px;color:#ff6e8a">MISSION 02 · 피트 크루 회의</p>
+  <h2 class="intro" style="position:absolute;top:203px;left:128px;width:1250px;font-family:var(--title);font-size:76px;line-height:1.1">어디를 고치면 빨라질까?</h2>
+  <div style="position:absolute;top:323px;left:128px;width:1664px;display:flex;justify-content:center">
+    <table class="grid" style="width:1560px;font-size:42px;color:#eef4fa">
+      <tr style="background:#2a1220"><th style="width:38%">이럴 때</th><th style="width:62%">살펴볼 부분</th></tr>
+      <tr class="f left" style="background:#121c30"><td>⚡ 직선에서 느리다</td><td>모터 출력, 배터리 전압, 차 무게, 바퀴 마찰</td></tr>
+      <tr class="f left" style="background:#0f1828"><td>📏 옆으로 휘어진다</td><td>바퀴 정렬, 축 휘어짐, 좌우 무게 균형</td></tr>
+      <tr class="f left" style="background:#121c30"><td>⛰️ 경사로가 느리다</td><td>기어비, 무게중심 위치, 바퀴 미끄러짐</td></tr>
+    </table>
+  </div>
+  <p class="f" style="position:absolute;top:760px;left:50%;width:1429px;font-size:50px;font-weight:700;line-height:1.4;text-align:center;margin-left:-714px">“더 잘 만들기” ✕ &nbsp;→&nbsp; <span style="color:#ffd23f">“무엇을 얼마나 바꿀까?”</span> ✓ &nbsp;· 학습지 ⑤</p>
+  <p class="foot">EV GRAND PRIX &nbsp;|&nbsp; 전개 3 · 모둠 (30~38분)</p>
+  <div class="notes">모둠원의 차 실물을 직접 보며 미달 항목 하나를 골라 원인 → 개선 → 기대 효과를 쓴다. 개선안이 막연하면 “무엇을 얼마나?”로 되묻기. 타이머: 시계를 누르면 시작/일시정지.</div>
+</section>
+
+<!-- 14. finish -->
+<section class="slide" data-title="좋은 차 = 내 목표를 달성한 차" style="background:#070b14">
+  <img class="bg" src="f9.jpg" alt="">
+  <div style="position:absolute;inset:0;background:linear-gradient(90deg, #070b14f7 0%, #070b14e6 52%, #070b1459 100%)"></div>
+  <p class="intro" style="position:absolute;top:150px;left:128px;width:900px;font-family:var(--display);font-size:32px;font-weight:700;letter-spacing:6px;color:#ffd23f">🏁 FINISH LINE</p>
+  <p class="intro d1" style="position:absolute;top:250px;left:128px;width:1300px;font-size:40px;line-height:1.4;color:#a9bcd0">처음 질문: 어떤 전기자동차가 가장 잘 만든 차일까?</p>
+  <h1 class="f left" style="position:absolute;top:330px;left:128px;width:1200px;font-family:var(--title);font-size:112px;line-height:1.15;text-shadow:0 0 40px #2be4f080">좋은 차 =<br><span style="color:#2be4f0">내 목표를 달성한 차</span></h1>
+  <div class="f" style="position:absolute;top:640px;left:128px;width:1100px;display:flex;flex-direction:column;gap:16px;padding:32px 40px;background:#121c30e6;border-left:8px solid #ffd23f;border-radius:20px">
+    <p style="font-size:34px;font-weight:700;color:#ffd23f">성찰하는 사람 · 학습지 ⑥</p>
+    <p style="font-size:32px;line-height:1.4">오늘 나는 내 차를 ‘느낌’으로 평가했나, ‘근거’로 평가했나?</p>
+  </div>
+  <p class="f" style="position:absolute;top:862px;left:128px;width:1400px;font-size:50px;font-weight:700">NEXT RACE · 다음 시간: 보완 후 우리 반 자동차 경주</p>
+  <div class="notes">정리 (38~45분). 먼저 2명 발표(달성 1명, 미달 1명) — 평가 문장 틀로 1분 이내. 그다음 이 슬라이드로 도입 질문에 답한다. 학습지 ⑥ 작성 후 회수.</div>
+</section>
+
+</div></div>
+
+<div id="notes" hidden></div>
+<nav id="bar" aria-label="슬라이드 조작">
+  <button id="bFirst" type="button" title="처음 (Home)">⏮</button>
+  <button id="bPrev" type="button" title="이전 (←)">◀ <span class="label">이전</span></button>
+  <span id="count">1 / 14</span>
+  <span id="stepdots" aria-hidden="true"></span>
+  <button id="bNext" class="main" type="button" title="다음 (→, 스페이스, 클릭)"><span class="label">다음</span> ▶</button>
+  <button id="bNotes" type="button" title="발표자 노트 (N)">📝 <span class="label">노트</span></button>
+  <button id="bFull" type="button" title="전체화면 (F)">⛶ <span class="label">전체화면</span></button>
+</nav>
+
+<script>var COVER_VIDEO = "ev-bg.mp4";</script>
+<script>
+(function () {
+  var stage = document.getElementById('stage');
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var N = slides.length, cur = 0, step = 0;
+
+  /* group fragments into steps: data-with="prev" joins the previous step; data-with="next" joins the following one */
+  var steps = slides.map(function (s) {
+    var fr = Array.prototype.slice.call(s.querySelectorAll('.f')), groups = [], pendingNext = [];
+    fr.forEach(function (el) {
+      var w = el.getAttribute('data-with');
+      if (w === 'next') { pendingNext.push(el); return; }
+      if (w === 'prev' && groups.length) { groups[groups.length - 1].push(el); }
+      else { groups.push(pendingNext.concat([el])); pendingNext = []; }
+    });
+    if (pendingNext.length) groups.push(pendingNext);
+    /* an arrow fragment shows together with the card after it */
+    var merged = [];
+    groups.forEach(function (g) {
+      var last = merged[merged.length - 1];
+      if (last && last.length === 1 && last[0].classList.contains('arrow')) last.push.apply(last, g);
+      else merged.push(g);
+    });
+    return merged;
+  });
+
+  function fit() {
+    var w = window.innerWidth, h = window.innerHeight, k = Math.min(w / 1920, h / 1080);
+    stage.style.transform = 'scale(' + k + ') translate(-50%, -50%)';
+    stage.style.transformOrigin = '0 0';
+    stage.style.left = '50%'; stage.style.top = '50%';
+    stage.style.transform = 'translate(-50%, -50%) scale(' + k + ')';
+    stage.style.transformOrigin = 'center center';
+  }
+
+  function applyStep() {
+    steps[cur].forEach(function (g, i) { g.forEach(function (el) { el.classList.toggle('on', i < step); }); });
+    var dots = document.getElementById('stepdots'); dots.innerHTML = '';
+    for (var i = 0; i < steps[cur].length; i++) { var d = document.createElement('i'); if (i < step) d.className = 'on'; dots.appendChild(d); }
+  }
+  function show(i, toStep) {
+    i = Math.max(0, Math.min(N - 1, i));
+    slides.forEach(function (s, k) { s.classList.toggle('active', k === i); s.classList.toggle('past', k < i); });
+    cur = i; step = toStep === 'end' ? steps[i].length : 0;
+    applyStep(); ui();
+    try { history.replaceState(null, '', '#s' + (i + 1)); } catch (e) {}
+    var v = document.getElementById('coverVideo');
+    if (v) { try { if (i === 0) { var p = v.play(); if (p && p.catch) p.catch(function () {}); } else v.pause(); } catch (e) {} }
+  }
+  function next() { if (step < steps[cur].length) { step++; applyStep(); ui(); } else if (cur < N - 1) show(cur + 1); }
+  function prev() { if (step > 0) { step--; applyStep(); ui(); } else if (cur > 0) show(cur - 1, 'end'); }
+  function ui() {
+    document.getElementById('count').textContent = (cur + 1) + ' / ' + N;
+    document.getElementById('progress').style.width = ((cur + (steps[cur].length ? step / steps[cur].length : 1)) / N * 100) + '%';
+    document.getElementById('bPrev').disabled = cur === 0 && step === 0;
+    document.getElementById('bNext').disabled = cur === N - 1 && step >= steps[cur].length;
+    document.getElementById('bFirst').disabled = cur === 0 && step === 0;
+    var nb = document.getElementById('notes');
+    if (!nb.hidden) renderNotes();
+  }
+  function renderNotes() {
+    var nb = document.getElementById('notes'), src = slides[cur].querySelector('.notes');
+    nb.innerHTML = '';
+    var t = document.createElement('b'); t.textContent = (cur + 1) + '. ' + (slides[cur].getAttribute('data-title') || ''); nb.appendChild(t);
+    nb.appendChild(document.createTextNode(src ? src.textContent : '노트 없음'));
+  }
+  function toggleNotes() { var nb = document.getElementById('notes'); nb.hidden = !nb.hidden; if (!nb.hidden) renderNotes(); }
+  function toggleFull() {
+    try {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else document.documentElement.requestFullscreen().catch(function () {});
+    } catch (e) {}
+  }
+
+  /* input */
+  document.getElementById('viewport').addEventListener('click', function (e) {
+    if (e.target.closest('.timer, a, button')) return;
+    next();
+  });
+  document.getElementById('viewport').addEventListener('contextmenu', function (e) { e.preventDefault(); prev(); });
+  document.getElementById('bNext').addEventListener('click', next);
+  document.getElementById('bPrev').addEventListener('click', prev);
+  document.getElementById('bFirst').addEventListener('click', function () { show(0); });
+  document.getElementById('bNotes').addEventListener('click', toggleNotes);
+  document.getElementById('bFull').addEventListener('click', toggleFull);
+  document.addEventListener('keydown', function (e) {
+    var k = e.key;
+    if (e.target && e.target.tagName === 'BUTTON' && (k === ' ' || k === 'Enter')) return;
+    if (e.target && e.target.closest && e.target.closest('.timer') && (k === ' ' || k === 'Enter')) return;
+    if (k === 'ArrowRight' || k === 'PageDown' || k === ' ' || k === 'Enter' || k === 'ArrowDown') { e.preventDefault(); next(); }
+    else if (k === 'ArrowLeft' || k === 'PageUp' || k === 'Backspace' || k === 'ArrowUp') { e.preventDefault(); prev(); }
+    else if (k === 'Home') show(0);
+    else if (k === 'End') show(N - 1, 'end');
+    else if (k === 'f' || k === 'F') toggleFull();
+    else if (k === 'n' || k === 'N') toggleNotes();
+    else if (/^[0-9]$/.test(k)) { /* number jump: type 1..9, 0 = 10 */ show(k === '0' ? 9 : Number(k) - 1); }
+  });
+  /* swipe on touch boards */
+  var tx = null;
+  document.getElementById('viewport').addEventListener('touchstart', function (e) { tx = e.touches[0].clientX; }, { passive: true });
+  document.getElementById('viewport').addEventListener('touchend', function (e) {
+    if (tx === null) return; var dx = e.changedTouches[0].clientX - tx; tx = null;
+    if (Math.abs(dx) > 60) { dx < 0 ? next() : prev(); }
+  });
+  /* auto-hide the control bar */
+  var idleT = 0;
+  function wake() { document.body.classList.remove('idle'); clearTimeout(idleT); idleT = setTimeout(function () { document.body.classList.add('idle'); }, 2600); }
+  ['mousemove', 'mousedown', 'touchstart', 'keydown'].forEach(function (ev) { document.addEventListener(ev, wake, { passive: true }); });
+
+  /* cover streaks + video */
+  var st = document.getElementById('streaks');
+  for (var i = 0; i < 26; i++) {
+    var d = document.createElement('i'); if (i % 3 === 0) d.className = 'r';
+    d.style.top = (Math.random() * 100) + '%'; d.style.width = (120 + Math.random() * 380) + 'px';
+    d.style.opacity = (0.25 + Math.random() * 0.55).toFixed(2);
+    d.style.animationDuration = (0.6 + Math.random() * 1.6).toFixed(2) + 's';
+    d.style.animationDelay = (-Math.random() * 2).toFixed(2) + 's';
+    st.appendChild(d);
+  }
+  var cv = document.getElementById('coverVideo');
+  try { cv.src = COVER_VIDEO; cv.poster = "f1.jpg"; } catch (e) {}
+
+  /* in-slide timers */
+  var ns = 'http://www.w3.org/2000/svg', C = 2 * Math.PI * 110;
+  document.querySelectorAll('.timer').forEach(function (box) {
+    var mins = Number(box.getAttribute('data-min')) || 5, total = mins * 60000, left = total, running = false, endAt = 0, raf = 0, audio = null, beeped = false;
+    box.innerHTML =
+      '<button class="dial" type="button" aria-label="타이머 시작 또는 일시정지">' +
+      '<svg viewBox="0 0 250 250" width="250" height="250" aria-hidden="true"><circle class="track" cx="125" cy="125" r="110"></circle><circle class="ring" cx="125" cy="125" r="110"></circle></svg>' +
+      '<span class="face"><span class="state">READY</span><span class="time">00:00</span><span class="hint">누르면 시작</span></span></button>' +
+      '<div class="bar"><b></b></div>' +
+      '<div class="ctrl"><button class="tb" data-a="minus" type="button">−1분</button><button class="tb go" data-a="toggle" type="button">▶ 시작</button><button class="tb" data-a="reset" type="button">↺</button><button class="tb" data-a="plus" type="button">+1분</button></div>';
+    var ring = box.querySelector('.ring'); ring.style.strokeDasharray = C;
+    var $t = box.querySelector('.time'), $s = box.querySelector('.state'), $h = box.querySelector('.hint'), $b = box.querySelector('.bar b'), $go = box.querySelector('[data-a="toggle"]');
+    function fmt(ms) { var s = Math.ceil(ms / 1000), m = Math.floor(s / 60); s %= 60; return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s; }
+    function draw() {
+      var done = left <= 0, warn = !done && left <= 60000;
+      $t.textContent = fmt(left);
+      ring.style.strokeDashoffset = C * (1 - left / total);
+      $b.style.width = (left / total * 100) + '%';
+      box.classList.toggle('warn', warn); box.classList.toggle('done', done);
+      $s.textContent = done ? 'TIME UP!' : (running ? (warn ? 'LAST 1 MIN' : 'RACING') : (left === total ? 'READY' : 'PAUSED'));
+      $h.textContent = done ? '↺ 로 다시' : (running ? '누르면 일시정지' : '누르면 시작');
+      $go.textContent = running ? '❚❚ 정지' : (left === total ? '▶ 시작' : '▶ 계속');
+    }
+    function beep() {
+      try {
+        if (!audio) return;
+        [0, 0.35, 0.7].forEach(function (t, k) {
+          var o = audio.createOscillator(), g = audio.createGain();
+          o.type = 'square'; o.frequency.value = k === 2 ? 1320 : 880;
+          g.gain.setValueAtTime(0.0001, audio.currentTime + t);
+          g.gain.exponentialRampToValueAtTime(0.25, audio.currentTime + t + 0.02);
+          g.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + t + (k === 2 ? 0.6 : 0.25));
+          o.connect(g); g.connect(audio.destination); o.start(audio.currentTime + t); o.stop(audio.currentTime + t + 0.7);
+        });
+      } catch (e) {}
+    }
+    function loop() { left = Math.max(0, endAt - Date.now()); if (left <= 0) { running = false; if (!beeped) { beeped = true; beep(); } } draw(); if (running) raf = requestAnimationFrame(loop); }
+    function start() { if (left <= 0) return; try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); audio.resume && audio.resume(); } catch (e) {} running = true; endAt = Date.now() + left; cancelAnimationFrame(raf); raf = requestAnimationFrame(loop); }
+    function pause() { if (running) left = Math.max(0, endAt - Date.now()); running = false; cancelAnimationFrame(raf); draw(); }
+    function toggle() { running ? pause() : start(); }
+    function adjust(m) { var d = m * 60000; if (running) { endAt = Math.max(Date.now(), endAt + d); left = Math.max(0, endAt - Date.now()); } else left = Math.max(0, left + d); total = Math.max(total, left); if (left > 0) beeped = false; draw(); }
+    box.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var a = e.target.closest('[data-a]');
+      if (a) { var act = a.getAttribute('data-a'); if (act === 'toggle') toggle(); else if (act === 'reset') { pause(); left = total = mins * 60000; beeped = false; draw(); } else if (act === 'plus') adjust(1); else if (act === 'minus') adjust(-1); return; }
+      if (e.target.closest('.dial')) toggle();
+    });
+    box.addEventListener('keydown', function (e) { e.stopPropagation(); });
+    box.addEventListener('contextmenu', function (e) { e.stopPropagation(); });
+    draw();
+  });
+
+  window.addEventListener('resize', fit);
+  fit();
+  var h = /^#s(\d+)$/.exec(location.hash);
+  show(h ? Number(h[1]) - 1 : 0);
+  wake();
+})();
+</script>
+
+</body>
+</html>
