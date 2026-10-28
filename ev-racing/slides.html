@@ -759,10 +759,11 @@ body.pmode #viewport { position: absolute; inset: 0; }
         <textarea id="pScript" placeholder="여기에 이 슬라이드에서 할 말을 쓰세요. 쓰는 대로 이 컴퓨터에 자동 저장됩니다."></textarea>
         <div class="p-memo" id="pMemo"></div>
         <div class="p-tools">
+          <button class="p-btn main" id="pSave" type="button" title="대본 저장 (Ctrl+S)">✔ 저장</button>
           <button class="p-btn" id="pFontDown" type="button" title="대본 글씨 작게">가−</button>
           <button class="p-btn" id="pFontUp" type="button" title="대본 글씨 크게">가+</button>
           <button class="p-btn" id="pCopy" type="button">📋 대본 전체 복사</button>
-          <button class="p-btn" id="pExport" type="button">💾 파일로 저장</button>
+          <button class="p-btn" id="pExport" type="button" title="다른 컴퓨터로 옮길 때">📤 파일로 내보내기</button>
           <button class="p-btn" id="pImportBtn" type="button">📂 불러오기</button>
           <input type="file" id="pImport" accept=".json,application/json" hidden>
           <span class="p-saved" id="pSaved"></span>
@@ -928,13 +929,20 @@ body.pmode #viewport { position: absolute; inset: 0; }
   function saveScripts(msg) {
     var ok = true;
     try { localStorage.setItem(SKEY, JSON.stringify(scripts)); } catch (e) { ok = false; }
-    document.getElementById('pSaved').textContent = ok ? (msg || '자동 저장됨') : '이 브라우저는 저장이 막혀 있어요. ‘대본 전체 복사’로 따로 보관하세요.';
+    document.getElementById('pSaved').textContent = ok ? (msg || '✔ 자동 저장됨') : '이 브라우저는 저장이 막혀 있어요. ‘대본 전체 복사’로 따로 보관하세요.';
   }
   document.getElementById('pScript').addEventListener('input', function () {
     scripts[keyOf(cur)] = this.value; clearTimeout(saveT);
     document.getElementById('pSaved').textContent = '저장 중…';
     saveT = setTimeout(function () { saveScripts(); }, 400);
   });
+  function saveNow() {
+    scripts[keyOf(cur)] = document.getElementById('pScript').value; clearTimeout(saveT);
+    var d = new Date(); saveScripts('저장됨 ' + (d.getHours() < 10 ? '0' : '') + d.getHours() + ':' + (d.getMinutes() < 10 ? '0' : '') + d.getMinutes());
+    toast('대본을 저장했어요. (이 컴퓨터에 저장)');
+  }
+  document.getElementById('pSave').addEventListener('click', saveNow);
+  document.addEventListener('keydown', function (e) { if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) { e.preventDefault(); if (PRESENTER) saveNow(); } }, true);
   function allScriptText() {
     return slides.map(function (s, i) {
       var k = keyOf(i), txt = (k in scripts) ? scripts[k] : defaultScript(i);
@@ -959,7 +967,7 @@ body.pmode #viewport { position: absolute; inset: 0; }
       var url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
       var a = document.createElement('a'); a.href = url; a.download = 'EV그랑프리_대본.json'; document.body.appendChild(a); a.click(); a.remove();
       setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
-      toast('대본 파일을 저장했어요. (안 받아지면 ‘대본 전체 복사’를 쓰세요)');
+      toast('대본 파일을 내보냈어요. (안 받아지면 ‘대본 전체 복사’를 쓰세요)');
     } catch (e) { toast('파일 저장이 막혀 있어요. ‘대본 전체 복사’를 쓰세요.'); }
   });
   document.getElementById('pImportBtn').addEventListener('click', function () { document.getElementById('pImport').click(); });
