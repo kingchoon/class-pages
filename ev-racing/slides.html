@@ -83,7 +83,7 @@ table.grid tr > :first-child { border-radius: 14px 0 0 14px; }
 table.grid tr > :last-child { border-radius: 0 14px 14px 0; }
 
 /* in-slide timer */
-.timer { position: absolute; display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 26px 24px; background: rgba(7,11,20,.92); border: 3px solid var(--tc); border-radius: 28px; box-shadow: 0 0 40px color-mix(in srgb, var(--tc) 55%, transparent); cursor: default; transition: border-color .3s, box-shadow .3s; }
+.timer { z-index: 5; position: absolute; display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 26px 24px; background: rgba(7,11,20,.92); border: 3px solid var(--tc); border-radius: 28px; box-shadow: 0 0 40px color-mix(in srgb, var(--tc) 55%, transparent); cursor: default; transition: border-color .3s, box-shadow .3s; }
 .timer .dial { position: relative; width: 250px; height: 250px; border: 0; padding: 0; background: none; cursor: pointer; border-radius: 50%; color: inherit; }
 .timer .dial svg { position: absolute; inset: 0; transform: rotate(-90deg); }
 .timer .track { fill: none; stroke: #1E2A40; stroke-width: 12; }
@@ -113,7 +113,7 @@ table.grid tr > :last-child { border-radius: 0 14px 14px 0; }
 
 /* control bar */
 /* ── 조작 막대 크기 (여기 숫자만 바꾸면 됨) ── */
-:root { --bar-pad: 4px;  --bar-font: 12px; }
+:root { --bar-pad: 3px;  --bar-font: 11px; }
 #bar { position: fixed; left: 50%; bottom: max(10px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); display: flex; align-items: center; gap: calc(var(--bar-pad) + 1px); padding: var(--bar-pad) calc(var(--bar-pad) + 2px); border-radius: 12px; background: rgba(10,16,28,.82); border: 1px solid rgba(43,228,240,.3); box-shadow: 0 6px 20px rgba(0,0,0,.45); backdrop-filter: blur(10px); transition: opacity .35s, transform .35s; z-index: 20; max-width: calc(100% - 32px); }
 body.idle #bar { opacity: 0; transform: translate(-50%, 16px); pointer-events: none; }
 body.idle #viewport { cursor: none; }
@@ -125,7 +125,7 @@ body.idle #viewport { cursor: none; }
 #count { font-family: var(--display); font-weight: 700; font-size: var(--bar-font); color: var(--muted); min-width: 44px; text-align: center; font-variant-numeric: tabular-nums; }
 #progress { position: fixed; left: 0; top: 0; height: 4px; background: linear-gradient(90deg, var(--red), var(--yellow), var(--cyan)); box-shadow: 0 0 10px var(--cyan); transition: width .4s; z-index: 21; }
 #stepdots { display: flex; gap: 3px; padding: 0 3px; }
-#stepdots i { width: 5px; height: 5px; border-radius: 50%; background: #2B3B55; }
+#stepdots i { width: 4px; height: 4px; border-radius: 50%; background: #2B3B55; }
 #stepdots i.on { background: var(--yellow); box-shadow: 0 0 5px var(--yellow); }
 #help { position: fixed; top: 12px; right: max(14px, env(safe-area-inset-right, 0px)); font-size: 12px; color: var(--dim); z-index: 20; transition: opacity .35s; }
 body.idle #help { opacity: 0; }
@@ -265,7 +265,6 @@ body.pmode #viewport { position: absolute; inset: 0; }
       <p class="body" style="color:#a9bcd0">① 시험 방법 설명 &nbsp;·&nbsp; ② 설계 목표 대비 평가 &nbsp;·&nbsp; ③ 개선 방안 제시</p>
     </div>
   </div>
-  <p class="foot">EV GRAND PRIX &nbsp;|&nbsp; 도입</p>
   <div class="notes">학습 목표 2개를 읽고, 오늘 쓰는 답은 모두 “숫자 근거”가 있어야 한다고 강조. 기준 D 세 요소가 학습지 ②~⑤와 연결된다고 짧게 안내.</div>
   <div class="script">
 [도입 · 3~5분]
@@ -314,7 +313,6 @@ body.pmode #viewport { position: absolute; inset: 0; }
     </div>
     <p class="f lead mt">“잘 됐다 / 안 됐다”로 끝나면 <span style="color:#ff6e8a">느낌</span>, 데이터가 들어가면 <span style="color:#2be4f0">평가</span>입니다.</p>
   </div>
-  <p class="foot">EV GRAND PRIX &nbsp;|&nbsp; 전개 1 · 데이터 읽는 법</p>
   <div class="notes">전개 1 시작 (5분). 오늘 모든 답의 틀. 판서 가운데에 이 순서를 적어 두고 수업 내내 가리킨다.</div>
   <div class="script">
 [전개 1 · 5~6분]
@@ -360,7 +358,6 @@ body.pmode #viewport { position: absolute; inset: 0; }
       </div>
     </div>
   </div>
-  <p class="foot">EV GRAND PRIX &nbsp;|&nbsp; 전개 1 · 데이터 읽는 법</p>
   <div class="notes">학습지 ① 설계 목표 칸을 이때 채우게 한다(1분). 세 항목 모두 숫자가 작을수록 좋다는 점을 확인. 직선 시험 한 번의 영상으로 속도와 직진성을 함께 잰다.</div>
   <div class="script">
 [전개 1 · 6~7분]
@@ -396,7 +393,6 @@ body.pmode #viewport { position: absolute; inset: 0; }
       <p class="f body stmt" style="border-left:8px solid #2be4f0"><span style="color:#2be4f0"><b>믿을 만한 값 = 신뢰성</b></span>이 생겨요</p>
     </div>
   </div>
-  <p class="foot">EV GRAND PRIX &nbsp;|&nbsp; 전개 1 · 데이터 읽는 법</p>
   <div class="notes">발문: “왜 한 번이 아니라 3번 쟀을까?” 학생 답을 듣고 세 줄을 차례로 띄운다. 학습지 ②의 ‘생각해 보기’ 답이 여기서 나온다 (기준 D-① 시험 방법).</div>
   <div class="script">
 [전개 1 · 7~8분]
@@ -436,7 +432,6 @@ body.pmode #viewport { position: absolute; inset: 0; }
     </div>
     <p class="f lead mt" style="font-weight:500;color:#A9BCD0">웹앱이 노란색으로 표시해 줍니다. 하지만 <b style="color:#EEF4FA">버릴지 말지</b>는 여러분이 판단해요.</p>
   </div>
-  <p class="foot">EV GRAND PRIX &nbsp;|&nbsp; 전개 1 · 데이터 읽는 법</p>
   <div class="notes">예시 학생 화면을 웹앱으로 같이 띄워도 좋다. 막대 길이는 기록(초)에 비례. 중앙값 1.42초에서 0.46초 차이 = 약 32%, [설정] 시트 기준 20%를 넘어서 튀는 값. 발문: “노란 값은 빼고 평가해도 될까?” → 다음 슬라이드에서 영상으로 판단.</div>
   <div class="script">
 [전개 1 · 8~10분]
@@ -477,7 +472,6 @@ body.pmode #viewport { position: absolute; inset: 0; }
       </div>
     </div>
   </div>
-  <p class="foot">EV GRAND PRIX &nbsp;|&nbsp; 전개 1 · 데이터 읽는 법</p>
   <div class="notes">예시 학생의 3회차 영상을 실제로 재생해 함께 판단한다. 차의 문제를 빼 버리면 차가 실제보다 좋아 보인다는 점을 짚는다. 학습지 ② 체크 칸과 연결.</div>
   <div class="script">
 [전개 1 · 10~11분]
@@ -516,7 +510,6 @@ body.pmode #viewport { position: absolute; inset: 0; }
       <p class="f lead" style="background:#121C30;padding:18px 40px;border-radius:999px;border:2px solid #2BE4F0;font-size:44px">속력 <span style="color:#2BE4F0">클수록</span> 빠름</p>
     </div>
   </div>
-  <p class="foot">EV GRAND PRIX &nbsp;|&nbsp; 전개 1 · 데이터 읽는 법</p>
   <div class="notes">학습지 ③. 1 ÷ 1.40 = 0.714… → 0.71 m/s. 시간과 속력은 반대로 움직인다는 오개념을 이때 정리한다. 웹앱의 ‘평균 속력’ 값과 직접 계산한 값이 같은지 확인하게 한다.</div>
   <div class="script">
 [전개 1 · 11~12분]
@@ -556,7 +549,6 @@ body.pmode #viewport { position: absolute; inset: 0; }
     </div>
     <p class="f lead mt">근거에 따라 결론이 바뀝니다. 그래서 <span style="color:#FFD23F">왜 그 평균을 썼는지</span>까지 써야 해요.</p>
   </div>
-  <p class="foot">EV GRAND PRIX &nbsp;|&nbsp; 전개 1 · 데이터 읽는 법</p>
   <div class="notes">예시 기록 1.40 / 1.42 / 1.88초. 3회 평균 4.70 ÷ 3 = 1.567 → 1.57초, 목표보다 0.12초 느림. 3회가 측정 실수로 확인되면 (1.40+1.42) ÷ 2 = 1.41초, 목표보다 0.04초 빠름. 학습지 ④ ‘판단 근거’ 칸이 바로 이 부분. 여기까지가 전개 1 (13분 지점).</div>
   <div class="script">
 [전개 1 · 12~13분]
@@ -592,7 +584,6 @@ body.pmode #viewport { position: absolute; inset: 0; }
     </div>
   </div>
   <div class="timer" data-min="17" style="--tc:#FFD23F;top:96px;left:1372px;width:420px"></div>
-  <p class="foot">EV GRAND PRIX &nbsp;|&nbsp; 전개 2 · 개인 분석 (13~30분)</p>
   <div class="notes">[수업코드] 자리에 참관 반 코드를 적어 둘 것. 순회하며 “그렇게 판단한 숫자는?”으로 근거를 묻는다. 데이터가 없는 학생은 모둠원 차량으로 함께 분석. 먼저 끝난 학생에게는 학습지 ④의 ‘더 생각해 보기’(목표가 적절했나)를 예고. 타이머: 시계를 누르면 시작/일시정지.</div>
   <div class="script">
 [전개 2 · 13~30분 · 개인 분석 17분]
@@ -633,7 +624,6 @@ body.pmode #viewport { position: absolute; inset: 0; }
       <p class="label" style="color:#FFF3F5;background:#C8143C;padding:8px 26px;border-radius:999px">개선</p>
     </div>
   </div>
-  <p class="foot">EV GRAND PRIX &nbsp;|&nbsp; 전개 2 · 개인 분석</p>
   <div class="notes">학습지 ④ ‘한 문장 평가’와 발표 때 쓰는 틀. 미션 1 진행 중 이 화면을 띄워 둔다. 윗줄은 기준 D-②(목표 대비 평가), 아랫줄은 D-③(개선 방안).</div>
   <div class="script">
 [전개 2 · 미션 1 진행 중 띄워 두기]
@@ -667,7 +657,6 @@ body.pmode #viewport { position: absolute; inset: 0; }
     </table>
     <p class="f lead" style="text-align:center">“더 잘 만들기” ✕ &nbsp;→&nbsp; <span style="color:#ffd23f">“무엇을 얼마나 바꿀까?”</span> ✓ &nbsp;· 학습지 ⑤</p>
   </div>
-  <p class="foot">EV GRAND PRIX &nbsp;|&nbsp; 전개 3 · 모둠 (30~38분)</p>
   <div class="notes">모둠원의 차 실물을 직접 보며 미달 항목 하나를 골라 원인 → 개선 → 기대 효과를 쓴다. 개선안이 막연하면 “무엇을 얼마나?”로 되묻기. 타이머: 시계를 누르면 시작/일시정지.</div>
   <div class="script">
 [전개 3 · 30~38분 · 모둠 8분]
