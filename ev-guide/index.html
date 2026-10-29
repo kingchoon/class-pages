@@ -485,7 +485,7 @@ input::placeholder,textarea::placeholder{color:var(--sub);opacity:.8}
     </div>
   </section>
 
-  <div class="foot"><span>모든 기록은 이 기기에만 저장돼요.</span><button class="btn warn" id="wipe" type="button">내 기록 모두 지우기</button></div>
+  <div class="foot"><span>모든 기록과 사진은 이 기기에 자동 저장돼요. 새로고침해도 남아요.</span><button class="btn warn" id="wipe" type="button">내 기록 모두 지우기</button></div>
 </div>
 
 <script>
@@ -786,6 +786,7 @@ twoTap($("wipe"),"내 기록 모두 지우기",()=>{
   initTestDefaults();
   document.querySelectorAll("[data-c]").forEach(c=>c.checked=false);
   fill(document); curStep=0; renderRoad(); renderDetail(); checkGoals(); updateTests();
+  location.reload(); // 사진 미리보기까지 깨끗하게
 });
 
 /* ───── 제출 ───── */
@@ -801,6 +802,7 @@ const photos={};
   $("photos").innerHTML=VIEWS.map(([k,l])=>`<label class="photo" id="ph-${k}"><span class="ttl">${l}</span>
     <input type="file" accept="image/*" data-v="${k}" aria-label="${l}에서 본 사진 고르기">
     <span class="box"><span>📷<br>${l}에서 찍은 사진<br>누르면 고를 수 있어요</span></span></label>`).join("");
+  VIEWS.forEach(([k])=>{ try{const o=JSON.parse(val("ph-"+k)||"null"); if(o&&o.full){photos[k]=o; showPhoto(k);} }catch(e){} });
   $("photos").addEventListener("change",async e=>{
     const inp=e.target, k=inp.dataset.v; if(!k||!inp.files||!inp.files[0]) return;
     const lab=$("ph-"+k), box=lab.querySelector(".box");
@@ -809,13 +811,21 @@ const photos={};
       const img=await loadImg(inp.files[0]);
       const full=shrink(img,1280,.82); let thumb=shrink(img,360,.6);
       for(let q=.5;thumb.length>45000&&q>.15;q-=.1) thumb=shrink(img,300,q);
-      photos[k]={full,thumb};
-      box.innerHTML=""; const im=new Image(); im.src=thumb; im.alt=VIEWS.find(x=>x[0]===k)[1]+"에서 본 사진 미리보기"; box.appendChild(im);
-      lab.classList.add("has");
-    }catch(err){ delete photos[k]; lab.classList.remove("has"); box.innerHTML="<span>사진을 열 수 없어요. 다른 사진으로 다시 골라 주세요.</span>"; }
+      photos[k]={full,thumb,sent:false}; keepPhoto(k); showPhoto(k);
+    }catch(err){ lab.classList.remove("has"); box.innerHTML="<span>사진을 열 수 없어요. 다른 사진으로 다시 골라 주세요.</span>"; }
     updateSendList();
   });
 })();
+function showPhoto(k){
+  const lab=$("ph-"+k), box=lab.querySelector(".box"), o=photos[k];
+  box.innerHTML=""; const im=new Image(); im.src=o.thumb||o.full; im.alt=VIEWS.find(x=>x[0]===k)[1]+"에서 본 사진 미리보기"; box.appendChild(im);
+  lab.classList.add("has");
+}
+// 사진도 이 기기에 저장 (F5·창 닫기에도 남게). 저장 공간이 모자라면 작은 사진만이라도 남김
+function keepPhoto(k){
+  try{ localStorage.setItem(PFX+"ph-"+k,JSON.stringify(photos[k])); }
+  catch(e){ try{ localStorage.setItem(PFX+"ph-"+k,JSON.stringify({thumb:photos[k].thumb,full:photos[k].thumb,sent:photos[k].sent,small:1})); }catch(e2){} }
+}
 function loadImg(file){
   return new Promise((ok,no)=>{const url=URL.createObjectURL(file),im=new Image();
     im.onload=()=>{URL.revokeObjectURL(url);ok(im);}; im.onerror=()=>{URL.revokeObjectURL(url);no(new Error("img"));}; im.src=url;});
@@ -870,20 +880,36 @@ $("sendBtn").onclick=async()=>{
   if(!name) return sendMsg("err","이름을 써 주세요.");
   if(!/^\d{4}$/.test(pin)) return sendMsg("err","제출 비밀번호를 숫자 4자리로 써 주세요.");
   const written=sendStats().filter(x=>x[1]!=="사진").reduce((s,x)=>s+x[2],0);
-  if(!written&&!Object.keys(photos).length) return sendMsg("err","아직 쓴 내용도, 고른 사진도 없어요.");
+  const toSend={}; VIEWS.forEach(([k])=>{ if(photos[k]&&!photos[k].sent) toSend[k]={full:photos[k].full,thumb:photos[k].thumb}; });
+  if(!written&&!Object.keys(toSend).length) return sendMsg("err","아직 쓴 내용도, 새로 고른 사진도 없어요.");
   const btn=$("sendBtn"); btn.disabled=true;
-  sendMsg("wait",Object.keys(photos).length?"사진과 기록을 보내는 중… 창을 닫지 말고 잠깐 기다려요 ⏳":"기록을 보내는 중… ⏳");
+  sendMsg("wait",Object.keys(toSend).length?"사진과 기록을 보내는 중… 창을 닫지 말고 잠깐 기다려요 ⏳":"기록을 보내는 중… ⏳");
   try{
-    const res=await fetch(SUBMIT_URL,{method:"POST",body:JSON.stringify({action:"submit",ban,no,name,pin,answers:written?collect():null,photos})});
+    const res=await fetch(SUBMIT_URL,{method:"POST",body:JSON.stringify({action:"submit",ban,no,name,pin,answers:written?collect():null,photos:toSend})});
     const out=await res.json();
     if(out.ok){
       save("sblast",out.time||"");
+      Object.keys(toSend).forEach(k=>{photos[k].sent=true; keepPhoto(k);});
       sendMsg("ok",`제출 완료! 🎉 ${out.time||""} · ${out.count}번째 제출이에요.${written?"":" (이 기기에는 쓴 내용이 없어서 사진만 보냈고, 예전에 낸 답안은 그대로 남아요.)"}${out.pdf?" 학습지 PDF도 만들어졌어요.":""} 고치고 싶으면 다시 제출해도 돼요.`);
     } else sendMsg("err",out.msg||"제출하지 못했어요. 다시 눌러 주세요.");
   }catch(err){ sendMsg("err","인터넷 연결을 확인하고 다시 눌러 주세요. (기록은 이 기기에 그대로 있어요)"); }
   btn.disabled=false;
 };
 document.addEventListener("input",()=>{ if(!$("p-send").hidden) updateSendList(); });
+// 한글 입력 중 마지막 글자까지: 조합이 끝날 때, 칸을 벗어날 때, 새로고침·창 닫기 직전에 한 번 더 저장
+function flushAll(){ document.querySelectorAll("[data-k]").forEach(el=>{ if(el.type==="radio"){ if(el.checked) save(el.dataset.k,el.value); } else save(el.dataset.k,el.value); }); }
+document.addEventListener("compositionend",e=>{const el=e.target; if(el.dataset&&el.dataset.k) save(el.dataset.k,el.value);});
+document.addEventListener("focusout",e=>{const el=e.target; if(el.dataset&&el.dataset.k&&el.type!=="radio") save(el.dataset.k,el.value);});
+window.addEventListener("pagehide",flushAll);
+window.addEventListener("beforeunload",flushAll);
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="hidden") flushAll(); });
+// 저장이 막힌 화면(미리보기·비공개 창 등)이면 알려 주기
+(function checkStorage(){
+  let ok=false; try{ localStorage.setItem(PFX+"_t","1"); ok=localStorage.getItem(PFX+"_t")==="1"; localStorage.removeItem(PFX+"_t"); }catch(e){}
+  if(!ok){ const w=document.createElement("div"); w.className="alert"; w.setAttribute("role","alert");
+    w.innerHTML="<b>⚠️ 이 화면에서는 기록이 저장되지 않아요.</b> 새로고침하면 사라져요. 크롬(또는 삼성 인터넷)에서 선생님이 알려 준 주소로 열어 주세요. 시크릿(비공개) 창이면 일반 창으로 열어요.";
+    document.querySelector(".wrap").prepend(w); }
+})();
 
 /* ───── 탭 ───── */
 const TABS=["plan","make","eval","send"];
