@@ -1110,7 +1110,29 @@ TABS.forEach((t,i)=>{
 const hashTab=(location.hash||"").replace("#","");
 showTab(TABS.includes(hashTab)?hashTab:(TABS.includes(val("tab"))?val("tab"):"plan"));
 
+/* 서버에 있는 사진과 이 기기 사진 맞추기 — 다른 기기에서 올렸거나 예전에 지운 사진도 보이게 해서 지울 수 있게 */
+async function syncPhotos(){
+  const i=info(); if(infoProblem(i)) return;
+  try{
+    const out=await (await fetch(SUBMIT_URL,{method:"POST",body:JSON.stringify({action:"photos",ban:i.ban,no:i.no,pin:i.pin})})).json();
+    if(!out.ok) return;
+    const srv=out.photos||{}; let pendingDel=false;
+    ALLPH.forEach(([k])=>{
+      const o=photos[k], on=!!srv[k];
+      if(on&&!o){ photos[k]={thumb:srv[k].thumb,full:srv[k].thumb,sent:true,srv:true,remote:true}; keepPhoto(k); }
+      else if(on&&o&&o.del){ pendingDel=true; }
+      else if(!on&&o&&o.del){ delete photos[k]; ls.del(PFX+"ph-"+k); }
+      else if(!on&&o&&o.sent){ delete photos[k]; ls.del(PFX+"ph-"+k); } // 선생님이 지운 사진
+      showPhoto(k);
+    });
+    updateSendList();
+    if(pendingDel){ setDirty(true); scheduleAuto(1000); }
+  }catch(e){}
+}
+let syncT=null;
+$("sbpin").addEventListener("input",()=>{ clearTimeout(syncT); if(/^\d{4}$/.test($("sbpin").value.trim())) syncT=setTimeout(syncPhotos,800); });
 renderRoad(); renderDetail(); checkGoals(); updateTests(); updateDims(); updateCloud();
+syncPhotos();
 </script>
 </body>
 </html>
