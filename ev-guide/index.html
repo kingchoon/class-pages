@@ -225,6 +225,15 @@ input::placeholder,textarea::placeholder{color:var(--sub);opacity:.8}
 .tags span{font-family:var(--f-mono);font-size:13px;border:1px solid color-mix(in srgb,var(--surface) 30%,transparent);border-radius:99px;padding:2px 10px}
 .foot{display:flex;justify-content:center;align-items:center;gap:10px;flex-wrap:wrap;font-size:14px;color:var(--sub)}
 
+/* 서버 저장 막대 */
+.cloud{display:flex;align-items:center;gap:8px 12px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:8px 10px 8px 14px;font-size:15px}
+.cloud .st{flex:1 1 220px;min-width:0;color:var(--sub)}
+.cloud .st b{color:var(--ink)}
+.cloud.dirty{border-color:var(--caution);background:var(--caution-soft)}
+.cloud.clean{border-color:var(--accent)}
+.cloud .btn{min-height:42px}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap}
+.btnrow .btn{flex:1 1 180px;min-height:52px;font-size:16.5px}
 /* 내 계획서 */
 .myplan{display:flex;flex-direction:column;gap:10px}
 .prow{display:grid;grid-template-columns:34px minmax(0,2.2fr) minmax(0,.8fr) minmax(0,1.3fr) minmax(0,1.1fr);gap:8px;align-items:start;background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:10px}
@@ -289,11 +298,13 @@ input::placeholder,textarea::placeholder{color:var(--sub);opacity:.8}
     <div class="prog" aria-live="polite">진행 <div class="bar"><i id="progBar"></i></div><b id="progTx">0/12</b></div>
   </header>
 
+  <div class="cloud" id="cloud" role="status" aria-live="polite"><span class="st" id="cloudSt">☁️ 서버 저장 확인 중…</span><button type="button" class="btn primary" id="cloudBtn">☁️ 지금 저장</button></div>
+
   <nav class="tabs" role="tablist" aria-label="가이드 영역">
     <button class="tab" role="tab" id="t-plan" aria-controls="p-plan" aria-selected="true"><span class="n">01–02</span>목표·재료</button>
     <button class="tab" role="tab" id="t-make" aria-controls="p-make" aria-selected="false"><span class="n">C</span>제작 6단계</button>
     <button class="tab" role="tab" id="t-eval" aria-controls="p-eval" aria-selected="false"><span class="n">D</span>평가·개선</button>
-    <button class="tab" role="tab" id="t-send" aria-controls="p-send" aria-selected="false"><span class="n">📮</span>제출</button>
+    <button class="tab" role="tab" id="t-send" aria-controls="p-send" aria-selected="false"><span class="n">☁️</span>저장·제출</button>
   </nav>
 
   <!-- ───────── 목표·재료 ───────── -->
@@ -459,33 +470,38 @@ input::placeholder,textarea::placeholder{color:var(--sub);opacity:.8}
   <!-- ───────── 제출 ───────── -->
   <section class="panel" id="p-send" role="tabpanel" aria-labelledby="t-send" hidden>
     <div class="card">
-      <div class="ch"><div class="eyebrow">Submit · 선생님께 제출</div><h2>내 기록과 사진 제출하기</h2>
-        <p class="note">제출하면 이 기기에 쓴 목표·계획서·기록·테스트·개선·성찰이 사진과 함께 선생님께 가고, <b>학습지 PDF로 자동 변환</b>돼요. 여러 번 제출해도 괜찮아요 — 마지막 제출이 남아요.</p></div>
+      <div class="ch"><div class="eyebrow">Save · 내 정보와 저장</div><h2>매시간 저장하고, 언제든 불러와요</h2>
+        <p class="note"><b>☁️ 저장</b>하면 지금까지 쓴 내용과 사진이 선생님 서버에 보관돼요. 수업이 끝나기 전에 꼭 저장! 다음 시간에 다른 기기를 쓰더라도 <b>📥 불러오기</b>로 이어서 고치고 다시 쓸 수 있어요.</p></div>
       <div class="idrow">
         <label class="fl"><span>반</span><select data-k="sbban"><option value="">반 고르기</option></select></label>
         <label class="fl"><span>번호</span><select data-k="sbno"><option value="">번호 고르기</option></select></label>
         <label class="fl"><span>이름</span><input type="text" data-k="sbname" maxlength="20" autocomplete="off" placeholder="이름"></label>
-        <label class="fl"><span>제출 비밀번호 (숫자 4자리)</span><input type="password" id="sbpin" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="●●●●"></label>
+        <label class="fl"><span>내 비밀번호 (숫자 4자리)</span><input type="password" id="sbpin" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="●●●●"></label>
       </div>
-      <p class="note">비밀번호는 <b>처음 제출할 때 정하고</b>, 다시 제출할 때 같은 번호를 써요. 다른 친구가 내 이름으로 덮어쓰지 못하게 지켜 줘요. 잊었으면 선생님께 말해요.</p>
+      <p class="note">비밀번호는 <b>처음 저장할 때 정하고</b>, 저장·불러오기·제출 때 같은 번호를 써요. 다른 친구가 내 기록을 덮어쓰거나 가져가지 못하게 지켜 줘요. 잊었으면 선생님께 말해요. 비밀번호를 넣어 두면 창을 닫기 전까지 <b>3분마다 자동 저장</b>돼요.</p>
+      <div class="btnrow">
+        <button type="button" class="btn primary" id="saveBtn">☁️ 저장하기</button>
+        <button type="button" class="btn" id="loadBtn">📥 저장한 것 불러오기</button>
+      </div>
+      <div class="smsg" id="saveMsg" role="status" aria-live="polite" hidden></div>
     </div>
 
     <div class="card">
       <div class="ch"><div class="eyebrow">C-3 · Photos</div><h2>완성품 사진 (앞·옆·위)</h2>
         <div class="crit"><span class="badge">C-3</span><span class="top"><b>7-8점</b>앞·옆·위 모습을 이름표(차체·모터·기어·건전지 위치)와 함께</span></div>
-        <p class="note">칸을 누르면 카메라나 앨범이 열려요. 사진은 제출할 때만 보내고, 이 기기에는 남지 않아요. 다시 제출할 때 사진을 안 고르면 예전 사진이 그대로 남아요.</p></div>
+        <p class="note">칸을 누르면 카메라나 앨범이 열려요. 고른 사진은 이 기기에 남고, 저장할 때 서버로 가요. 사진을 바꾸고 싶으면 그 칸을 다시 눌러 새로 고르면 돼요.</p></div>
       <div class="photos" id="photos"></div>
     </div>
 
     <div class="card">
-      <div class="ch"><div class="eyebrow">Check</div><h2>제출 전 확인</h2><p class="note">빈 곳이 있어도 제출할 수 있지만, 채울수록 점수에 가까워져요.</p></div>
+      <div class="ch"><div class="eyebrow">Final · 최종 제출</div><h2>다 끝났으면 최종 제출</h2><p class="note">최종 제출하면 선생님께 <b>학습지 PDF</b>가 만들어져요. 빈 곳이 있어도 제출할 수 있지만, 채울수록 점수에 가까워져요. 제출한 뒤에도 고쳐서 다시 제출할 수 있어요.</p></div>
       <ul class="sendlist" id="sendlist"></ul>
-      <button type="button" class="btn primary sendbtn" id="sendBtn">📮 선생님께 제출하기</button>
+      <button type="button" class="btn primary sendbtn" id="sendBtn">📮 최종 제출하기 (학습지 PDF)</button>
       <div class="smsg" id="sendMsg" role="status" aria-live="polite" hidden></div>
     </div>
   </section>
 
-  <div class="foot"><span>모든 기록과 사진은 이 기기에 자동 저장돼요. 새로고침해도 남아요.</span><button class="btn warn" id="wipe" type="button">내 기록 모두 지우기</button></div>
+  <div class="foot"><span>기록과 사진은 이 기기에 자동 저장되고, ☁️ 저장을 누르면 서버에도 보관돼요.</span><button class="btn warn" id="wipe" type="button">내 기록 모두 지우기</button></div>
 </div>
 
 <script>
@@ -786,7 +802,7 @@ twoTap($("wipe"),"내 기록 모두 지우기",()=>{
   initTestDefaults();
   document.querySelectorAll("[data-c]").forEach(c=>c.checked=false);
   fill(document); curStep=0; renderRoad(); renderDetail(); checkGoals(); updateTests();
-  location.reload(); // 사진 미리보기까지 깨끗하게
+  noFlush=true; location.reload(); // 사진 미리보기까지 깨끗하게
 });
 
 /* ───── 제출 ───── */
@@ -872,32 +888,120 @@ function collect(){
     d4:{good:g("d4good"),bad:g("d4bad"),change:g("d4change"),learn:g("d4learn")}
   };
 }
-function sendMsg(cls,txt){const m=$("sendMsg"); m.hidden=false; m.className="smsg "+cls; m.textContent=txt;}
-$("sendBtn").onclick=async()=>{
-  const ban=val("sbban"), no=val("sbno"), name=val("sbname").trim(), pin=$("sbpin").value.trim();
-  if(!SUBMIT_URL) return sendMsg("err","아직 제출 주소가 설정되지 않았어요. 선생님께 알려 주세요.");
-  if(!ban||!no) return sendMsg("err","반과 번호를 골라 주세요.");
-  if(!name) return sendMsg("err","이름을 써 주세요.");
-  if(!/^\d{4}$/.test(pin)) return sendMsg("err","제출 비밀번호를 숫자 4자리로 써 주세요.");
-  const written=sendStats().filter(x=>x[1]!=="사진").reduce((s,x)=>s+x[2],0);
+function sendMsg(cls,txt,id){const m=$(id||"sendMsg"); m.hidden=false; m.className="smsg "+cls; m.textContent=txt;}
+const ssn={get(k){try{return sessionStorage.getItem(k)}catch(e){return null}},set(k,v){try{sessionStorage.setItem(k,v)}catch(e){}}};
+$("sbpin").value=ssn.get(PFX+"pin")||"";
+$("sbpin").addEventListener("input",()=>{ssn.set(PFX+"pin",$("sbpin").value.trim()); updateCloud();});
+const info=()=>({ban:val("sbban"),no:val("sbno"),name:val("sbname").trim(),pin:$("sbpin").value.trim()});
+function infoProblem(i){
+  if(!SUBMIT_URL) return "아직 저장 주소가 설정되지 않았어요. 선생님께 알려 주세요.";
+  if(!i.ban||!i.no) return "'저장·제출' 탭에서 반과 번호를 골라 주세요.";
+  if(!i.name) return "'저장·제출' 탭에서 이름을 써 주세요.";
+  if(!/^\d{4}$/.test(i.pin)) return "'저장·제출' 탭에서 내 비밀번호(숫자 4자리)를 써 주세요.";
+  return "";
+}
+const writtenCount=()=>sendStats().filter(x=>x[1]!=="사진").reduce((s,x)=>s+x[2],0);
+let busy=false, noFlush=false;
+const setDirty=v=>{save("dirty",v?"1":""); updateCloud();};
+/* 서버로 보내기: action = save(저장) | submit(최종 제출) */
+async function push(action,quiet){
+  const i=info(), prob=infoProblem(i), msgId=action==="submit"?"sendMsg":"saveMsg";
+  if(prob){ if(!quiet){ sendMsg("err",prob,msgId); updateCloud(prob); } return false; }
+  if(busy) return false;
+  const written=writtenCount();
   const toSend={}; VIEWS.forEach(([k])=>{ if(photos[k]&&!photos[k].sent) toSend[k]={full:photos[k].full,thumb:photos[k].thumb}; });
-  if(!written&&!Object.keys(toSend).length) return sendMsg("err","아직 쓴 내용도, 새로 고른 사진도 없어요.");
-  const btn=$("sendBtn"); btn.disabled=true;
-  sendMsg("wait",Object.keys(toSend).length?"사진과 기록을 보내는 중… 창을 닫지 말고 잠깐 기다려요 ⏳":"기록을 보내는 중… ⏳");
+  if(!written&&!Object.keys(toSend).length&&action==="save"){ if(!quiet) sendMsg("err","아직 쓴 내용도, 새로 고른 사진도 없어요.",msgId); return false; }
+  busy=true; ["saveBtn","sendBtn","cloudBtn"].forEach(id=>$(id).disabled=true);
+  if(!quiet) sendMsg("wait",Object.keys(toSend).length?"사진과 기록을 보내는 중… 창을 닫지 말고 잠깐 기다려요 ⏳":"보내는 중… ⏳",msgId);
+  $("cloudSt").textContent="☁️ 서버에 저장하는 중…";
+  let ok=false;
   try{
-    const res=await fetch(SUBMIT_URL,{method:"POST",body:JSON.stringify({action:"submit",ban,no,name,pin,answers:written?collect():null,photos:toSend})});
+    const res=await fetch(SUBMIT_URL,{method:"POST",body:JSON.stringify({action,ban:i.ban,no:i.no,name:i.name,pin:i.pin,answers:written?collect():null,photos:toSend})});
     const out=await res.json();
     if(out.ok){
-      save("sblast",out.time||"");
+      ok=true;
       Object.keys(toSend).forEach(k=>{photos[k].sent=true; keepPhoto(k);});
-      sendMsg("ok",`제출 완료! 🎉 ${out.time||""} · ${out.count}번째 제출이에요.${written?"":" (이 기기에는 쓴 내용이 없어서 사진만 보냈고, 예전에 낸 답안은 그대로 남아요.)"}${out.pdf?" 학습지 PDF도 만들어졌어요.":""} 고치고 싶으면 다시 제출해도 돼요.`);
-    } else sendMsg("err",out.msg||"제출하지 못했어요. 다시 눌러 주세요.");
-  }catch(err){ sendMsg("err","인터넷 연결을 확인하고 다시 눌러 주세요. (기록은 이 기기에 그대로 있어요)"); }
-  btn.disabled=false;
+      save("lastSave",out.time||""); if(action==="submit") save("lastSubmit",out.time||"");
+      save("dirty","");
+      if(!quiet) sendMsg("ok",action==="submit"
+        ?`최종 제출 완료! 🎉 ${out.time||""} · ${out.count}번째 제출이에요.${out.pdf?" 학습지 PDF도 만들어졌어요.":""} 고치고 싶으면 다시 제출해도 돼요.`
+        :`☁️ 저장했어요! ${out.time||""} · 다음 시간에 '📥 불러오기'로 이어서 쓸 수 있어요.${written?"":" (이 기기에는 쓴 글이 없어서 사진만 저장했어요.)"}`,msgId);
+    } else if(!quiet) sendMsg("err",out.msg||"저장하지 못했어요. 다시 눌러 주세요.",msgId);
+  }catch(err){ if(!quiet) sendMsg("err","인터넷 연결을 확인하고 다시 눌러 주세요. (기록은 이 기기에 그대로 있어요)",msgId); }
+  busy=false; ["saveBtn","sendBtn","cloudBtn"].forEach(id=>$(id).disabled=false);
+  updateCloud(); return ok;
+}
+$("saveBtn").onclick=()=>push("save");
+$("sendBtn").onclick=()=>push("submit");
+$("cloudBtn").onclick=()=>{
+  const prob=infoProblem(info());
+  if(prob){ showTab("send"); const f=["sbban","sbno","sbname"].find(k=>!val(k).trim()); (f?document.querySelector(`[data-k="${f}"]`):$("sbpin")).focus(); updateCloud(prob); return; }
+  push("save");
 };
+function updateCloud(warn){
+  const c=$("cloud"), st=$("cloudSt"), last=val("lastSave"), dirty=val("dirty")==="1";
+  if(busy) return;
+  c.className="cloud "+(dirty?"dirty":last?"clean":"");
+  if(warn){ st.textContent="⚠️ "+warn; c.className="cloud dirty"; return; }
+  st.innerHTML="";
+  const b=document.createElement("b");
+  if(!last&&!dirty){ b.textContent="☁️ 아직 서버에 저장한 적 없어요"; st.append(b," · 수업이 끝나기 전에 꼭 저장해요"); }
+  else if(dirty){ b.textContent="저장 안 된 내용이 있어요"; st.append(b,last?` · 마지막 저장 ${last}`:" · 아직 서버 저장 전"); }
+  else { b.textContent="✓ 서버에 저장됨"; st.append(b,` · ${last}`); }
+  if(/^\d{4}$/.test($("sbpin").value.trim())) st.append(" · 3분마다 자동 저장 중");
+}
+/* 불러오기: 서버에 저장한 내용 → 이 기기로 (두 번 눌러 확인) */
+(function(){
+  const btn=$("loadBtn"), label=btn.textContent; let armed=0,t;
+  btn.addEventListener("click",async()=>{
+    const i=info();
+    if(!SUBMIT_URL) return sendMsg("err","아직 저장 주소가 설정되지 않았어요.","saveMsg");
+    if(!i.ban||!i.no) return sendMsg("err","반과 번호를 먼저 골라 주세요.","saveMsg");
+    if(!/^\d{4}$/.test(i.pin)) return sendMsg("err","내 비밀번호(숫자 4자리)를 써 주세요.","saveMsg");
+    if(writtenCount()>0&&!armed){ armed=1; btn.textContent="한 번 더 누르면 이 기기 내용이 저장한 내용으로 바뀌어요"; t=setTimeout(()=>{armed=0;btn.textContent=label;},4000); return; }
+    clearTimeout(t); armed=0; btn.textContent=label; btn.disabled=true;
+    sendMsg("wait","저장한 내용을 가져오는 중… ⏳","saveMsg");
+    try{
+      const out=await (await fetch(SUBMIT_URL,{method:"POST",body:JSON.stringify({action:"load",ban:i.ban,no:i.no,pin:i.pin})})).json();
+      if(!out.ok){ btn.disabled=false; return sendMsg("err",out.msg||"불러오지 못했어요.","saveMsg"); }
+      applyLoaded(out);
+      sendMsg("ok","불러왔어요! 화면을 새로 고칠게요…","saveMsg");
+      noFlush=true; setTimeout(()=>location.reload(),600);
+    }catch(e){ btn.disabled=false; sendMsg("err","인터넷 연결을 확인하고 다시 눌러 주세요.","saveMsg"); }
+  });
+})();
+function applyLoaded(out){
+  const keep=["sbban","sbno","sbname","tab"];
+  try{ Object.keys(localStorage).filter(k=>k.startsWith(PFX)&&!keep.includes(k.slice(PFX.length))).forEach(k=>ls.del(k)); }catch(e){}
+  const a=out.answers||{}, S=(k,v)=>save(k,v==null?"":String(v));
+  (a.goals||[]).forEach((g,i)=>{S("g"+i,g.text);S("gt"+i,g.type);});
+  (a.plan||[]).forEach((p,i)=>{S(`pl${i}-a`,p.task);S(`pl${i}-b`,p.time);S(`pl${i}-c`,p.mat);S(`pl${i}-d`,p.tool);});
+  S("plwhy",a.planWhy);
+  (a.steps||[]).forEach((x,i)=>{S("done"+i,x.done?"1":"");S(`rec${i}-a`,x.today);S(`rec${i}-b`,x.safety);S(`rec${i}-c`,x.solve);});
+  (a.self||[]).forEach((x,i)=>S("self"+i,x.star));
+  (a.changes||[]).forEach((c,r)=>{S(`chg${r}-k`,c.kind);S(`chg${r}-a`,c.before);S(`chg${r}-b`,c.after);S(`chg${r}-c`,c.why);});
+  (a.testDesign||[]).forEach((d,t)=>{S(`td${t}-0`,d.goal);S(`td${t}-1`,d.what);S(`td${t}-2`,d.how);S(`td${t}-3`,d.count);});
+  (a.tests||[]).forEach((x,t)=>{S(`t${t}name`,x.name);S(`t${t}unit`,x.unit);S(`t${t}dir`,x.dir);S(`t${t}target`,x.target);(x.r||[]).forEach((v,r)=>S(`t${t}r${r}`,v));});
+  S("overall",a.overall);
+  (a.imps||[]).forEach((m,i)=>{S(`imp${i}-a`,m.problem);S(`imp${i}-b`,m.how);S(`imp${i}-c`,m.effect);});
+  const d=a.d4||{}; S("d4good",d.good);S("d4bad",d.bad);S("d4change",d.change);S("d4learn",d.learn);
+  if(out.name) S("sbname",out.name);
+  Object.keys(out.photos||{}).forEach(k=>{photos[k]=out.photos[k]; keepPhoto(k);});
+  S("lastSave",out.saveTime||""); S("lastSubmit",out.submitTime||""); S("dirty","");
+  initTestDefaults();
+}
+/* 바뀐 내용 표시 + 3분마다 자동 저장 + 창 닫을 때 마지막 저장 */
+document.addEventListener("input",e=>{ const k=e.target.dataset&&e.target.dataset.k; if(k&&!k.startsWith("sb")) setDirty(true); });
+document.addEventListener("change",e=>{ if(e.target.closest&&e.target.closest("#photos")) setDirty(true); });
+setInterval(()=>{ if(val("dirty")==="1"&&!infoProblem(info())) push("save",true); },180000);
+window.addEventListener("pagehide",()=>{
+  if(noFlush||val("dirty")!=="1"||infoProblem(info())||!navigator.sendBeacon) return;
+  const i=info(), w=writtenCount(); if(!w) return;
+  try{ navigator.sendBeacon(SUBMIT_URL,new Blob([JSON.stringify({action:"save",ban:i.ban,no:i.no,name:i.name,pin:i.pin,answers:collect(),photos:{}})],{type:"text/plain"})); }catch(e){}
+});
 document.addEventListener("input",()=>{ if(!$("p-send").hidden) updateSendList(); });
 // 한글 입력 중 마지막 글자까지: 조합이 끝날 때, 칸을 벗어날 때, 새로고침·창 닫기 직전에 한 번 더 저장
-function flushAll(){ document.querySelectorAll("[data-k]").forEach(el=>{ if(el.type==="radio"){ if(el.checked) save(el.dataset.k,el.value); } else save(el.dataset.k,el.value); }); }
+function flushAll(){ if(noFlush) return; document.querySelectorAll("[data-k]").forEach(el=>{ if(el.type==="radio"){ if(el.checked) save(el.dataset.k,el.value); } else save(el.dataset.k,el.value); }); }
 document.addEventListener("compositionend",e=>{const el=e.target; if(el.dataset&&el.dataset.k) save(el.dataset.k,el.value);});
 document.addEventListener("focusout",e=>{const el=e.target; if(el.dataset&&el.dataset.k&&el.type!=="radio") save(el.dataset.k,el.value);});
 window.addEventListener("pagehide",flushAll);
@@ -925,7 +1029,7 @@ TABS.forEach((t,i)=>{
 const hashTab=(location.hash||"").replace("#","");
 showTab(TABS.includes(hashTab)?hashTab:(TABS.includes(val("tab"))?val("tab"):"plan"));
 
-renderRoad(); renderDetail(); checkGoals(); updateTests();
+renderRoad(); renderDetail(); checkGoals(); updateTests(); updateCloud();
 </script>
 </body>
 </html>
