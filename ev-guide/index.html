@@ -333,7 +333,7 @@ input::placeholder,textarea::placeholder{color:var(--sub);opacity:.8}
         <div class="crit"><span class="badge">C-1</span><span class="top"><b>7-8점</b>순서·시간(차시)·재료·도구 4가지를 모두 구체적으로 (친구가 그대로 따라 만들 수 있게)</span></div>
         <p class="note">'제작 6단계' 탭의 계획 예시를 참고하되, <b>내 차에 맞는 치수·재료·도구</b>로 직접 써요.</p></div>
       <div class="myplan" id="myplan"></div>
-      <label class="fl"><span>이 순서인 까닭</span><textarea data-k="plwhy" placeholder="예) ○○을 먼저 해야 △△을 할 수 있기 때문이다."></textarea></label>
+      <label class="fl"><span>이 순서인 까닭</span><textarea data-k="plwhy" ></textarea></label>
     </div>
 
     <div class="card">
@@ -427,7 +427,7 @@ input::placeholder,textarea::placeholder{color:var(--sub);opacity:.8}
       <div class="tests" id="tres"></div>
       <div class="row"><button class="btn" id="demo" type="button">예시 데이터 넣기</button><button class="btn warn" id="resetT" type="button">기록표 지우기</button></div>
       <label class="fl"><span>종합 평가 — 이 결과를 믿을 수 있나요? 오차가 생긴 까닭, 아쉬운 점</span>
-        <textarea data-k="overall" placeholder="예) 같은 바닥에서 3번 쟀지만 2회차에 출발 방향이 조금 비뚤어서 결과가 달라졌을 수 있다. 줄자를 바닥에 고정하지 않아 몇 cm 오차가 있을 수 있다."></textarea></label>
+        <textarea data-k="overall" ></textarea></label>
     </div>
 
     <div class="card">
@@ -452,10 +452,10 @@ input::placeholder,textarea::placeholder{color:var(--sub);opacity:.8}
       <div class="ch"><h3>모형 부품 ↔ 실제 전기차 부품</h3>
         <div class="map"><div><small>건전지</small><b>배터리</b></div><div><small>스위치</small><b>가속 페달</b></div><div><small>모터</small><b>구동 모터</b></div><div><small>기어</small><b>감속기</b></div></div></div>
       <div class="two">
-        <label class="fl"><span>좋은 점과 까닭</span><textarea data-k="d4good" placeholder="예) 배기가스가 없어 동네 공기가 덜 나빠진다(환경). 스위치가 밖에 있어 한 손으로 쉽게 켠다(사람)."></textarea></label>
-        <label class="fl"><span>아쉬운 점과 까닭</span><textarea data-k="d4bad" placeholder="예) 건전지가 빨리 닳아 먼 거리는 못 간다. 충전·교체가 번거롭다."></textarea></label>
-        <label class="fl"><span>더 안전·편리하려면 바꿀 점</span><textarea data-k="d4change" placeholder="예) 안전바를 더 높여 경사에서도 탑승객이 안 떨어지게 한다."></textarea></label>
-        <label class="fl"><span>배운 점 · 다음에 다르게 할 점</span><textarea data-k="d4learn" placeholder="예) 축을 수직으로 다는 게 직진에 중요하다는 것을 배웠다. 다음엔 붙이기 전에 자로 먼저 잰다."></textarea></label>
+        <label class="fl"><span>좋은 점과 까닭</span><textarea data-k="d4good" ></textarea></label>
+        <label class="fl"><span>아쉬운 점과 까닭</span><textarea data-k="d4bad" ></textarea></label>
+        <label class="fl"><span>더 안전·편리하려면 바꿀 점</span><textarea data-k="d4change" ></textarea></label>
+        <label class="fl"><span>배운 점 · 다음에 다르게 할 점</span><textarea data-k="d4learn" ></textarea></label>
       </div>
     </div>
 
@@ -545,7 +545,7 @@ const GOAL_EX=[["1m 이상 직선으로 간다","성능"],["10초 안에 3m를 �
 const GTYPES=["성능","안전","편리","규격","기타"];
 $("chips").innerHTML=GOAL_EX.map(([t,ty],i)=>`<button type="button" class="chip" data-i="${i}"><em class="${ty==="안전"||ty==="편리"?"s":""}">${ty}</em>${t}</button>`).join("");
 $("goals").innerHTML=[0,1,2].map(i=>`<div class="goal"><span class="no" aria-hidden="true">${"①②③"[i]}</span>
-  <input type="text" data-k="g${i}" aria-label="목표 ${i+1}" placeholder="목표 ${i+1}: 예시를 누르거나 직접 쓰기">
+  <input type="text" data-k="g${i}" aria-label="목표 ${i+1}" placeholder="목표 ${i+1}">
   <select data-k="gt${i}" aria-label="목표 ${i+1} 종류"><option value="">종류 고르기</option>${GTYPES.map(t=>`<option>${t}</option>`).join("")}</select></div>`).join("");
 fill($("goals"));
 let lastGoal=-1;
@@ -579,10 +579,10 @@ const PLAN_HINT=[
   ["검사하기","무엇을 어떻게 확인할까? (작동·치수·안전)"]
 ];
 $("myplan").innerHTML=[0,1,2,3,4,5].map(i=>`<div class="prow"><span class="pn" aria-hidden="true">${i+1}</span>
-  <label class="fl"><span>${i+1}. 할 일 <em style="font-style:normal;font-weight:500;font-size:13.5px;background:var(--accent-soft);color:var(--accent);border-radius:8px;padding:1px 8px;margin-left:4px">💡 ${PLAN_HINT[i][0]}</em></span><textarea data-k="pl${i}-a" placeholder="${PLAN_HINT[i][0]} → ${PLAN_HINT[i][1]}"></textarea></label>
-  <label class="fl"><span>시간</span><input type="text" data-k="pl${i}-b" placeholder="예) 1차시"></label>
-  <label class="fl"><span>재료</span><input type="text" data-k="pl${i}-c" placeholder="크기·개수까지"></label>
-  <label class="fl"><span>도구</span><input type="text" data-k="pl${i}-d" placeholder="사용할 도구"></label></div>`).join("");
+  <label class="fl"><span>${i+1}. 할 일 <em style="font-style:normal;font-weight:500;font-size:13.5px;background:var(--accent-soft);color:var(--accent);border-radius:8px;padding:1px 8px;margin-left:4px">💡 ${PLAN_HINT[i][0]}</em></span><textarea data-k="pl${i}-a" ></textarea></label>
+  <label class="fl"><span>시간</span><input type="text" data-k="pl${i}-b" ></label>
+  <label class="fl"><span>재료</span><input type="text" data-k="pl${i}-c" ></label>
+  <label class="fl"><span>도구</span><input type="text" data-k="pl${i}-d" ></label></div>`).join("");
 fill($("myplan"));
 
 /* ───── 재료·공구 ───── */
@@ -716,7 +716,7 @@ function renderDetail(){
     <div class="log">
       <div class="crit"><span class="badge">C-2</span><h3>오늘의 기록 · ${i+1}단계</h3></div>
       <p class="note">차시가 끝나기 5분 전에 3칸을 채워요. 사진이나 그림도 남겨 두세요.</p>
-      <div class="log3">${REC.map(([f,l,ph])=>`<label class="fl"><span>${l}</span><textarea data-k="rec${i}-${f}" placeholder="${ph}"></textarea></label>`).join("")}</div>
+      <div class="log3">${REC.map(([f,l,ph])=>`<label class="fl"><span>${l}</span><textarea data-k="rec${i}-${f}" ></textarea></label>`).join("")}</div>
     </div>
     <div class="stepnav">
       <button type="button" class="btn" id="prevS" ${i===0?"disabled":""}>‹ 이전</button>
@@ -734,9 +734,9 @@ $("road").addEventListener("click",e=>{const b=e.target.closest(".rs"); if(b) go
 /* C-4 바꾼 점 */
 $("chg").innerHTML=[0,1].map(r=>`<div class="chg">
   <label class="fl"><span>구분</span><select data-k="chg${r}-k"><option value="">고르기</option><option>디자인 변경</option><option>계획 변경</option><option>그 밖의 변경</option></select></label>
-  <label class="fl"><span>처음 계획</span><input type="text" data-k="chg${r}-a" placeholder="처음엔 어떻게?"></label>
-  <label class="fl"><span>바꾼 내용</span><input type="text" data-k="chg${r}-b" placeholder="어떻게 바꿨나?"></label>
-  <label class="fl"><span>바꾼 까닭</span><input type="text" data-k="chg${r}-c" placeholder="왜 바꿨나?"></label></div>`).join("");
+  <label class="fl"><span>처음 계획</span><input type="text" data-k="chg${r}-a" ></label>
+  <label class="fl"><span>바꾼 내용</span><input type="text" data-k="chg${r}-b" ></label>
+  <label class="fl"><span>바꾼 까닭</span><input type="text" data-k="chg${r}-c" ></label></div>`).join("");
 fill($("chg"));
 
 /* C-3 자기점검 */
@@ -747,7 +747,7 @@ fill($("self"));
 /* ───── 평가 ───── */
 const TD=[["목표","예) 3m 이상 간다"],["재는 것과 단위","예) 이동 거리(m)"],["재는 방법","예) 출발선에서 멈춘 곳까지 줄자로 잰다"],["횟수","예) 3번"]];
 const TD2=["예) 3m를 갈 때 옆으로 30cm 이내로 벗어난다","예) 옆으로 벗어난 거리(cm)","예) 가운데 선에서 멈춘 곳까지 옆 거리를 줄자로 잰다","예) 3번"];
-$("tdesign").innerHTML=[0,1].map(t=>`<div class="tcard"><h3>테스트 ${t+1} 설계</h3>${TD.map(([l,ph],j)=>`<label class="fl"><span>${["확인할 목표","재는 것과 단위","재는 방법","횟수"][j]}</span><input type="text" data-k="td${t}-${j}" placeholder="${t?TD2[j]:ph}"></label>`).join("")}</div>`).join("");
+$("tdesign").innerHTML=[0,1].map(t=>`<div class="tcard"><h3>테스트 ${t+1} 설계</h3>${TD.map(([l,ph],j)=>`<label class="fl"><span>${["확인할 목표","재는 것과 단위","재는 방법","횟수"][j]}</span><input type="text" data-k="td${t}-${j}" ></label>`).join("")}</div>`).join("");
 fill($("tdesign"));
 
 const TDEF=[{name:"이동 거리",unit:"m",dir:"이상",target:"3.0"},{name:"옆으로 벗어난 거리",unit:"cm",dir:"이하",target:"30"}];
@@ -802,9 +802,9 @@ twoTap($("resetT"),"기록표 지우기",()=>{[0,1].forEach(t=>[0,1,2].forEach(r
 
 /* D-3 내 개선 */
 $("mimp").innerHTML=[0,1].map(i=>`<div class="imp mine">
-  <label class="prob"><b>내 개선 ${i+1} · 문제점 (테스트 결과)</b><input type="text" data-k="imp${i}-a" placeholder="예) 3회 중 1회가 2.6m밖에 못 감"></label>
-  <label class="sol"><b>개선 방법 (무엇을 · 어떻게)</b><input type="text" data-k="imp${i}-b" placeholder="무엇을 어떻게 바꿀까?"></label>
-  <label class="eff"><b>기대 효과</b><input type="text" data-k="imp${i}-c" placeholder="바꾸면 어떻게 좋아질까?"></label></div>`).join("");
+  <label class="prob"><b>내 개선 ${i+1} · 문제점 (테스트 결과)</b><input type="text" data-k="imp${i}-a" ></label>
+  <label class="sol"><b>개선 방법 (무엇을 · 어떻게)</b><input type="text" data-k="imp${i}-b" ></label>
+  <label class="eff"><b>기대 효과</b><input type="text" data-k="imp${i}-c" ></label></div>`).join("");
 fill(document);
 
 /* 진행률: 제작 완료 6 + 기록 6 */
