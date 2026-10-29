@@ -256,6 +256,8 @@ input::placeholder,textarea::placeholder{color:var(--sub);opacity:.8}
 .photo.has .box{border-style:solid;border-color:var(--accent);padding:0}
 .photo input{position:absolute;inset:0;opacity:0;cursor:pointer}
 .photo input:focus-visible+.box{outline:2px solid var(--accent);outline-offset:2px}
+.phwrap{display:flex;flex-direction:column;gap:6px;min-width:0}
+.phdel{min-height:40px;font-size:14.5px;color:var(--bad);border-color:var(--bad)}
 .sendlist{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .sendlist .b{white-space:nowrap}
 .sendlist li{display:flex;align-items:center;gap:8px;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:15px}
@@ -723,9 +725,7 @@ function renderDetail(){
       <p class="note">계획에 따라 만들고, 차시가 끝나기 5분 전에 3칸을 빠짐없이 채워요.</p>
       <div class="log3">${REC.map(([f,l,ph])=>`<label class="fl"><span>${l}</span><textarea data-k="rec${i}-${f}" ></textarea></label>`).join("")}</div>
       <div class="crit" style="margin-top:6px"><span class="badge">C-2 ③</span><h3>오늘의 과정 사진</h3></div>
-      <div class="photos one"><label class="photo" id="ph-s${i}"><span class="ttl">${i+1}단계 · ${D.t}</span>
-        <input type="file" accept="image/*" data-v="s${i}" aria-label="${i+1}단계 과정 사진 고르기">
-        <span class="box"><span>📷<br>오늘 만든 모습<br>누르면 고를 수 있어요</span></span></label></div>
+      <div class="photos one">${photoSlot("s"+i,`${i+1}단계 · ${D.t}`,"오늘 만든 모습",`${i+1}단계 과정 사진`)}</div>
     </div>
     <div class="stepnav">
       <button type="button" class="btn" id="prevS" ${i===0?"disabled":""}>‹ 이전</button>
@@ -820,15 +820,33 @@ const VIEWS=[["front","앞"],["side","옆"],["top","위"]];
 const STEP_PH=[0,1,2,3,4,5].map(i=>["s"+i,(i+1)+"단계"]);
 const ALLPH=[...VIEWS,...STEP_PH];
 const photos={};
+const live=k=>!!(photos[k]&&!photos[k].del);
+const EMPTY_BOX=hint=>`<span>📷<br>${hint}<br>누르면 고를 수 있어요</span>`;
+// 사진 칸 하나: 누르면 고르기, 아래 버튼으로 지우기
+function photoSlot(k,title,hint,aria){
+  return `<div class="phwrap"><label class="photo" id="ph-${k}" data-hint="${hint}"><span class="ttl">${title}</span>
+    <input type="file" accept="image/*" data-v="${k}" aria-label="${aria} 고르기">
+    <span class="box">${EMPTY_BOX(hint)}</span></label>
+    <button type="button" class="btn phdel" data-del="${k}" hidden>🗑 사진 지우기</button></div>`;
+}
 (function initSend(){
   const bs=document.querySelector('[data-k="sbban"]'), ns=document.querySelector('[data-k="sbno"]');
   for(let i=1;i<=12;i++) bs.insertAdjacentHTML("beforeend",`<option value="${i}">${i}반</option>`);
   for(let i=1;i<=40;i++) ns.insertAdjacentHTML("beforeend",`<option value="${i}">${i}번</option>`);
   fill($("p-send"));
-  $("photos").innerHTML=VIEWS.map(([k,l])=>`<label class="photo" id="ph-${k}"><span class="ttl">${l}</span>
-    <input type="file" accept="image/*" data-v="${k}" aria-label="${l}에서 본 사진 고르기">
-    <span class="box"><span>📷<br>${l}에서 찍은 사진<br>누르면 고를 수 있어요</span></span></label>`).join("");
-  ALLPH.forEach(([k])=>{ try{const o=JSON.parse(val("ph-"+k)||"null"); if(o&&o.full){photos[k]=o; showPhoto(k);} }catch(e){} });
+  $("photos").innerHTML=VIEWS.map(([k,l])=>photoSlot(k,l,`${l}에서 찍은 사진`,`${l}에서 본 사진`)).join("");
+  ALLPH.forEach(([k])=>{ try{const o=JSON.parse(val("ph-"+k)||"null"); if(o&&(o.full||o.del)){photos[k]=o; showPhoto(k);} }catch(e){} });
+  // 사진 지우기 (두 번 눌러 확인) — 서버에 올라간 사진이면 다음 저장 때 서버에서도 지워짐
+  document.addEventListener("click",e=>{
+    const b=e.target.closest&&e.target.closest(".phdel"); if(!b) return;
+    const k=b.dataset.del;
+    if(!b.dataset.armed){ b.dataset.armed="1"; b.textContent="한 번 더 누르면 지워져요"; setTimeout(()=>{delete b.dataset.armed; b.textContent="🗑 사진 지우기";},3000); return; }
+    delete b.dataset.armed; b.textContent="🗑 사진 지우기";
+    const inp=document.querySelector(`input[data-v="${k}"]`); if(inp) inp.value="";
+    if(photos[k]&&photos[k].srv){ photos[k]={del:true,sent:false,srv:true}; keepPhoto(k); }
+    else { delete photos[k]; ls.del(PFX+"ph-"+k); }
+    showPhoto(k); updateSendList(); setDirty(true);
+  });
   // 완성품 사진(앞·옆·위)과 단계별 과정 사진 모두 여기서 처리
   document.addEventListener("change",async e=>{
     const inp=e.target; if(!inp.matches||!inp.matches('input[type="file"][data-v]')) return;
@@ -839,13 +857,16 @@ const photos={};
       const img=await loadImg(inp.files[0]), step=k[0]==="s";
       const full=shrink(img,step?960:1280,step?.75:.82); let thumb=step?shrink(img,240,.55):shrink(img,360,.6);
       for(let q=.5;thumb.length>45000&&q>.15;q-=.1) thumb=shrink(img,300,q);
-      photos[k]={full,thumb,sent:false}; keepPhoto(k); showPhoto(k);
+      photos[k]={full,thumb,sent:false,srv:!!(photos[k]&&photos[k].srv)}; keepPhoto(k); showPhoto(k);
     }catch(err){ lab.classList.remove("has"); box.innerHTML="<span>사진을 열 수 없어요. 다른 사진으로 다시 골라 주세요.</span>"; }
     updateSendList(); setDirty(true);
   });
 })();
 function showPhoto(k){
-  const lab=$("ph-"+k); if(!lab||!photos[k]) return;
+  const lab=$("ph-"+k); if(!lab) return;
+  const delBtn=lab.parentNode.querySelector(".phdel");
+  if(!live(k)){ lab.classList.remove("has"); lab.querySelector(".box").innerHTML=EMPTY_BOX(lab.dataset.hint||""); if(delBtn) delBtn.hidden=true; return; }
+  if(delBtn) delBtn.hidden=false;
   const box=lab.querySelector(".box"), o=photos[k];
   box.innerHTML=""; const im=new Image(); im.src=o.thumb||o.full; im.alt=ALLPH.find(x=>x[0]===k)[1]+" 사진 미리보기"; box.appendChild(im);
   lab.classList.add("has");
@@ -874,8 +895,8 @@ function sendStats(){
     ["C-1","계획서 4요소",r6.filter(i=>["a","b","c","d"].every(f=>has(`pl${i}-${f}`))).length+(has("plwhy")?1:0),7],
     ["C-2 ①","안전 수칙",TOOLS.filter(t=>!t[2]&&has("safe-"+t[1])).length,TOOLS.filter(t=>!t[2]).length],
     ["C-2 ②","차시별 기록",r6.filter(recFull).length,6],
-    ["C-2 ③","과정 사진",STEP_PH.filter(([k])=>photos[k]).length,6],
-    ["C-2 ③④","완성품 사진",VIEWS.filter(([k])=>photos[k]).length,3],
+    ["C-2 ③","과정 사진",STEP_PH.filter(([k])=>live(k)).length,6],
+    ["C-2 ③④","완성품 사진",VIEWS.filter(([k])=>live(k)).length,3],
     ["C-2 ④","완성품 점검",cnt([0,1,2,3].map(i=>"self"+i)),4],
     ["C-3 ①","바꾼 점+이유",two.filter(r=>has(`chg${r}-b`)&&has(`chg${r}-c`)).length,2],
     ["C-3 ②·D-1","테스트 방법",two.filter(t=>[0,1,2,3].every(j=>has(`td${t}-${j}`))).length,2],
@@ -933,7 +954,7 @@ async function push(action,quiet){
   if(prob){ if(!quiet){ sendMsg("err",prob,msgId); updateCloud(prob); } return false; }
   if(busy) return false;
   const written=writtenCount();
-  const toSend={}; ALLPH.forEach(([k])=>{ if(photos[k]&&!photos[k].sent) toSend[k]={full:photos[k].full,thumb:photos[k].thumb}; });
+  const toSend={}; ALLPH.forEach(([k])=>{ const o=photos[k]; if(o&&!o.sent) toSend[k]=o.del?{del:true}:{full:o.full,thumb:o.thumb}; });
   if(!written&&!Object.keys(toSend).length&&action==="save"){ if(!quiet) sendMsg("err","아직 쓴 내용도, 새로 고른 사진도 없어요.",msgId); return false; }
   busy=true; ["saveBtn","sendBtn","cloudBtn"].forEach(id=>$(id).disabled=true);
   if(!quiet) sendMsg("wait",Object.keys(toSend).length?"사진과 기록을 보내는 중… 창을 닫지 말고 잠깐 기다려요 ⏳":"보내는 중… ⏳",msgId);
@@ -944,7 +965,7 @@ async function push(action,quiet){
     const out=await res.json();
     if(out.ok){
       ok=true;
-      Object.keys(toSend).forEach(k=>{photos[k].sent=true; keepPhoto(k);});
+      Object.keys(toSend).forEach(k=>{ if(photos[k].del){ delete photos[k]; ls.del(PFX+"ph-"+k); } else { photos[k].sent=true; photos[k].srv=true; keepPhoto(k); } });
       save("lastSave",out.time||""); if(action==="submit") save("lastSubmit",out.time||"");
       save("dirty","");
       if(!quiet) sendMsg("ok",action==="submit"
@@ -1012,7 +1033,8 @@ function applyLoaded(out){
   (a.imps||[]).forEach((m,i)=>{S(`imp${i}-a`,m.problem);S(`imp${i}-b`,m.how);S(`imp${i}-c`,m.effect);});
   const d=a.d4||{}; S("d4good",d.good);S("d4bad",d.bad);S("d4change",d.change);S("d4learn",d.learn);
   if(out.name) S("sbname",out.name);
-  Object.keys(out.photos||{}).forEach(k=>{photos[k]=out.photos[k]; keepPhoto(k);});
+  ALLPH.forEach(([k])=>{ delete photos[k]; });
+  Object.keys(out.photos||{}).forEach(k=>{photos[k]=Object.assign({},out.photos[k],{sent:true,srv:true}); keepPhoto(k);});
   S("lastSave",out.saveTime||""); S("lastSubmit",out.submitTime||""); S("dirty","");
   initTestDefaults();
 }
