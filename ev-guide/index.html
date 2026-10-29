@@ -1,0 +1,905 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>전기차 모형 제작 가이드</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* 모눈 작업대 위 '제작 카드'. 탭 3개(목표·재료 / 제작 6단계 / 평가·개선). 각 카드에 총괄평가 기준 배지(C-1~C-4, D-1~D-4) */
+:root{
+  --bg:#F1F4F1; --grid:#E1E7E2; --surface:#FFFFFF; --surface-2:#F6F8F6; --ink:#16212A; --sub:#55636D; --line:#D6DED8;
+  --accent:#12855E; --accent-ink:#FFFFFF; --accent-soft:#DDF2E8;
+  --caution:#B86E0E; --caution-soft:#FCEFD9; --bad:#C23E31; --bad-soft:#FADFDB;
+  --draw:#24323C; --draw-soft:#9AA8B1; --hl:#12855E;
+  --f-display:"Do Hyeon","Apple SD Gothic Neo",sans-serif;
+  --f-body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#10161A; --grid:#1A2328; --surface:#172026; --surface-2:#1D272E; --ink:#E5ECE8; --sub:#9DAAB2; --line:#2A363D;
+  --accent:#3CC48F; --accent-ink:#0C1A14; --accent-soft:#183329;
+  --caution:#F0B04D; --caution-soft:#3A2D18; --bad:#F06A5B; --bad-soft:#3A1F1C;
+  --draw:#D8E2DD; --draw-soft:#6E7E87; --hl:#3CC48F; color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#10161A; --grid:#1A2328; --surface:#172026; --surface-2:#1D272E; --ink:#E5ECE8; --sub:#9DAAB2; --line:#2A363D;
+  --accent:#3CC48F; --accent-ink:#0C1A14; --accent-soft:#183329;
+  --caution:#F0B04D; --caution-soft:#3A2D18; --bad:#F06A5B; --bad-soft:#3A1F1C;
+  --draw:#D8E2DD; --draw-soft:#6E7E87; --hl:#3CC48F; color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.7;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-top:max(18px,env(safe-area-inset-top,0px));padding-bottom:max(48px,env(safe-area-inset-bottom,0px))}
+.wrap{max-width:960px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+h1,h2,h3{font-family:var(--f-display);font-weight:400;margin:0;text-wrap:balance;letter-spacing:-.01em}
+p{margin:0}
+.mono{font-family:var(--f-mono)}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.12em;color:var(--accent);text-transform:uppercase}
+button{font:inherit;cursor:pointer;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* 머리 */
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px 20px;flex-wrap:wrap}
+.head h1{font-size:clamp(26px,4.4vw,38px);line-height:1.15}
+.head .sub{color:var(--sub);font-size:15px;margin-top:4px}
+.prog{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:14px;color:var(--sub)}
+.prog .bar{width:120px;height:8px;border-radius:4px;background:var(--surface-2);overflow:hidden;border:1px solid var(--line)}
+.prog .bar i{display:block;height:100%;background:var(--accent);width:0;transition:width .3s}
+.prog b{font-family:var(--f-mono);color:var(--ink)}
+
+/* 탭 */
+.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:4px;box-shadow:0 4px 16px rgba(0,0,0,.05)}
+.tab{white-space:nowrap;border:0;background:transparent;border-radius:10px;min-height:46px;font-size:15.5px;color:var(--sub);display:flex;align-items:center;justify-content:center;gap:6px;padding:0 6px}
+.tab .n{font-family:var(--f-mono);font-size:11px;opacity:.7}
+.tab[aria-selected="true"]{background:var(--ink);color:var(--surface)}
+.panel{display:flex;flex-direction:column;gap:16px}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px 22px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.card h2{font-size:24px}
+.card h3{font-size:19px}
+.note{font-size:14.5px;color:var(--sub)}
+.ch{display:flex;flex-direction:column;gap:4px}
+
+/* 기준 배지 + 7-8점 핵심 */
+.crit{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+.badge{font-family:var(--f-mono);font-size:12.5px;font-weight:600;letter-spacing:.04em;background:var(--ink);color:var(--surface);border-radius:7px;padding:2px 8px;flex:none}
+.top{font-size:14.5px;color:var(--ink);background:var(--accent-soft);border-radius:10px;padding:6px 12px;display:flex;gap:8px;align-items:baseline;min-width:0}
+.top b{font-family:var(--f-mono);font-size:12px;color:var(--accent);flex:none}
+
+/* 입력 공통 */
+input[type=text],input[type=number],textarea,select{font:inherit;font-size:16px;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:9px 12px;width:100%;min-height:44px;min-width:0}
+textarea{resize:vertical;min-height:76px;line-height:1.55}
+input::placeholder,textarea::placeholder{color:var(--sub);opacity:.8}
+.fl{display:flex;flex-direction:column;gap:4px;min-width:0}
+.fl>span{font-size:14.5px;font-weight:600}
+.btn{min-height:44px;border-radius:11px;border:1px solid var(--line);background:var(--surface);padding:0 16px;font-size:15.5px;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.warn{border-color:var(--bad);color:var(--bad)}
+.btn:disabled{opacity:.4;cursor:default}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+/* 과제 */
+.brief{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.brief div{background:var(--surface-2);border-radius:12px;padding:10px 14px;font-size:15px}
+.brief b{display:block;font-family:var(--f-mono);font-size:12px;color:var(--accent);letter-spacing:.06em}
+
+/* 목표 */
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{min-height:44px;border:1px dashed var(--accent);background:var(--surface);color:var(--ink);border-radius:99px;padding:6px 14px;font-size:15px;text-align:left;display:inline-flex;align-items:center;gap:8px}
+.chip em{flex:none;white-space:nowrap;font-style:normal;font-family:var(--f-mono);font-size:11.5px;border-radius:6px;padding:1px 6px;background:var(--surface-2);color:var(--sub)}
+.chip em.s{background:var(--accent-soft);color:var(--accent)}
+.chip:hover{background:var(--accent-soft)}
+.goals{display:flex;flex-direction:column;gap:10px}
+.goal{display:grid;grid-template-columns:40px minmax(0,1fr) 120px;gap:8px;align-items:center}
+.goal .no{width:36px;height:36px;border-radius:10px;background:var(--accent-soft);color:var(--accent);font-family:var(--f-display);font-size:20px;display:grid;place-items:center}
+.gwarn{border-radius:12px;padding:10px 14px;font-size:15px;background:var(--caution-soft)}
+.gwarn.ok{background:var(--accent-soft)}
+.req{background:var(--caution-soft);border-radius:12px;padding:10px 14px;font-size:15px;display:flex;gap:10px;align-items:flex-start}
+.req b{flex:none;font-size:12px;font-family:var(--f-mono);color:var(--caution);margin-top:3px;letter-spacing:.06em}
+
+/* 재료·공구 */
+.mats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.mat h3{font-size:18px;display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.mat h3 i{width:10px;height:10px;border-radius:3px;background:var(--accent);display:inline-block}
+.chk{display:flex;flex-direction:column;gap:2px}
+.chk label{display:flex;align-items:center;gap:10px;padding:6px 10px;min-height:44px;border-radius:10px;cursor:pointer;font-size:15.5px}
+.chk label:hover{background:var(--surface-2)}
+.chk input{width:20px;height:20px;accent-color:var(--accent);flex:none}
+.chk input:checked+span{color:var(--sub);text-decoration:line-through}
+.tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.tool{border:1px solid var(--line);border-left:4px solid var(--caution);border-radius:12px;padding:10px 14px;display:flex;flex-direction:column;gap:2px}
+.tool label{display:flex;align-items:center;gap:10px;font-weight:600;min-height:36px;cursor:pointer}
+.tool input{width:20px;height:20px;accent-color:var(--accent);flex:none}
+.tool p{font-size:15px;color:var(--sub)}
+.alert{border:2px solid var(--bad);background:var(--bad-soft);border-radius:12px;padding:10px 14px;font-size:15px}
+.alert b{color:var(--bad)}
+
+/* 로드맵 */
+.road{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+.rs{border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:12px 10px;text-align:left;display:flex;flex-direction:column;gap:2px;position:relative;min-width:0;min-height:44px}
+.rs .no{font-family:var(--f-mono);font-size:11.5px;color:var(--sub)}
+.rs .t{font-family:var(--f-display);font-size:17px;line-height:1.25}
+.rs .d{font-size:13px;color:var(--sub);line-height:1.4}
+.rs .tick{position:absolute;right:8px;top:8px;width:18px;height:18px;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;font-size:11px;color:transparent}
+.rs .rec{position:absolute;right:30px;top:9px;width:9px;height:9px;border-radius:50%;background:transparent;border:1.5px solid var(--line)}
+.rs.recd .rec{background:var(--caution);border-color:var(--caution)}
+.rs.done .tick{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.rs[aria-current="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.legend{font-size:13.5px;color:var(--sub);display:flex;gap:14px;flex-wrap:wrap}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:middle}
+
+/* 계획 미니표 (C-1 4요소) */
+.plan{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.plan div{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:15px;min-width:0}
+.plan b{display:block;font-family:var(--f-mono);font-size:11.5px;color:var(--accent);letter-spacing:.06em}
+.why{font-size:14.5px;color:var(--sub)}
+.why b{color:var(--ink)}
+
+/* 단계 상세 */
+.step{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:20px;align-items:start}
+.fig{background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:12px;margin:0;min-width:0}
+.fig svg{display:block;width:100%;height:auto}
+.fig svg text{font-family:var(--f-body);font-size:12.5px;fill:var(--sub)}
+.fig svg .lbl{fill:var(--ink);font-weight:600}
+.fig svg .hl{fill:var(--hl)}
+.fig figcaption{font-size:14px;color:var(--sub);margin-top:6px}
+.points{display:flex;flex-direction:column;gap:12px;counter-reset:pt}
+.pt{display:grid;grid-template-columns:32px 1fr;gap:10px;align-items:start}
+.pt::before{counter-increment:pt;content:counter(pt);width:28px;height:28px;border-radius:8px;background:var(--accent-soft);color:var(--accent);font-family:var(--f-mono);font-weight:600;display:grid;place-items:center;font-size:13px}
+.pt h4{margin:0;font-size:16px;font-weight:600}
+.pt p{font-size:15.5px;color:var(--sub)}
+.flow{font-family:var(--f-mono);font-size:14px;background:var(--surface-2);border-radius:10px;padding:8px 12px;color:var(--ink)}
+.log{border:1px dashed var(--caution);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;background:color-mix(in srgb,var(--caution-soft) 45%,var(--surface))}
+.log3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.stepnav{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:14px}
+
+/* 변경 기록 / 자기점검 */
+.ex{font-size:14.5px;background:var(--surface-2);border-radius:12px;padding:10px 14px;color:var(--sub)}
+.ex b{color:var(--ink)}
+.chg{display:grid;grid-template-columns:140px repeat(3,minmax(0,1fr));gap:8px;align-items:end;border-top:1px solid var(--line);padding-top:10px}
+.self{display:flex;flex-direction:column;gap:8px}
+.sr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 12px;align-items:center;border-bottom:1px solid var(--line);padding-bottom:8px}
+.stars{display:flex;gap:4px}
+.stars label{position:relative}
+.stars input{position:absolute;opacity:0;inset:0;width:100%;height:100%;margin:0;cursor:pointer}
+.stars span{display:grid;place-items:center;min-width:56px;min-height:44px;border:1px solid var(--line);border-radius:10px;font-size:14px;color:var(--caution);background:var(--surface)}
+.stars input:checked+span{background:var(--caution-soft);border-color:var(--caution);font-weight:700}
+.stars input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
+.fix{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:4px;font-size:15.5px}
+.fix li::marker{font-family:var(--f-mono);color:var(--accent)}
+
+/* 평가 */
+.eval{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+.tests{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.tcard{border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.tcard h3{font-size:18px}
+.set{display:grid;grid-template-columns:minmax(0,1fr) 92px 80px 72px;gap:8px;align-items:end}
+.tri{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.tri input{text-align:center;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.res{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--surface-2);border-radius:12px;padding:10px 12px}
+.res .avg{font-family:var(--f-mono);font-size:20px;font-variant-numeric:tabular-nums}
+.res .avg small{font-size:12px;color:var(--sub);font-family:var(--f-body);display:block;line-height:1}
+.verdict{display:inline-block;font-size:15px;font-weight:700;padding:5px 14px;border-radius:99px;background:var(--surface);color:var(--sub);border:1px solid var(--line)}
+.verdict.ok{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+.verdict.part{background:var(--caution-soft);color:var(--caution);border-color:var(--caution)}
+.verdict.no{background:var(--bad-soft);color:var(--bad);border-color:var(--bad)}
+.verdict.pop{animation:pop .45s cubic-bezier(.3,1.6,.5,1)}
+@keyframes pop{0%{transform:scale(.7)}60%{transform:scale(1.12)}100%{transform:scale(1)}}
+.reason{font-size:15.5px;border-left:3px solid var(--accent);padding:2px 0 2px 10px}
+.reason:empty{display:none}
+.rule{font-size:14.5px;color:var(--sub);display:flex;flex-wrap:wrap;gap:4px 14px}
+.rule span::before{content:"";display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:middle;background:var(--c)}
+
+.imps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.imp{background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column}
+.imp .prob{background:var(--bad-soft);padding:10px 16px;font-size:15px}
+.imp .prob b,.imp .sol b,.imp .eff b{display:block;font-family:var(--f-mono);font-size:11.5px;letter-spacing:.08em}
+.imp .prob b{color:var(--bad)}
+.imp .sol{padding:10px 16px;font-size:15px}
+.imp .sol b{color:var(--sub)}
+.imp .eff{background:var(--accent-soft);padding:10px 16px;font-size:15px}
+.imp .eff b{color:var(--accent)}
+.imp.mine{border-style:dashed}
+.imp.mine .prob,.imp.mine .sol,.imp.mine .eff{display:flex;flex-direction:column;gap:4px}
+
+.pflow{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.pflow span{background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:6px 12px;font-weight:600}
+.pflow i{font-style:normal;color:var(--accent);font-weight:700}
+.map{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.map div{border:1px solid var(--line);border-radius:12px;padding:8px 12px;text-align:center;font-size:15px}
+.map small{display:block;color:var(--sub);font-size:13px}
+.map b{display:block;color:var(--accent)}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+
+.outro{background:var(--ink);color:var(--surface);border-radius:18px;padding:22px;display:flex;flex-direction:column;gap:8px}
+.outro h2{font-size:26px}
+.outro .eyebrow{color:color-mix(in srgb,var(--surface) 65%,transparent)}
+.tags{display:flex;gap:8px;flex-wrap:wrap}
+.tags span{font-family:var(--f-mono);font-size:13px;border:1px solid color-mix(in srgb,var(--surface) 30%,transparent);border-radius:99px;padding:2px 10px}
+.foot{display:flex;justify-content:center;align-items:center;gap:10px;flex-wrap:wrap;font-size:14px;color:var(--sub)}
+
+/* 내 계획서 */
+.myplan{display:flex;flex-direction:column;gap:10px}
+.prow{display:grid;grid-template-columns:34px minmax(0,2.2fr) minmax(0,.8fr) minmax(0,1.3fr) minmax(0,1.1fr);gap:8px;align-items:start;background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:10px}
+.prow .pn{width:30px;height:30px;border-radius:9px;background:var(--accent-soft);color:var(--accent);font-family:var(--f-mono);font-weight:600;display:grid;place-items:center;margin-top:24px}
+.prow textarea{min-height:64px}
+/* 제출 */
+.idrow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.photos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.photo{position:relative;display:flex;flex-direction:column;gap:6px;align-items:stretch;cursor:pointer}
+.photo .ttl{font-family:var(--f-display);font-size:19px}
+.photo .box{aspect-ratio:4/3;border:2px dashed var(--line);border-radius:14px;background:var(--surface-2);display:grid;place-items:center;overflow:hidden;color:var(--sub);font-size:14.5px;text-align:center;padding:8px;transition:border-color .2s,transform .2s}
+.photo:hover .box{border-color:var(--accent);transform:translateY(-2px)}
+.photo .box img{width:100%;height:100%;object-fit:cover;display:block}
+.photo.has .box{border-style:solid;border-color:var(--accent);padding:0}
+.photo input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.photo input:focus-visible+.box{outline:2px solid var(--accent);outline-offset:2px}
+.sendlist{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.sendlist li{display:flex;align-items:center;gap:8px;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:15px}
+.sendlist .b{font-family:var(--f-mono);font-size:12px;font-weight:600;background:var(--ink);color:var(--surface);border-radius:6px;padding:1px 6px}
+.sendlist .n{margin-left:auto;font-family:var(--f-mono);font-size:13.5px;color:var(--sub)}
+.sendlist li.full{border-color:var(--accent);background:var(--accent-soft)}
+.sendlist li.full .n{color:var(--accent);font-weight:600}
+.sendbtn{min-height:56px;font-size:18px;font-family:var(--f-display);border-radius:14px}
+.sendbtn:active{transform:scale(.96)}
+.smsg{border-radius:12px;padding:12px 14px;font-size:15.5px}
+.smsg.ok{background:var(--accent-soft);color:var(--ink);animation:pop .35s}
+.smsg.err{background:var(--bad-soft);color:var(--ink)}
+.smsg.wait{background:var(--surface-2);color:var(--sub)}
+@media (max-width:820px){
+  .road{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .step,.eval,.tests{grid-template-columns:1fr}
+  .plan,.map{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .chg{grid-template-columns:1fr 1fr}
+  .chg .fl:first-child{grid-column:1/-1}
+}
+@media (max-width:820px){.idrow{grid-template-columns:1fr 1fr}.sendlist{grid-template-columns:1fr 1fr}.prow{grid-template-columns:34px minmax(0,1fr) minmax(0,1fr)}.prow .fl:nth-child(2){grid-column:2/-1}.prow .pn{margin-top:0}}
+@media (max-width:600px){
+  .photos{grid-template-columns:1fr}.sendlist{grid-template-columns:1fr}
+  .brief,.mats,.tools,.imps,.log3,.two,.chg{grid-template-columns:1fr}
+  .road{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .card{padding:16px}
+  .tab{font-size:14px;padding:0 2px}
+  .tab .n{display:none}
+  .prog .bar{width:70px}
+  .goal{grid-template-columns:36px minmax(0,1fr)}
+  .goal select{grid-column:2}
+  .set{grid-template-columns:1fr 1fr}
+  .set .fl:first-child{grid-column:1/-1}
+  .sr{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="head">
+    <div>
+      <div class="eyebrow">Unit 3 · 친환경 수송 기술 프로젝트</div>
+      <h1>친환경 근거리 전기차 모형 제작 가이드</h1>
+      <p class="sub">목표 정하기 → 계획·제작·기록 → 테스트·평가·개선까지, 총괄평가 연습장</p>
+    </div>
+    <div class="prog" aria-live="polite">진행 <div class="bar"><i id="progBar"></i></div><b id="progTx">0/12</b></div>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="가이드 영역">
+    <button class="tab" role="tab" id="t-plan" aria-controls="p-plan" aria-selected="true"><span class="n">01–02</span>목표·재료</button>
+    <button class="tab" role="tab" id="t-make" aria-controls="p-make" aria-selected="false"><span class="n">C</span>제작 6단계</button>
+    <button class="tab" role="tab" id="t-eval" aria-controls="p-eval" aria-selected="false"><span class="n">D</span>평가·개선</button>
+    <button class="tab" role="tab" id="t-send" aria-controls="p-send" aria-selected="false"><span class="n">📮</span>제출</button>
+  </nav>
+
+  <!-- ───────── 목표·재료 ───────── -->
+  <section class="panel" id="p-plan" role="tabpanel" aria-labelledby="t-plan">
+    <div class="card">
+      <div class="ch"><div class="eyebrow">Mission</div><h2>나는 미래모빌리티 연구소 신입 연구원</h2></div>
+      <p>우리 동네 사람이 <b>안전하고 편리하게</b> 탈 수 있는 친환경 근거리 전기차 모형을 만들고, 테스트로 성능을 확인한 뒤 개선 방안을 제안해요.</p>
+      <div class="brief">
+        <div><b>사용자</b>우리 동네에서 짧은 거리를 이동하는 학생</div>
+        <div><b>보고 대상</b>선생님과 반 친구들 (시제품 평가 회의)</div>
+        <div><b>만들 것</b>전기차 모형(탑승객 쇠구슬 1개) · 계획서·차시별 기록 · 테스트 보고서</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="ch"><div class="eyebrow">01 · My Goals</div><h2>목표는 내가 정해요 (3개)</h2>
+        <p class="note">아래 예시 칩을 누르면 빈 칸에 들어가요. 직접 써도 좋아요. <b>3개 중 1개는 꼭 '안전' 또는 '편리' 목표</b>여야 해요.</p></div>
+      <div class="chips" id="chips"></div>
+      <div class="goals" id="goals"></div>
+      <div class="gwarn" id="gwarn" role="status"></div>
+      <div class="req"><b>차체 조건</b><span>가로 <b>180~200</b> × 세로 <b>90~110</b> × 높이 <b>120~150</b> mm 안에서 만들기, 우드락 두께 <b>5mm</b></span></div>
+    </div>
+
+    <div class="card">
+      <div class="ch"><div class="eyebrow">01 · My Plan</div><h2>내 제작 계획서</h2>
+        <div class="crit"><span class="badge">C-1</span><span class="top"><b>7-8점</b>순서·시간(차시)·재료·도구 4가지를 모두 구체적으로 (친구가 그대로 따라 만들 수 있게)</span></div>
+        <p class="note">'제작 6단계' 탭의 계획 예시를 참고하되, <b>내 차에 맞는 치수·재료·도구</b>로 직접 써요.</p></div>
+      <div class="myplan" id="myplan"></div>
+      <label class="fl"><span>이 순서인 까닭</span><textarea data-k="plwhy" placeholder="예) ○○을 먼저 해야 △△을 할 수 있기 때문이다."></textarea></label>
+    </div>
+
+    <div class="card">
+      <div class="ch"><div class="eyebrow">02 · Materials</div><h2>재료 챙기기</h2><p class="note">준비한 것은 눌러서 체크해 두세요. 이 기기에 저장돼요.</p></div>
+      <div class="mats" id="mats"></div>
+    </div>
+
+    <div class="card">
+      <div class="ch"><div class="eyebrow">02 · Tools &amp; Safety</div><h2>공구와 안전 수칙</h2>
+        <div class="crit"><span class="badge">C-2</span><span class="top"><b>7-8점</b>도구마다 안전 수칙을 바르게 쓰고, 그대로 지키며 쓴다</span></div></div>
+      <div class="tools" id="tools"></div>
+      <div class="alert" role="note"><b>글루건이 떨어졌다면?</b> 손으로 잡지 않아요(뜨거운 끝에 화상). 한 발 물러난 뒤, <b>손잡이</b>를 잡아 거치대에 세워요.</div>
+    </div>
+  </section>
+
+  <!-- ───────── 제작 6단계 ───────── -->
+  <section class="panel" id="p-make" role="tabpanel" aria-labelledby="t-make" hidden>
+    <div class="card">
+      <div class="ch"><div class="eyebrow">C · Process Roadmap</div><h2>6단계 제작 공정</h2>
+        <div class="crit"><span class="badge">C-1</span><span class="top"><b>7-8점</b>순서·시간(차시)·재료·도구 4가지를 모두 구체적으로 + 이 순서인 까닭</span></div></div>
+      <p class="note">각 단계의 '계획 예시'를 내 계획서 6행의 모범으로 삼아요. 차시는 예시이니 내 계획에 맞게 바꿔 써요.</p>
+      <div class="road" id="road"></div>
+      <div class="legend"><span><i style="background:var(--accent)"></i>완료 표시</span><span><i style="background:var(--caution)"></i>오늘의 기록 3칸 다 씀</span></div>
+    </div>
+    <article class="card" id="detail"></article>
+
+    <div class="card">
+      <div class="ch"><div class="eyebrow">C-4 · Changes</div><h2>바꾼 점 메모</h2>
+        <div class="crit"><span class="badge">C-4</span><span class="top"><b>7-8점</b>디자인과 계획에서 바꾼 점 2가지 이상 + 바꾼 까닭</span></div></div>
+      <p class="ex"><b>예시 ·</b> [디자인] 축을 글루건으로 바로 붙임 → 빨대를 붙이고 그 안에 축을 끼움 → 축이 굳어 바퀴가 안 돌아서<br><b>예시 ·</b> [계획] 3차시에 배선 → 4차시에 배선 → 축을 다시 다느라 시간이 더 걸려서</p>
+      <div id="chg"></div>
+      <p class="note">구분: 디자인 변경 = 모양·크기·재료 / 계획 변경 = 순서·시간·도구</p>
+    </div>
+
+    <div class="card">
+      <div class="ch"><div class="eyebrow">C-3 · Self Check</div><h2>완성품 자기점검</h2>
+        <div class="crit"><span class="badge">C-3</span><span class="top"><b>7-8점</b>계획대로 끝까지 완성 · 목표대로 작동 · 단단하고 깔끔 · 앞·옆·위 사진/그림에 이름표</span></div></div>
+      <div class="self" id="self"></div>
+      <div class="ch"><h3>안 움직일 때 점검 순서</h3><p class="note">가장 먼저 <b>회로(전기 통로)</b>! 전기가 안 통하면 스위치도 모터도 작동할 수 없어요.</p></div>
+      <ol class="fix">
+        <li>건전지 +, − 방향이 맞나요?</li>
+        <li>전선이 빠지거나 끊어진 곳은 없나요?</li>
+        <li>모터는 도는데 기어가 서로 맞물려 있나요?</li>
+        <li>바퀴가 차체에 닿아서 걸리지 않나요?</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ───────── 평가·개선 ───────── -->
+  <section class="panel" id="p-eval" role="tabpanel" aria-labelledby="t-eval" hidden>
+    <div class="card">
+      <div class="ch"><div class="eyebrow">D-1 · Test Design</div><h2>테스트 방법 설계</h2>
+        <div class="crit"><span class="badge">D-1</span><span class="top"><b>7-8점</b>서로 다른 테스트 2가지 이상, 각각 무엇을(단위)·어떻게·몇 번을 모두 구체적으로</span></div></div>
+      <div class="eval">
+        <figure class="fig">
+          <svg viewBox="0 0 360 260" role="img" aria-label="격자판 위에서 곧게 간 경로와 옆으로 벗어난 경로">
+            <g stroke="var(--line)" stroke-width="1">
+              <path d="M30 20v220M60 20v220M90 20v220M120 20v220M150 20v220M180 20v220M210 20v220M240 20v220M270 20v220M300 20v220M330 20v220"/>
+              <path d="M30 20h300M30 50h300M30 80h300M30 110h300M30 140h300M30 170h300M30 200h300M30 230h300"/>
+            </g>
+            <rect x="140" y="20" width="80" height="220" fill="var(--accent)" opacity=".1"/>
+            <line x1="180" y1="20" x2="180" y2="240" stroke="var(--draw-soft)" stroke-dasharray="4 4"/>
+            <line x1="140" y1="20" x2="140" y2="240" stroke="var(--accent)" stroke-width="1.2"/>
+            <line x1="220" y1="20" x2="220" y2="240" stroke="var(--accent)" stroke-width="1.2"/>
+            <path d="M178 236 L182 24" stroke="var(--accent)" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <path d="M184 236 C 192 160, 230 110, 300 40" stroke="var(--bad)" stroke-width="3" fill="none" stroke-linecap="round" stroke-dasharray="7 5"/>
+            <line x1="30" y1="236" x2="330" y2="236" stroke="var(--draw)" stroke-width="2"/>
+            <line x1="30" y1="24" x2="330" y2="24" stroke="var(--draw)" stroke-width="2"/>
+            <text x="34" y="254">출발선</text><text x="34" y="16">3m 도달선</text>
+            <text x="226" y="200" class="lbl">옆으로 30cm</text>
+            <text x="236" y="84" style="fill:var(--bad)">30cm 넘게 벗어남</text>
+            <text x="146" y="226" class="hl">곧게</text>
+          </svg>
+          <figcaption>테스트 예시: 3m를 가는 동안 가운데 선에서 옆으로 얼마나 벗어나는지 재요.</figcaption>
+        </figure>
+        <div class="points">
+          <div class="pt"><div><h4>목표 하나에 테스트 하나</h4><p>내 목표 ①②③ 중 2개 이상을 골라, 서로 다른 것을 재는 테스트를 만들어요.</p></div></div>
+          <div class="pt"><div><h4>무엇을 · 단위까지</h4><p>"잘 가나?" 대신 "이동 거리(m)", "걸린 시간(초)"처럼 숫자로 재는 것을 정해요. 눈으로 보는 것보다 정확해요.</p></div></div>
+          <div class="pt"><div><h4>같은 방법으로 3번</h4><p>한 번은 우연일 수 있어요. 같은 출발선·같은 바닥에서 3번 재고 평균을 내요.</p></div></div>
+        </div>
+      </div>
+      <p class="ex"><b>예시 ·</b> 목표 "3m 이상 간다" → 재는 것: 이동 거리(m) / 방법: 출발선에서 멈춘 곳까지 줄자로 잰다 / 횟수: 3번</p>
+      <div class="tests" id="tdesign"></div>
+    </div>
+
+    <div class="card">
+      <div class="ch"><div class="eyebrow">D-2 · Results</div><h2>결과 기록표와 판정</h2>
+        <div class="crit"><span class="badge">D-2</span><span class="top"><b>7-8점</b>실제 숫자를 근거로 목표마다 달성 정도와 그렇게 판단한 까닭을 쓴다</span></div></div>
+      <div class="rule"><span style="--c:var(--accent)">달성 = 3회 모두 통과</span><span style="--c:var(--caution)">부분 달성 = 평균은 통과, 못 통과한 회차 있음</span><span style="--c:var(--bad)">미달성 = 평균이 통과 못함</span></div>
+      <p class="note">평균은 소수 첫째 자리까지 반올림해서 비교해요. 목표 기준값과 '이상/이하'는 내 목표에 맞게 바꿀 수 있어요.</p>
+      <div class="tests" id="tres"></div>
+      <div class="row"><button class="btn" id="demo" type="button">예시 데이터 넣기</button><button class="btn warn" id="resetT" type="button">기록표 지우기</button></div>
+      <label class="fl"><span>종합 평가 — 이 결과를 믿을 수 있나요? 오차가 생긴 까닭, 아쉬운 점</span>
+        <textarea data-k="overall" placeholder="예) 같은 바닥에서 3번 쟀지만 2회차에 출발 방향이 조금 비뚤어서 결과가 달라졌을 수 있다. 줄자를 바닥에 고정하지 않아 몇 cm 오차가 있을 수 있다."></textarea></label>
+    </div>
+
+    <div class="card">
+      <div class="ch"><div class="eyebrow">D-3 · Improvements</div><h2>테스트 결과로 개선하기</h2>
+        <div class="crit"><span class="badge">D-3</span><span class="top"><b>7-8점</b>결과를 바탕으로 개선 2가지 이상: 문제점 → 개선 방법(무엇을·어떻게) → 기대 효과</span></div></div>
+      <div class="imps">
+        <div class="imp"><div class="prob"><b>예시 1 · 문제점</b>오른쪽으로 휘어서 2m밖에 못 감</div>
+          <div class="sol"><b>개선 방법</b>두 바퀴 축이 차체와 수직이 되도록 쇠자로 재어 다시 붙인다</div>
+          <div class="eff"><b>기대 효과</b>직선으로 달려 3m 이상 갈 수 있다</div></div>
+        <div class="imp"><div class="prob"><b>예시 2 · 문제점</b>매끄러운 바닥에서 바퀴가 헛돎</div>
+          <div class="sol"><b>개선 방법</b>바퀴 둘레에 고무줄이나 미끄럼 방지 테이프를 감는다</div>
+          <div class="eff"><b>기대 효과</b>바닥과의 마찰력이 커져 헛돌지 않고 앞으로 나간다</div></div>
+      </div>
+      <div class="imps" id="mimp"></div>
+    </div>
+
+    <div class="card">
+      <div class="ch"><div class="eyebrow">D-4 · Impact</div><h2>원리와 사용자에게 주는 영향</h2>
+        <div class="crit"><span class="badge">D-4</span><span class="top"><b>7-8점</b>사용자에게 주는 영향 2가지를 구체적으로 (사람·사회·환경 관점)</span></div></div>
+      <div class="ch"><h3>움직이는 원리</h3>
+        <div class="pflow" aria-label="건전지에서 스위치, 모터, 기어를 거쳐 바퀴로"><span>건전지</span><i>→</i><span>스위치</span><i>→</i><span>모터</span><i>→</i><span>기어</span><i>→</i><span>바퀴</span></div></div>
+      <div class="ch"><h3>모형 부품 ↔ 실제 전기차 부품</h3>
+        <div class="map"><div><small>건전지</small><b>배터리</b></div><div><small>스위치</small><b>가속 페달</b></div><div><small>모터</small><b>구동 모터</b></div><div><small>기어</small><b>감속기</b></div></div></div>
+      <div class="two">
+        <label class="fl"><span>좋은 점과 까닭</span><textarea data-k="d4good" placeholder="예) 배기가스가 없어 동네 공기가 덜 나빠진다(환경). 스위치가 밖에 있어 한 손으로 쉽게 켠다(사람)."></textarea></label>
+        <label class="fl"><span>아쉬운 점과 까닭</span><textarea data-k="d4bad" placeholder="예) 건전지가 빨리 닳아 먼 거리는 못 간다. 충전·교체가 번거롭다."></textarea></label>
+        <label class="fl"><span>더 안전·편리하려면 바꿀 점</span><textarea data-k="d4change" placeholder="예) 안전바를 더 높여 경사에서도 탑승객이 안 떨어지게 한다."></textarea></label>
+        <label class="fl"><span>배운 점 · 다음에 다르게 할 점</span><textarea data-k="d4learn" placeholder="예) 축을 수직으로 다는 게 직진에 중요하다는 것을 배웠다. 다음엔 붙이기 전에 자로 먼저 잰다."></textarea></label>
+      </div>
+    </div>
+
+    <div class="outro">
+      <div class="eyebrow">Sustainable Mobility</div>
+      <h2>더 안전하고 편리한 친환경 이동</h2>
+      <p>과학과 기술의 혁신으로, 사람의 몸과 쓰임을 생각한 수송 시스템을 설계해요.</p>
+      <div class="tags"><span>#친환경에너지</span><span>#수송기술</span><span>#IB디자인</span></div>
+    </div>
+  </section>
+
+  <!-- ───────── 제출 ───────── -->
+  <section class="panel" id="p-send" role="tabpanel" aria-labelledby="t-send" hidden>
+    <div class="card">
+      <div class="ch"><div class="eyebrow">Submit · 선생님께 제출</div><h2>내 기록과 사진 제출하기</h2>
+        <p class="note">제출하면 이 기기에 쓴 목표·계획서·기록·테스트·개선·성찰이 사진과 함께 선생님께 가고, <b>학습지 PDF로 자동 변환</b>돼요. 여러 번 제출해도 괜찮아요 — 마지막 제출이 남아요.</p></div>
+      <div class="idrow">
+        <label class="fl"><span>반</span><select data-k="sbban"><option value="">반 고르기</option></select></label>
+        <label class="fl"><span>번호</span><select data-k="sbno"><option value="">번호 고르기</option></select></label>
+        <label class="fl"><span>이름</span><input type="text" data-k="sbname" maxlength="20" autocomplete="off" placeholder="이름"></label>
+        <label class="fl"><span>제출 비밀번호 (숫자 4자리)</span><input type="password" id="sbpin" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="●●●●"></label>
+      </div>
+      <p class="note">비밀번호는 <b>처음 제출할 때 정하고</b>, 다시 제출할 때 같은 번호를 써요. 다른 친구가 내 이름으로 덮어쓰지 못하게 지켜 줘요. 잊었으면 선생님께 말해요.</p>
+    </div>
+
+    <div class="card">
+      <div class="ch"><div class="eyebrow">C-3 · Photos</div><h2>완성품 사진 (앞·옆·위)</h2>
+        <div class="crit"><span class="badge">C-3</span><span class="top"><b>7-8점</b>앞·옆·위 모습을 이름표(차체·모터·기어·건전지 위치)와 함께</span></div>
+        <p class="note">칸을 누르면 카메라나 앨범이 열려요. 사진은 제출할 때만 보내고, 이 기기에는 남지 않아요. 다시 제출할 때 사진을 안 고르면 예전 사진이 그대로 남아요.</p></div>
+      <div class="photos" id="photos"></div>
+    </div>
+
+    <div class="card">
+      <div class="ch"><div class="eyebrow">Check</div><h2>제출 전 확인</h2><p class="note">빈 곳이 있어도 제출할 수 있지만, 채울수록 점수에 가까워져요.</p></div>
+      <ul class="sendlist" id="sendlist"></ul>
+      <button type="button" class="btn primary sendbtn" id="sendBtn">📮 선생님께 제출하기</button>
+      <div class="smsg" id="sendMsg" role="status" aria-live="polite" hidden></div>
+    </div>
+  </section>
+
+  <div class="foot"><span>모든 기록은 이 기기에만 저장돼요.</span><button class="btn warn" id="wipe" type="button">내 기록 모두 지우기</button></div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const PFX="evg:";
+const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+const val=k=>ls.get(PFX+k)||"";
+const save=(k,v)=>ls.set(PFX+k,v);
+
+/* 두 번 눌러 확인 */
+function twoTap(btn,label,action){
+  let armed=0,t;
+  btn.addEventListener("click",()=>{
+    if(!armed){armed=1;btn.textContent="한 번 더 누르면 지워져요";t=setTimeout(()=>{armed=0;btn.textContent=label;},3000);return;}
+    clearTimeout(t);armed=0;btn.textContent=label;action();
+  });
+}
+
+/* data-k 입력칸: 값 채우기 + 자동 저장 */
+function fill(root){
+  root.querySelectorAll("[data-k]").forEach(el=>{
+    const v=val(el.dataset.k);
+    if(el.type==="radio") el.checked=(v===el.value); else el.value=v;
+  });
+}
+document.addEventListener("input",e=>{
+  const el=e.target; if(!el.dataset||!el.dataset.k) return;
+  if(el.type==="radio"&&!el.checked) return;
+  save(el.dataset.k,el.value);
+  if(el.dataset.k.startsWith("g")) checkGoals();
+  if(el.dataset.k.startsWith("t")) updateTests();
+  if(el.dataset.k.startsWith("rec")) {renderRoad();}
+});
+document.addEventListener("change",e=>{
+  const el=e.target; if(el.type==="radio"&&el.dataset.k&&el.checked) save(el.dataset.k,el.value);
+  if(el.tagName==="SELECT"&&el.dataset.k){save(el.dataset.k,el.value); if(el.dataset.k.startsWith("g")) checkGoals(); if(el.dataset.k.startsWith("t")) updateTests();}
+});
+
+/* ───── 목표 ───── */
+const GOAL_EX=[["1m 이상 직선으로 간다","성능"],["10초 안에 3m를 간다","성능"],["15° 경사판 1m를 5초 안에 올라간다","성능"],["15° 경사판을 내려와도 탑승객이 떨어지지 않는다","안전"],["벽에 부딪혀도 탑승객이 떨어지지 않는다","안전"],["차 밖에서 한 손으로 스위치를 켤 수 있다","편리"]];
+const GTYPES=["성능","안전","편리","규격","기타"];
+$("chips").innerHTML=GOAL_EX.map(([t,ty],i)=>`<button type="button" class="chip" data-i="${i}"><em class="${ty==="안전"||ty==="편리"?"s":""}">${ty}</em>${t}</button>`).join("");
+$("goals").innerHTML=[0,1,2].map(i=>`<div class="goal"><span class="no" aria-hidden="true">${"①②③"[i]}</span>
+  <input type="text" data-k="g${i}" aria-label="목표 ${i+1}" placeholder="목표 ${i+1}: 예시를 누르거나 직접 쓰기">
+  <select data-k="gt${i}" aria-label="목표 ${i+1} 종류"><option value="">종류 고르기</option>${GTYPES.map(t=>`<option>${t}</option>`).join("")}</select></div>`).join("");
+fill($("goals"));
+let lastGoal=-1;
+$("goals").addEventListener("focusin",e=>{const m=(e.target.dataset.k||"").match(/^gt?(\d)$/); if(m) lastGoal=+m[1];});
+$("chips").addEventListener("click",e=>{
+  const b=e.target.closest(".chip"); if(!b) return;
+  const [t,ty]=GOAL_EX[+b.dataset.i];
+  let i=[0,1,2].find(j=>!val("g"+j).trim()); if(i===undefined) i=lastGoal>=0?lastGoal:2;
+  const inp=document.querySelector(`[data-k="g${i}"]`), sel=document.querySelector(`[data-k="gt${i}"]`);
+  inp.value=t; sel.value=ty; save("g"+i,t); save("gt"+i,ty); checkGoals(); inp.focus();
+});
+function checkGoals(){
+  const filled=[0,1,2].filter(i=>val("g"+i).trim());
+  const sp=[0,1,2].some(i=>val("g"+i).trim()&&(val("gt"+i)==="안전"||val("gt"+i)==="편리"));
+  const w=$("gwarn");
+  if(!filled.length){w.className="gwarn";w.textContent="아직 목표가 없어요. 위 예시를 눌러 시작해 보세요!";}
+  else if(!sp){w.className="gwarn";w.textContent="잠깐! 목표 중 1개는 꼭 '안전' 또는 '편리' 목표여야 해요. 종류를 고르거나 예시에서 골라 보세요.";}
+  else if(filled.length<3){w.className="gwarn ok";w.textContent=`좋아요, 안전·편리 목표가 있어요. 목표를 ${3-filled.length}개 더 정해 보세요.`;}
+  else {w.className="gwarn ok";w.textContent="목표 3개 완성! 평가 탭에서 이 목표를 테스트로 확인해요.";}
+  updateProg();
+}
+
+/* ───── 내 계획서 (C-1) ───── */
+$("myplan").innerHTML=[0,1,2,3,4,5].map(i=>`<div class="prow"><span class="pn" aria-hidden="true">${i+1}</span>
+  <label class="fl"><span>${i+1}. 할 일</span><textarea data-k="pl${i}-a" placeholder="${i?"":"예) 제작도를 그린다. 모든 면을 조건에 맞게 mm로 적는다."}"></textarea></label>
+  <label class="fl"><span>시간</span><input type="text" data-k="pl${i}-b" placeholder="예) 1차시"></label>
+  <label class="fl"><span>재료</span><input type="text" data-k="pl${i}-c" placeholder="크기·개수까지"></label>
+  <label class="fl"><span>도구</span><input type="text" data-k="pl${i}-d" placeholder="사용할 도구"></label></div>`).join("");
+fill($("myplan"));
+
+/* ───── 재료·공구 ───── */
+const MATS=[
+  {h:"차체 및 구동부",items:["5mm 우드락","바퀴 4개","쇠축 2개","기어(구동·종속)","플라스틱 빨대","탑승객(쇠구슬) 1개"]},
+  {h:"전원 및 회로",items:["AA 건전지 2개 + 홀더","DC 모터","슬라이드 스위치","전선","수축튜브"]}
+];
+const TOOLS=[
+  ["커터칼","자를 대고, 칼날이 몸 바깥쪽을 향하게 하여 자른다."],
+  ["쇠자","자를 꾹 눌러 고정하고, 칼날이 자 바깥으로 넘어오지 않게 한다."],
+  ["글루건","달궈진 끝을 만지지 않고, 다 쓴 뒤 거치대에 세워 둔다."],
+  ["니퍼·와이어 스트리퍼","전선 굵기에 맞는 구멍을 쓰고, 피복을 벗길 때 안쪽 구리선까지 자르지 않게 살짝 누른다."],
+  ["우드락 본드","얇게 펴 바르고 창문을 열어 환기한다. 손에 묻으면 바로 닦는다."],
+  ["드라이버","나사의 홈 모양에 맞는 크기를 골라 돌린다."],
+  ["히트건","바람을 수축튜브에만 대고, 사람 쪽으로 향하지 않는다. 쓴 뒤 뜨거운 끝을 만지지 않고 식을 때까지 세워 둔다."]
+];
+$("mats").innerHTML=MATS.map((g,gi)=>`<div class="mat"><h3><i></i>${g.h}</h3><div class="chk">${
+  g.items.map((it,ii)=>`<label><input type="checkbox" data-c="m${gi}-${ii}"><span>${it}</span></label>`).join("")}</div></div>`).join("");
+$("tools").innerHTML=TOOLS.map(([n,r],i)=>`<div class="tool"><label><input type="checkbox" data-c="tl${i}"><span>${n}</span></label><p>${r}</p></div>`).join("");
+document.querySelectorAll("[data-c]").forEach(c=>{c.checked=val(c.dataset.c)==="1"; c.addEventListener("change",()=>save(c.dataset.c,c.checked?"1":""));});
+
+/* ───── 제작 6단계 ───── */
+const COND="가로 180~200 × 세로 90~110 × 높이 120~150 mm, 우드락 두께 5mm";
+const STEPS=[
+ {t:"제작도 그리기",d:"모든 면을 조건에 맞게",eb:"Step 1 · Drawing",h:"제작도 그리기 — 자동차의 모든 면을 조건에 맞게",req:COND,fig:"chassis",cap:"점선 상자 = 차체 조건 범위, 초록 면 = 내 차체",
+  plan:["1차시","종이, 연필, 지우개","자"],why:"제작도가 있어야 우드락에 옮겨 그리고 정확한 치수로 자를 수 있어요.",
+  pts:[["조건 범위 안에서 내 치수 정하기","가로·세로·높이를 범위 안의 숫자로 정해 mm로 적어요. 예: 190 × 100 × 130 mm"],["모든 면 빠짐없이 그리기","밑판·옆판 2장·앞판·뒤판처럼 붙일 면을 모두 그려요. 판끼리 겹치는 쪽은 우드락 두께 5mm를 계산해요."],["사용자를 생각해 위치 표시하기","탑승객 좌석과 스위치 위치를 제작도에 표시해요. 스위치는 차 밖에서 한 손으로 켤 수 있는 곳이 편리해요."]]},
+ {t:"우드락 자르기",d:"옮겨 그리고 자르기",eb:"Step 2 · Cutting",h:"제작도를 우드락에 옮겨 그리고 자르기",req:"우드락 ( 가로 × 세로 × 5 ) mm — 내 치수를 계획서 빈칸에 써요",fig:"chassis",cap:"자른 판이 점선 상자(조건 범위) 안에 들어가는지 확인",
+  plan:["1차시","우드락 (  ×  × 5)","칼"],why:"판을 먼저 잘라 두어야 밑판에 부품을 달고 차체를 조립할 수 있어요.",
+  pts:[["자 대고 칼날은 몸 바깥쪽","자를 꾹 누르고 칼날이 몸 바깥쪽을 향하게 해서, 2~3번 나누어 살살 잘라요."],["자른 뒤 치수 다시 재기","제작도 치수와 다르면 다시 다듬어요. 치수대로 정확히 잘라야 판끼리 잘 맞아요."],["판마다 이름 적어 두기","밑판·옆판·앞판처럼 연필로 살짝 적어 두면 4단계에서 붙일 때 헷갈리지 않아요."]]},
+ {t:"밑판에 부품 달기",d:"기어·모터, 빨대·축, 탑승객",eb:"Step 3 · Base Assembly",h:"밑판에 기어·모터, 빨대·축을 달고 탑승객 위치 고정하기",flow:"모터 → 작은 구동기어(빠름) → 큰 종속기어(느리지만 힘이 셈) → 바퀴축",fig:["axle","gear"],cap:"빨대는 축이 자유롭게 도는 통로, 주황 원 = 두 기어 사이의 아주 작은 틈",
+  plan:["1차시","빨대, 쇠축, 바퀴","우드락 본드, 글루건"],why:"벽을 붙이기 전, 밑판이 열려 있을 때 달아야 손이 들어가 기어와 축을 정확히 맞출 수 있어요.",
+  pts:[["축은 빨대 안에, 빨대는 직각(90°)","축을 글루건으로 바로 붙이면 굳어서 안 돌아요. 빨대를 차체 중심선과 직각으로 붙이고 그 안에 축을 끼워요. 바퀴와 차체 사이는 약 2mm 띄워요."],["기어 사이에 아주 작은 틈","모터의 작은 기어가 바퀴축의 큰 기어를 돌려요. 너무 꽉 끼면 모터가 멈추고, 너무 멀면 헛돌아요. 종이 한두 장 정도의 틈이면 알맞아요."],["탑승객 위치 먼저 정하기","모터·건전지 자리를 피해 탑승객(쇠구슬) 자리를 정하고 표시해요. 글루건은 달궈진 끝을 만지지 말고, 다 쓰면 거치대에 세워요."]]},
+ {t:"차체 완성",d:"우드락 본드로 붙이기",eb:"Step 4 · Body",h:"2단계에서 자른 판을 우드락 본드로 붙여 차체 완성하기",req:COND,fig:"chassis",cap:"완성한 차체가 점선 상자(조건 범위) 안에 들어가는지 자로 확인",
+  plan:["1차시","재단한 우드락","우드락 본드"],why:"밑판의 구동부가 자리를 잡은 뒤에 벽을 붙여야 부품과 벽이 부딪히지 않아요.",
+  pts:[["직각 맞춰 붙이기","판이 직각이 되게 붙이고, 본드가 마를 때까지 잠깐 잡고 있어요."],["우드락 본드는 얇게, 환기하며","본드를 얇게 펴 발라요. 냄새가 나므로 창문을 열고, 손에 묻으면 바로 닦아요."],["바퀴·기어가 벽에 닿지 않는지 확인","붙인 뒤 바퀴를 손으로 돌려 봐요. 벽에 닿으면 그 부분을 다듬어요."]]},
+ {t:"회로 배선",d:"연결하고 튜브 감싸기",eb:"Step 5 · Circuit",h:"건전지 홀더 → 스위치 → 모터 순서로 연결하기",req:"피복을 1cm 벗겨 연결하고, 연결 부분을 수축튜브로 감싸요. 스위치는 차체 옆면 바깥에 달아요",fig:"circuit",cap:"초록 부분 = 수축튜브로 감쌀 연결 부분",
+  plan:["1차시","AA건전지 2개, 건전지 홀더, 스위치, 전선, 수축튜브","히트건, 와이어 스트리퍼"],why:"모터 위치가 정해진 뒤에 배선해야 전선 길이가 남거나 모자라지 않아요.",
+  pts:[["와이어 스트리퍼로 피복 1cm 벗기기","전선 굵기에 맞는 구멍에 끼우고, 안쪽 구리선까지 자르지 않게 살짝 눌러요. 수축튜브는 연결하기 전에 미리 끼워 둬요."],["히트건으로 수축튜브 줄이기","연결 부분 위로 튜브를 옮기고 히트건 바람을 튜브에만 대요. 바람과 뜨거운 끝을 사람 쪽으로 향하지 않아요."],["스위치는 차체 옆면 바깥에","차 밖에서 한 손으로 켤 수 있게 달아요. 건전지는 평평한 쪽(−)을 스프링 쪽에 끼워요."]]},
+ {t:"좌석·안전 확인",d:"좌석·안전바, 작동 확인",eb:"Step 6 · Passenger Seat",h:"좌석과 안전바를 붙이고 탑승객을 태워 작동·안전 확인하기",req:"탑승객 = 쇠구슬 1개. 좌석은 쇠구슬 크기에 맞게 만들어요",fig:"seat",cap:"초록 = 3면을 감싸는 좌석, 주황 = 끼움식 안전바, 가운데 = 쇠구슬",
+  plan:["1차시","우드락, 쇠구슬","칼, 자, 글루건"],why:"무거운 부품(모터·건전지)을 다 붙인 뒤 남은 공간에 맞춰야 탑승객 자리가 확실하고, 마지막에 작동을 확인해야 고칠 점을 찾을 수 있어요.",
+  pts:[["쇠구슬 자리 만들기","쇠구슬은 잘 굴러요. 바닥 판에 구슬보다 조금 작은 구멍을 뚫어 구슬이 쏙 앉게 하고, 등받이와 양옆 벽으로 3면을 감싸요."],["끼움식 안전바","구슬 앞쪽에 우드락 바를 끼울 홈을 파요. 바와 바닥 사이 틈은 구슬 지름보다 좁게 해야 경사를 내려와도 굴러 나가지 않아요."],["태우고 작동시켜 안전 확인","스위치를 켜서 달리게 하고, 탑승객이 떨어지지 않는지 봐요. 문제가 있으면 '바꾼 점 메모'에 적어요."]]}
+];
+
+const FIG={
+ chassis:`<svg viewBox="0 0 360 230" role="img" aria-label="차체 조건 범위 상자 안에 차체가 들어가는 그림">
+  <g fill="none" stroke="var(--draw-soft)" stroke-width="1.5" stroke-dasharray="5 4">
+    <path d="M70 70 L230 70 L290 40 L130 40 Z"/><path d="M70 70 L70 190 L230 190 L230 70"/><path d="M290 40 L290 160 L230 190"/><path d="M130 40 L130 160 L70 190 M130 160 L290 160"/></g>
+  <g fill="var(--accent)" opacity=".18"><path d="M86 170 L214 170 L262 146 L134 146 Z"/></g>
+  <g fill="none" stroke="var(--draw)" stroke-width="2"><path d="M86 170 L214 170 L214 140 L86 140 Z"/><path d="M214 170 L262 146 L262 116 L214 140"/><path d="M86 140 L134 116 L262 116"/></g>
+  <g fill="var(--draw)"><circle cx="106" cy="174" r="12"/><circle cx="196" cy="174" r="12"/></g>
+  <g fill="var(--surface)"><circle cx="106" cy="174" r="4"/><circle cx="196" cy="174" r="4"/></g>
+  <g stroke="var(--accent)" stroke-width="1.5"><path d="M70 208 L230 208 M70 202v12 M230 202v12"/><path d="M300 160 L300 40 M294 160h12 M294 40h12"/><path d="M238 200 L294 172"/></g>
+  <text x="110" y="226" class="lbl">가로 180~200</text><text x="306" y="96" class="lbl">높이</text><text x="306" y="112" class="lbl">120~150</text><text x="250" y="204" class="lbl">세로 90~110</text>
+  <text x="132" y="32">차체 조건 범위 (단위 mm)</text></svg>`,
+ axle:`<svg viewBox="0 0 360 230" role="img" aria-label="위에서 본 차체, 빨대 안에 들어간 축과 바퀴">
+  <rect x="110" y="40" width="140" height="150" rx="6" fill="var(--surface)" stroke="var(--draw)" stroke-width="2"/>
+  <text x="140" y="120">차체 (위에서 본 모습)</text>
+  <g fill="var(--accent)" opacity=".25"><rect x="110" y="62" width="140" height="12"/><rect x="110" y="156" width="140" height="12"/></g>
+  <g stroke="var(--draw)" stroke-width="3"><line x1="74" y1="68" x2="286" y2="68"/><line x1="74" y1="162" x2="286" y2="162"/></g>
+  <g fill="var(--draw)"><rect x="60" y="50" width="14" height="36" rx="3"/><rect x="286" y="50" width="14" height="36" rx="3"/><rect x="60" y="144" width="14" height="36" rx="3"/><rect x="286" y="144" width="14" height="36" rx="3"/></g>
+  <g stroke="var(--accent)" stroke-width="1.5"><path d="M74 96 v10 M110 96 v10 M74 101 h36"/></g>
+  <text x="50" y="124" class="hl">약 2mm</text>
+  <text x="256" y="58" class="hl">빨대</text>
+  <g stroke="var(--draw-soft)" stroke-dasharray="3 3"><line x1="180" y1="30" x2="180" y2="200"/></g>
+  <text x="140" y="216">중심선 ⟂ 빨대 (90°)</text></svg>`,
+ gear:`<svg viewBox="0 0 360 230" role="img" aria-label="작은 구동기어가 큰 종속기어를 돌리는 그림">
+  <g fill="none" stroke="var(--draw)" stroke-width="2">
+    <circle cx="110" cy="120" r="34"/><circle cx="110" cy="120" r="6" fill="var(--draw)"/>
+    <circle cx="222" cy="120" r="72"/><circle cx="222" cy="120" r="8" fill="var(--draw)"/></g>
+  <g stroke="var(--draw)" stroke-width="5" stroke-linecap="round">
+    ${Array.from({length:10},(_,i)=>{const a=i*36*Math.PI/180;return `<line x1="${(110+34*Math.cos(a)).toFixed(1)}" y1="${(120+34*Math.sin(a)).toFixed(1)}" x2="${(110+41*Math.cos(a)).toFixed(1)}" y2="${(120+41*Math.sin(a)).toFixed(1)}"/>`}).join("")}
+    ${Array.from({length:22},(_,i)=>{const a=i*(360/22)*Math.PI/180;return `<line x1="${(222+72*Math.cos(a)).toFixed(1)}" y1="${(120+72*Math.sin(a)).toFixed(1)}" x2="${(222+79*Math.cos(a)).toFixed(1)}" y2="${(120+79*Math.sin(a)).toFixed(1)}"/>`}).join("")}
+  </g>
+  <path d="M86 78 a40 40 0 0 1 48 0" fill="none" stroke="var(--accent)" stroke-width="2"/><path d="M134 78 l-8 -2 l3 8" fill="none" stroke="var(--accent)" stroke-width="2"/>
+  <path d="M262 46 a80 80 0 0 0 -80 0" fill="none" stroke="var(--accent)" stroke-width="2"/>
+  <circle cx="148" cy="120" r="9" fill="none" stroke="var(--caution)" stroke-width="2"/>
+  <text x="50" y="186" class="lbl">구동기어</text><text x="50" y="202">모터축 · 빠름</text>
+  <text x="196" y="218" class="lbl">종속기어</text><text x="252" y="218">바퀴축 · 느림·힘 셈</text>
+  <text x="118" y="150" style="fill:var(--caution)">작은 틈</text></svg>`,
+ circuit:`<svg viewBox="0 0 360 230" role="img" aria-label="건전지 홀더, 스위치, 모터로 이어진 회로와 수축튜브">
+  <g fill="none" stroke="var(--draw)" stroke-width="2.5" stroke-linejoin="round"><path d="M60 70 H170 M210 70 H290 V160 H250 M190 160 H60 V70"/></g>
+  <rect x="40" y="96" width="40" height="70" rx="6" fill="var(--surface)" stroke="var(--draw)" stroke-width="2"/>
+  <text x="36" y="186" class="lbl">AA×2 홀더</text><text x="48" y="114">＋</text><text x="50" y="158">−</text>
+  <path d="M170 70 L204 56" stroke="var(--draw)" stroke-width="2.5"/><circle cx="170" cy="70" r="3" fill="var(--draw)"/><circle cx="210" cy="70" r="3" fill="var(--draw)"/>
+  <text x="150" y="46" class="lbl">슬라이드 스위치</text>
+  <circle cx="220" cy="160" r="30" fill="var(--surface)" stroke="var(--draw)" stroke-width="2"/><text x="214" y="165" class="lbl">M</text>
+  <rect x="254" y="152" width="28" height="16" rx="4" fill="var(--accent)" opacity=".35"/><rect x="170" y="152" width="20" height="16" rx="4" fill="var(--accent)" opacity=".35"/>
+  <text x="196" y="222" class="hl">수축튜브로 연결 부분 감싸기</text><text x="160" y="204">DC 모터</text></svg>`,
+ seat:`<svg viewBox="0 0 360 230" role="img" aria-label="쇠구슬 탑승객을 3면으로 감싸는 좌석과 끼움식 안전바">
+  <rect x="60" y="170" width="240" height="14" rx="3" fill="var(--draw-soft)" opacity=".5"/>
+  <g fill="var(--accent)" opacity=".2"><path d="M120 60 h14 v110 h-14 Z M240 60 h-14 v110 h14 Z M120 60 h120 v14 h-120 Z"/></g>
+  <g fill="none" stroke="var(--draw)" stroke-width="2"><path d="M120 170 V60 H240 V170"/><path d="M134 170 V74 H226 V170"/></g>
+  <circle cx="180" cy="148" r="18" fill="var(--draw-soft)" stroke="var(--draw)" stroke-width="2"/><circle cx="174" cy="142" r="5" fill="var(--surface)" opacity=".7"/><text x="150" y="112" class="lbl">쇠구슬</text>
+  <rect x="112" y="122" width="136" height="10" rx="3" fill="var(--caution)"/>
+  <g fill="var(--surface)" stroke="var(--draw)" stroke-width="1.5"><rect x="114" y="118" width="10" height="18"/><rect x="236" y="118" width="10" height="18"/></g>
+  <text x="252" y="131" class="lbl">안전바</text><text x="252" y="70" class="lbl">3면 감싸개</text>
+  <path d="M180 20 v28 M172 30 l8 -10 l8 10" stroke="var(--accent)" stroke-width="2" fill="none"/><text x="194" y="34">위로 태우고 내리기</text></svg>`
+};
+
+const REC=[["a","오늘 한 일","예) 우드락을 190×100mm로 잘라 밑판을 만들었다."],["b","사용한 도구와 지킨 안전수칙","예) 커터칼 — 쇠자를 대고 칼날을 몸 바깥쪽으로 했다."],["c","어려웠던 점 → 해결 방법","예) 판이 비뚤게 잘림 → 쇠자를 더 세게 눌러 다시 잘랐다."]];
+const recFull=i=>REC.every(([f])=>val(`rec${i}-${f}`).trim());
+const isDone=i=>val("done"+i)==="1";
+let curStep=Math.min(5,Math.max(0,parseInt(ls.get(PFX+"step"),10)||0));
+
+function renderRoad(){
+  $("road").innerHTML=STEPS.map((s,i)=>`<button type="button" class="rs ${isDone(i)?"done":""} ${recFull(i)?"recd":""}" data-i="${i}" ${i===curStep?'aria-current="true"':""} aria-label="${i+1}단계 ${s.t}${isDone(i)?", 완료":""}${recFull(i)?", 기록 완료":""}"><span class="rec" aria-hidden="true"></span><span class="tick" aria-hidden="true">✓</span><span class="no">STEP 0${i+1}</span><span class="t">${s.t}</span><span class="d">${s.d}</span></button>`).join("");
+  updateProg();
+}
+function renderDetail(){
+  const D=STEPS[curStep], i=curStep;
+  $("detail").innerHTML=`
+    <div class="ch"><div class="eyebrow">${D.eb}</div><h2>${D.h}</h2></div>
+    ${D.req?`<div class="req"><b>필수</b><span>${D.req}</span></div>`:""}
+    <div class="ch"><div class="crit"><span class="badge">C-1</span><span class="note">계획 예시 (계획서 한 줄)</span></div>
+      <div class="plan"><div><b>순서</b>${i+1}. ${D.t}</div><div><b>시간</b>${D.plan[0]}</div><div><b>재료</b>${D.plan[1]}</div><div><b>도구</b>${D.plan[2]}</div></div>
+      <p class="why"><b>이 순서인 까닭 ·</b> ${D.why}</p></div>
+    ${D.flow?`<div class="flow">${D.flow}</div>`:""}
+    <div class="step">
+      <figure class="fig">${[].concat(D.fig).map(k=>FIG[k]).join("")}<figcaption>${D.cap}</figcaption></figure>
+      <div class="points">${D.pts.map(([h,p])=>`<div class="pt"><div><h4>${h}</h4><p>${p}</p></div></div>`).join("")}</div>
+    </div>
+    <div class="log">
+      <div class="crit"><span class="badge">C-2</span><h3>오늘의 기록 · ${i+1}단계</h3></div>
+      <p class="note">차시가 끝나기 5분 전에 3칸을 채워요. 사진이나 그림도 남겨 두세요.</p>
+      <div class="log3">${REC.map(([f,l,ph])=>`<label class="fl"><span>${l}</span><textarea data-k="rec${i}-${f}" placeholder="${ph}"></textarea></label>`).join("")}</div>
+    </div>
+    <div class="stepnav">
+      <button type="button" class="btn" id="prevS" ${i===0?"disabled":""}>‹ 이전</button>
+      <button type="button" class="btn ${isDone(i)?"":"primary"}" id="doneS">${isDone(i)?"✓ "+(i+1)+"단계 완료됨 (취소)":(i+1)+"단계 완료 표시"}</button>
+      <button type="button" class="btn" id="nextS" ${i===5?"disabled":""}>다음 ›</button>
+    </div>`;
+  fill($("detail"));
+  $("prevS").onclick=()=>go(i-1);
+  $("nextS").onclick=()=>go(i+1);
+  $("doneS").onclick=()=>{const v=!isDone(i); save("done"+i,v?"1":""); renderRoad(); renderDetail(); if(v&&i<5) setTimeout(()=>go(i+1),250);};
+}
+function go(i){curStep=Math.min(5,Math.max(0,i)); save("step",String(curStep)); renderRoad(); renderDetail();}
+$("road").addEventListener("click",e=>{const b=e.target.closest(".rs"); if(b) go(+b.dataset.i);});
+
+/* C-4 바꾼 점 */
+$("chg").innerHTML=[0,1].map(r=>`<div class="chg">
+  <label class="fl"><span>구분</span><select data-k="chg${r}-k"><option value="">고르기</option><option>디자인 변경</option><option>계획 변경</option><option>그 밖의 변경</option></select></label>
+  <label class="fl"><span>처음 계획</span><input type="text" data-k="chg${r}-a" placeholder="처음엔 어떻게?"></label>
+  <label class="fl"><span>바꾼 내용</span><input type="text" data-k="chg${r}-b" placeholder="어떻게 바꿨나?"></label>
+  <label class="fl"><span>바꾼 까닭</span><input type="text" data-k="chg${r}-c" placeholder="왜 바꿨나?"></label></div>`).join("");
+fill($("chg"));
+
+/* C-3 자기점검 */
+const SELF=["계획서에 따라 끝까지 완성했나요?","목표한 대로 작동하나요?","접착·배선이 단단하고 마무리가 깔끔한가요?","앞·옆·위 모습을 이름표(차체·모터·기어·건전지 위치)와 함께 남겼나요?"];
+$("self").innerHTML=SELF.map((q,i)=>`<div class="sr" role="radiogroup" aria-label="${q}"><span>${q}</span><div class="stars">${["★★★","★★","★"].map(s=>`<label><input type="radio" name="self${i}" data-k="self${i}" value="${s}" aria-label="${s.length}점"><span>${s}</span></label>`).join("")}</div></div>`).join("");
+fill($("self"));
+
+/* ───── 평가 ───── */
+const TD=[["목표","예) 3m 이상 간다"],["재는 것과 단위","예) 이동 거리(m)"],["재는 방법","예) 출발선에서 멈춘 곳까지 줄자로 잰다"],["횟수","예) 3번"]];
+const TD2=["예) 3m를 갈 때 옆으로 30cm 이내로 벗어난다","예) 옆으로 벗어난 거리(cm)","예) 가운데 선에서 멈춘 곳까지 옆 거리를 줄자로 잰다","예) 3번"];
+$("tdesign").innerHTML=[0,1].map(t=>`<div class="tcard"><h3>테스트 ${t+1} 설계</h3>${TD.map(([l,ph],j)=>`<label class="fl"><span>${["확인할 목표","재는 것과 단위","재는 방법","횟수"][j]}</span><input type="text" data-k="td${t}-${j}" placeholder="${t?TD2[j]:ph}"></label>`).join("")}</div>`).join("");
+fill($("tdesign"));
+
+const TDEF=[{name:"이동 거리",unit:"m",dir:"이상",target:"3.0"},{name:"옆으로 벗어난 거리",unit:"cm",dir:"이하",target:"30"}];
+$("tres").innerHTML=[0,1].map(t=>`<div class="tcard" id="tc${t}">
+  <h3>테스트 ${t+1}</h3>
+  <div class="set">
+    <label class="fl"><span>재는 것</span><input type="text" data-k="t${t}name"></label>
+    <label class="fl"><span>목표 기준</span><input type="number" inputmode="decimal" step="any" data-k="t${t}target"></label>
+    <label class="fl"><span>방향</span><select data-k="t${t}dir"><option>이상</option><option>이하</option></select></label>
+    <label class="fl"><span>단위</span><input type="text" data-k="t${t}unit"></label>
+  </div>
+  <div class="tri">${[0,1,2].map(r=>`<label class="fl"><span>${r+1}회</span><input type="number" inputmode="decimal" step="any" data-k="t${t}r${r}"></label>`).join("")}</div>
+  <div class="res"><div class="avg"><small>평균</small><span id="avg${t}">–</span></div><span class="verdict" id="vd${t}" aria-live="polite">3회 입력하면 판정</span></div>
+  <p class="reason" id="rs${t}"></p></div>`).join("");
+function initTestDefaults(){
+  TDEF.forEach((d,t)=>{["name","unit","dir","target"].forEach(f=>{if(ls.get(PFX+`t${t}${f}`)===null) save(`t${t}${f}`,d[f]);});});
+}
+initTestDefaults(); fill($("tres"));
+
+const r1=x=>Math.round(x*10)/10;
+const fmt=x=>{const s=r1(x).toFixed(1); return s.endsWith(".0")&&Math.abs(x)>=10?String(Math.round(x)):s;};
+const lastV=["",""];
+function updateTests(){
+  [0,1].forEach(t=>{
+    const unit=val(`t${t}unit`)||"", dir=val(`t${t}dir`)||"이상", tgRaw=val(`t${t}target`);
+    const tg=parseFloat(tgRaw);
+    const nums=[0,1,2].map(r=>val(`t${t}r${r}`).trim()).filter(s=>s!=="").map(Number).filter(Number.isFinite);
+    const vd=$("vd"+t), rs=$("rs"+t), av=$("avg"+t);
+    av.textContent=nums.length?fmt(nums.reduce((a,b)=>a+b,0)/nums.length)+" "+unit:"–";
+    let cls="verdict", txt, reason="";
+    if(nums.length<3){txt="3회 입력하면 판정";}
+    else if(!Number.isFinite(tg)){txt="목표 기준을 입력해요";}
+    else{
+      const pass=x=>dir==="이하"?x<=tg:x>=tg;
+      const avg=r1(nums.reduce((a,b)=>a+b,0)/3), p=nums.filter(pass).length, T=`${fmt(tg)}${unit} ${dir}`, A=`${fmt(avg)}${unit}`;
+      if(p===3){cls+=" ok";txt="달성";reason=`3회 모두 ${T}이고, 평균 ${A}라서 달성`;}
+      else if(pass(avg)){cls+=" part";txt="부분 달성";reason=`3회 중 ${p}회가 ${T}, 평균 ${A}라서 부분 달성 (평균은 통과했지만 못 통과한 회차가 있음)`;}
+      else{cls+=" no";txt="미달성";reason=`3회 중 ${p}회가 ${T}, 평균 ${A}로 목표(${T})를 통과하지 못해서 미달성`;}
+    }
+    vd.className=cls; vd.textContent=txt; rs.textContent=reason;
+    if(txt!==lastV[t]&&cls!=="verdict"){void vd.offsetWidth; vd.classList.add("pop");}
+    lastV[t]=txt;
+  });
+  updateProg();
+}
+const DEMO=[[3.2,2.6,3.5],[20,45,30]];
+$("demo").onclick=()=>{
+  DEMO.forEach((arr,t)=>{const d=TDEF[t]; ["name","unit","dir","target"].forEach(f=>save(`t${t}${f}`,d[f])); arr.forEach((v,r)=>save(`t${t}r${r}`,String(v)));});
+  fill($("tres")); updateTests();
+};
+twoTap($("resetT"),"기록표 지우기",()=>{[0,1].forEach(t=>[0,1,2].forEach(r=>save(`t${t}r${r}`,""))); fill($("tres")); updateTests();});
+
+/* D-3 내 개선 */
+$("mimp").innerHTML=[0,1].map(i=>`<div class="imp mine">
+  <label class="prob"><b>내 개선 ${i+1} · 문제점 (테스트 결과)</b><input type="text" data-k="imp${i}-a" placeholder="예) 3회 중 1회가 2.6m밖에 못 감"></label>
+  <label class="sol"><b>개선 방법 (무엇을 · 어떻게)</b><input type="text" data-k="imp${i}-b" placeholder="무엇을 어떻게 바꿀까?"></label>
+  <label class="eff"><b>기대 효과</b><input type="text" data-k="imp${i}-c" placeholder="바꾸면 어떻게 좋아질까?"></label></div>`).join("");
+fill(document);
+
+/* 진행률: 제작 완료 6 + 기록 6 */
+function updateProg(){
+  let n=0; for(let i=0;i<6;i++){if(isDone(i))n++; if(recFull(i))n++;}
+  $("progTx").textContent=n+"/12"; $("progBar").style.width=(n/12*100)+"%";
+}
+
+/* 전체 지우기 */
+twoTap($("wipe"),"내 기록 모두 지우기",()=>{
+  try{Object.keys(localStorage).filter(k=>k.startsWith(PFX)).forEach(k=>ls.del(k));}catch(e){}
+  initTestDefaults();
+  document.querySelectorAll("[data-c]").forEach(c=>c.checked=false);
+  fill(document); curStep=0; renderRoad(); renderDetail(); checkGoals(); updateTests();
+});
+
+/* ───── 제출 ───── */
+// ▼ 선생님: Apps Script 웹 앱 주소(…/exec)를 따옴표 안에 붙여 넣으세요
+const SUBMIT_URL="";
+const VIEWS=[["front","앞"],["side","옆"],["top","위"]];
+const photos={};
+(function initSend(){
+  const bs=document.querySelector('[data-k="sbban"]'), ns=document.querySelector('[data-k="sbno"]');
+  for(let i=1;i<=12;i++) bs.insertAdjacentHTML("beforeend",`<option value="${i}">${i}반</option>`);
+  for(let i=1;i<=40;i++) ns.insertAdjacentHTML("beforeend",`<option value="${i}">${i}번</option>`);
+  fill($("p-send"));
+  $("photos").innerHTML=VIEWS.map(([k,l])=>`<label class="photo" id="ph-${k}"><span class="ttl">${l}</span>
+    <input type="file" accept="image/*" data-v="${k}" aria-label="${l}에서 본 사진 고르기">
+    <span class="box"><span>📷<br>${l}에서 찍은 사진<br>누르면 고를 수 있어요</span></span></label>`).join("");
+  $("photos").addEventListener("change",async e=>{
+    const inp=e.target, k=inp.dataset.v; if(!k||!inp.files||!inp.files[0]) return;
+    const lab=$("ph-"+k), box=lab.querySelector(".box");
+    box.innerHTML="<span>사진 줄이는 중…</span>";
+    try{
+      const img=await loadImg(inp.files[0]);
+      const full=shrink(img,1280,.82); let thumb=shrink(img,360,.6);
+      for(let q=.5;thumb.length>45000&&q>.15;q-=.1) thumb=shrink(img,300,q);
+      photos[k]={full,thumb};
+      box.innerHTML=""; const im=new Image(); im.src=thumb; im.alt=VIEWS.find(x=>x[0]===k)[1]+"에서 본 사진 미리보기"; box.appendChild(im);
+      lab.classList.add("has");
+    }catch(err){ delete photos[k]; lab.classList.remove("has"); box.innerHTML="<span>사진을 열 수 없어요. 다른 사진으로 다시 골라 주세요.</span>"; }
+    updateSendList();
+  });
+})();
+function loadImg(file){
+  return new Promise((ok,no)=>{const url=URL.createObjectURL(file),im=new Image();
+    im.onload=()=>{URL.revokeObjectURL(url);ok(im);}; im.onerror=()=>{URL.revokeObjectURL(url);no(new Error("img"));}; im.src=url;});
+}
+function shrink(img,max,q){
+  const r=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight));
+  const c=document.createElement("canvas"); c.width=Math.round(img.naturalWidth*r); c.height=Math.round(img.naturalHeight*r);
+  const x=c.getContext("2d"); x.fillStyle="#fff"; x.fillRect(0,0,c.width,c.height); x.drawImage(img,0,0,c.width,c.height);
+  return c.toDataURL("image/jpeg",q);
+}
+const has=k=>!!val(k).trim();
+const cnt=keys=>keys.filter(has).length;
+function sendStats(){
+  const r6=[0,1,2,3,4,5];
+  return [
+    ["C-1","목표",cnt([0,1,2].map(i=>"g"+i)),3],
+    ["C-1","계획서",r6.filter(i=>["a","b","c","d"].every(f=>has(`pl${i}-${f}`))).length+(has("plwhy")?1:0),7],
+    ["C-2","차시별 기록",r6.filter(recFull).length,6],
+    ["C-3","자기점검",cnt([0,1,2,3].map(i=>"self"+i)),4],
+    ["C-3","사진",VIEWS.filter(([k])=>photos[k]).length,3],
+    ["C-4","바꾼 점",[0,1].filter(r=>has(`chg${r}-b`)&&has(`chg${r}-c`)).length,2],
+    ["D-1","테스트 설계",[0,1].filter(t=>[0,1,2,3].every(j=>has(`td${t}-${j}`))).length,2],
+    ["D-2","결과 기록",[0,1].filter(t=>[0,1,2].every(r=>has(`t${t}r${r}`))).length+(has("overall")?1:0),3],
+    ["D-3·4","개선·성찰",[0,1].filter(i=>has(`imp${i}-b`)).length+cnt(["d4good","d4bad","d4change","d4learn"]),6]
+  ];
+}
+function updateSendList(){
+  $("sendlist").innerHTML=sendStats().map(([b,l,n,t])=>`<li class="${n>=t?"full":""}"><span class="b">${b}</span>${l}<span class="n">${n>=t?"✓ ":""}${n}/${t}</span></li>`).join("");
+}
+function collect(){
+  const g=val;
+  return {
+    v:1,
+    goals:[0,1,2].map(i=>({text:g("g"+i),type:g("gt"+i)})),
+    plan:[0,1,2,3,4,5].map(i=>({task:g(`pl${i}-a`),time:g(`pl${i}-b`),mat:g(`pl${i}-c`),tool:g(`pl${i}-d`)})),
+    planWhy:g("plwhy"),
+    steps:STEPS.map((s,i)=>({title:s.t,done:isDone(i),today:g(`rec${i}-a`),safety:g(`rec${i}-b`),solve:g(`rec${i}-c`)})),
+    self:SELF.map((q,i)=>({q,star:g("self"+i)})),
+    changes:[0,1].map(r=>({kind:g(`chg${r}-k`),before:g(`chg${r}-a`),after:g(`chg${r}-b`),why:g(`chg${r}-c`)})),
+    testDesign:[0,1].map(t=>({goal:g(`td${t}-0`),what:g(`td${t}-1`),how:g(`td${t}-2`),count:g(`td${t}-3`)})),
+    tests:[0,1].map(t=>({name:g(`t${t}name`),unit:g(`t${t}unit`),dir:g(`t${t}dir`),target:g(`t${t}target`),r:[0,1,2].map(r=>g(`t${t}r${r}`)),avg:$("avg"+t).textContent,verdict:$("vd"+t).textContent,reason:$("rs"+t).textContent})),
+    overall:g("overall"),
+    imps:[0,1].map(i=>({problem:g(`imp${i}-a`),how:g(`imp${i}-b`),effect:g(`imp${i}-c`)})),
+    d4:{good:g("d4good"),bad:g("d4bad"),change:g("d4change"),learn:g("d4learn")}
+  };
+}
+function sendMsg(cls,txt){const m=$("sendMsg"); m.hidden=false; m.className="smsg "+cls; m.textContent=txt;}
+$("sendBtn").onclick=async()=>{
+  const ban=val("sbban"), no=val("sbno"), name=val("sbname").trim(), pin=$("sbpin").value.trim();
+  if(!SUBMIT_URL) return sendMsg("err","아직 제출 주소가 설정되지 않았어요. 선생님께 알려 주세요.");
+  if(!ban||!no) return sendMsg("err","반과 번호를 골라 주세요.");
+  if(!name) return sendMsg("err","이름을 써 주세요.");
+  if(!/^\d{4}$/.test(pin)) return sendMsg("err","제출 비밀번호를 숫자 4자리로 써 주세요.");
+  const written=sendStats().filter(x=>x[1]!=="사진").reduce((s,x)=>s+x[2],0);
+  if(!written&&!Object.keys(photos).length) return sendMsg("err","아직 쓴 내용도, 고른 사진도 없어요.");
+  const btn=$("sendBtn"); btn.disabled=true;
+  sendMsg("wait",Object.keys(photos).length?"사진과 기록을 보내는 중… 창을 닫지 말고 잠깐 기다려요 ⏳":"기록을 보내는 중… ⏳");
+  try{
+    const res=await fetch(SUBMIT_URL,{method:"POST",body:JSON.stringify({action:"submit",ban,no,name,pin,answers:written?collect():null,photos})});
+    const out=await res.json();
+    if(out.ok){
+      save("sblast",out.time||"");
+      sendMsg("ok",`제출 완료! 🎉 ${out.time||""} · ${out.count}번째 제출이에요.${written?"":" (이 기기에는 쓴 내용이 없어서 사진만 보냈고, 예전에 낸 답안은 그대로 남아요.)"}${out.pdf?" 학습지 PDF도 만들어졌어요.":""} 고치고 싶으면 다시 제출해도 돼요.`);
+    } else sendMsg("err",out.msg||"제출하지 못했어요. 다시 눌러 주세요.");
+  }catch(err){ sendMsg("err","인터넷 연결을 확인하고 다시 눌러 주세요. (기록은 이 기기에 그대로 있어요)"); }
+  btn.disabled=false;
+};
+document.addEventListener("input",()=>{ if(!$("p-send").hidden) updateSendList(); });
+
+/* ───── 탭 ───── */
+const TABS=["plan","make","eval","send"];
+function showTab(k){
+  TABS.forEach(t=>{$("t-"+t).setAttribute("aria-selected",String(t===k)); $("t-"+t).tabIndex=t===k?0:-1; $("p-"+t).hidden=t!==k;});
+  save("tab",k);
+  if(k==="send") updateSendList();
+}
+TABS.forEach((t,i)=>{
+  $("t-"+t).onclick=()=>showTab(t);
+  $("t-"+t).onkeydown=e=>{let n=null; if(e.key==="ArrowRight")n=(i+1)%TABS.length; if(e.key==="ArrowLeft")n=(i+TABS.length-1)%TABS.length; if(n!==null){showTab(TABS[n]);$("t-"+TABS[n]).focus();e.preventDefault();}};
+});
+const hashTab=(location.hash||"").replace("#","");
+showTab(TABS.includes(hashTab)?hashTab:(TABS.includes(val("tab"))?val("tab"):"plan"));
+
+renderRoad(); renderDetail(); checkGoals(); updateTests();
+</script>
+</body>
+</html>
