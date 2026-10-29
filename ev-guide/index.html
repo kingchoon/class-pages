@@ -843,9 +843,9 @@ function photoSlot(k,title,hint,aria){
     if(!b.dataset.armed){ b.dataset.armed="1"; b.textContent="한 번 더 누르면 지워져요"; setTimeout(()=>{delete b.dataset.armed; b.textContent="🗑 사진 지우기";},3000); return; }
     delete b.dataset.armed; b.textContent="🗑 사진 지우기";
     const inp=document.querySelector(`input[data-v="${k}"]`); if(inp) inp.value="";
-    if(photos[k]&&photos[k].srv){ photos[k]={del:true,sent:false,srv:true}; keepPhoto(k); }
+    if(photos[k]&&(photos[k].srv||photos[k].sent)){ photos[k]={del:true,sent:false,srv:true}; keepPhoto(k); }
     else { delete photos[k]; ls.del(PFX+"ph-"+k); }
-    showPhoto(k); updateSendList(); setDirty(true);
+    showPhoto(k); updateSendList(); setDirty(true); scheduleAuto(5000);
   });
   // 완성품 사진(앞·옆·위)과 단계별 과정 사진 모두 여기서 처리
   document.addEventListener("change",async e=>{
@@ -859,7 +859,7 @@ function photoSlot(k,title,hint,aria){
       for(let q=.5;thumb.length>45000&&q>.15;q-=.1) thumb=shrink(img,300,q);
       photos[k]={full,thumb,sent:false,srv:!!(photos[k]&&photos[k].srv)}; keepPhoto(k); showPhoto(k);
     }catch(err){ lab.classList.remove("has"); box.innerHTML="<span>사진을 열 수 없어요. 다른 사진으로 다시 골라 주세요.</span>"; }
-    updateSendList(); setDirty(true);
+    updateSendList(); setDirty(true); scheduleAuto(5000);
   });
 })();
 function showPhoto(k){
@@ -1043,13 +1043,14 @@ document.addEventListener("input",e=>{ const k=e.target.dataset&&e.target.datase
 document.addEventListener("change",e=>{ if(e.target.closest&&e.target.closest("#photos")) setDirty(true); });
 // 자동 저장: 마지막으로 고친 뒤 1분 지나면 서버에 저장 (계속 쓰고 있어도 3분은 넘기지 않음)
 let autoT=null, firstDirtyAt=0;
-document.addEventListener("input",()=>{
+function scheduleAuto(soon){
   if(val("dirty")!=="1"||infoProblem(info())) return;
   if(!firstDirtyAt) firstDirtyAt=Date.now();
   clearTimeout(autoT);
-  const wait=Math.max(0,Math.min(60000,180000-(Date.now()-firstDirtyAt)));
-  autoT=setTimeout(async()=>{ if(await push("save",true)) firstDirtyAt=0; },wait);
-});
+  const wait=soon!=null?soon:Math.max(0,Math.min(60000,180000-(Date.now()-firstDirtyAt)));
+  autoT=setTimeout(async()=>{ if(busy){ scheduleAuto(3000); return; } if(await push("save",true)) firstDirtyAt=0; },wait);
+}
+document.addEventListener("input",()=>scheduleAuto());
 setInterval(()=>{ if(val("dirty")==="1"&&!infoProblem(info())&&!busy) push("save",true).then(ok=>{if(ok)firstDirtyAt=0;}); },180000);
 // 탭을 닫거나, 다른 탭으로 가거나, 크롬북 덮개를 닫을 때 마지막으로 한 번 더 저장
 function beaconSave(){
