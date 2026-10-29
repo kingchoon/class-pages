@@ -476,9 +476,9 @@ input::placeholder,textarea::placeholder{color:var(--sub);opacity:.8}
         <label class="fl"><span>반</span><select data-k="sbban"><option value="">반 고르기</option></select></label>
         <label class="fl"><span>번호</span><select data-k="sbno"><option value="">번호 고르기</option></select></label>
         <label class="fl"><span>이름</span><input type="text" data-k="sbname" maxlength="20" autocomplete="off" placeholder="이름"></label>
-        <label class="fl"><span>내 비밀번호 (숫자 4자리)</span><input type="password" id="sbpin" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="●●●●"></label>
+        <label class="fl"><span>내 비밀번호 (숫자 4자리)</span><input type="password" id="sbpin" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="●●●●"><span style="font-weight:400;font-size:14px;display:flex;gap:6px;align-items:center;min-height:32px"><input type="checkbox" id="pinKeep" checked style="width:18px;height:18px;accent-color:var(--accent)">내 크롬북이라 기억하기</span></label>
       </div>
-      <p class="note">비밀번호는 <b>처음 저장할 때 정하고</b>, 저장·불러오기·제출 때 같은 번호를 써요. 다른 친구가 내 기록을 덮어쓰거나 가져가지 못하게 지켜 줘요. 잊었으면 선생님께 말해요. 비밀번호를 넣어 두면 창을 닫기 전까지 <b>3분마다 자동 저장</b>돼요.</p>
+      <p class="note">비밀번호는 <b>처음 저장할 때 정하고</b>, 저장·불러오기·제출 때 같은 번호를 써요. 다른 친구가 내 기록을 덮어쓰거나 가져가지 못하게 지켜 줘요. 잊었으면 선생님께 말해요. 반·번호·이름·비밀번호를 한 번 써 두면, <b>고칠 때마다 1분 뒤 선생님 드라이브에 자동 저장</b>되고 창을 닫을 때도 저장돼요.</p>
       <div class="btnrow">
         <button type="button" class="btn primary" id="saveBtn">☁️ 저장하기</button>
         <button type="button" class="btn" id="loadBtn">📥 저장한 것 불러오기</button>
@@ -890,8 +890,12 @@ function collect(){
 }
 function sendMsg(cls,txt,id){const m=$(id||"sendMsg"); m.hidden=false; m.className="smsg "+cls; m.textContent=txt;}
 const ssn={get(k){try{return sessionStorage.getItem(k)}catch(e){return null}},set(k,v){try{sessionStorage.setItem(k,v)}catch(e){}}};
-$("sbpin").value=ssn.get(PFX+"pin")||"";
-$("sbpin").addEventListener("input",()=>{ssn.set(PFX+"pin",$("sbpin").value.trim()); updateCloud();});
+// 내 크롬북이면 비밀번호를 기억해서, 창을 다시 열어도 자동 저장이 이어지게
+$("pinKeep").checked=val("pinKeep")!=="0";
+$("sbpin").value=ssn.get(PFX+"pin")||(val("pinKeep")!=="0"?val("pin"):"")||"";
+function keepPin(){ const v=$("sbpin").value.trim(); ssn.set(PFX+"pin",v); if($("pinKeep").checked) save("pin",v); else ls.del(PFX+"pin"); }
+$("sbpin").addEventListener("input",()=>{keepPin(); updateCloud();});
+$("pinKeep").addEventListener("change",()=>{save("pinKeep",$("pinKeep").checked?"1":"0"); keepPin(); updateCloud();});
 const info=()=>({ban:val("sbban"),no:val("sbno"),name:val("sbname").trim(),pin:$("sbpin").value.trim()});
 function infoProblem(i){
   if(!SUBMIT_URL) return "아직 저장 주소가 설정되지 않았어요. 선생님께 알려 주세요.";
@@ -945,10 +949,11 @@ function updateCloud(warn){
   if(warn){ st.textContent="⚠️ "+warn; c.className="cloud dirty"; return; }
   st.innerHTML="";
   const b=document.createElement("b");
+  if(!last&&!dirty&&!writtenCount()){ b.textContent="👋 처음이면 '저장·제출' 탭에서 반·번호·이름·비밀번호를 먼저 써요"; st.append(b," · 전에 쓴 적이 있는데 비어 있으면 📥 불러오기!"); return; }
   if(!last&&!dirty){ b.textContent="☁️ 아직 서버에 저장한 적 없어요"; st.append(b," · 수업이 끝나기 전에 꼭 저장해요"); }
   else if(dirty){ b.textContent="저장 안 된 내용이 있어요"; st.append(b,last?` · 마지막 저장 ${last}`:" · 아직 서버 저장 전"); }
   else { b.textContent="✓ 서버에 저장됨"; st.append(b,` · ${last}`); }
-  if(/^\d{4}$/.test($("sbpin").value.trim())) st.append(" · 3분마다 자동 저장 중");
+  if(!infoProblem(info())) st.append(" · 고치면 1분 뒤 자동 저장");
 }
 /* 불러오기: 서버에 저장한 내용 → 이 기기로 (두 번 눌러 확인) */
 (function(){
@@ -971,7 +976,7 @@ function updateCloud(warn){
   });
 })();
 function applyLoaded(out){
-  const keep=["sbban","sbno","sbname","tab"];
+  const keep=["sbban","sbno","sbname","tab","pin","pinKeep"];
   try{ Object.keys(localStorage).filter(k=>k.startsWith(PFX)&&!keep.includes(k.slice(PFX.length))).forEach(k=>ls.del(k)); }catch(e){}
   const a=out.answers||{}, S=(k,v)=>save(k,v==null?"":String(v));
   (a.goals||[]).forEach((g,i)=>{S("g"+i,g.text);S("gt"+i,g.type);});
@@ -993,12 +998,24 @@ function applyLoaded(out){
 /* 바뀐 내용 표시 + 3분마다 자동 저장 + 창 닫을 때 마지막 저장 */
 document.addEventListener("input",e=>{ const k=e.target.dataset&&e.target.dataset.k; if(k&&!k.startsWith("sb")) setDirty(true); });
 document.addEventListener("change",e=>{ if(e.target.closest&&e.target.closest("#photos")) setDirty(true); });
-setInterval(()=>{ if(val("dirty")==="1"&&!infoProblem(info())) push("save",true); },180000);
-window.addEventListener("pagehide",()=>{
-  if(noFlush||val("dirty")!=="1"||infoProblem(info())||!navigator.sendBeacon) return;
-  const i=info(), w=writtenCount(); if(!w) return;
-  try{ navigator.sendBeacon(SUBMIT_URL,new Blob([JSON.stringify({action:"save",ban:i.ban,no:i.no,name:i.name,pin:i.pin,answers:collect(),photos:{}})],{type:"text/plain"})); }catch(e){}
+// 자동 저장: 마지막으로 고친 뒤 1분 지나면 서버에 저장 (계속 쓰고 있어도 3분은 넘기지 않음)
+let autoT=null, firstDirtyAt=0;
+document.addEventListener("input",()=>{
+  if(val("dirty")!=="1"||infoProblem(info())) return;
+  if(!firstDirtyAt) firstDirtyAt=Date.now();
+  clearTimeout(autoT);
+  const wait=Math.max(0,Math.min(60000,180000-(Date.now()-firstDirtyAt)));
+  autoT=setTimeout(async()=>{ if(await push("save",true)) firstDirtyAt=0; },wait);
 });
+setInterval(()=>{ if(val("dirty")==="1"&&!infoProblem(info())&&!busy) push("save",true).then(ok=>{if(ok)firstDirtyAt=0;}); },180000);
+// 탭을 닫거나, 다른 탭으로 가거나, 크롬북 덮개를 닫을 때 마지막으로 한 번 더 저장
+function beaconSave(){
+  if(noFlush||val("dirty")!=="1"||infoProblem(info())||!navigator.sendBeacon) return;
+  const i=info(); if(!writtenCount()) return;
+  try{ navigator.sendBeacon(SUBMIT_URL,new Blob([JSON.stringify({action:"save",ban:i.ban,no:i.no,name:i.name,pin:i.pin,answers:collect(),photos:{}})],{type:"text/plain"})); }catch(e){}
+}
+window.addEventListener("pagehide",beaconSave);
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="hidden") beaconSave(); });
 document.addEventListener("input",()=>{ if(!$("p-send").hidden) updateSendList(); });
 // 한글 입력 중 마지막 글자까지: 조합이 끝날 때, 칸을 벗어날 때, 새로고침·창 닫기 직전에 한 번 더 저장
 function flushAll(){ if(noFlush) return; document.querySelectorAll("[data-k]").forEach(el=>{ if(el.type==="radio"){ if(el.checked) save(el.dataset.k,el.value); } else save(el.dataset.k,el.value); }); }
