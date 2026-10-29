@@ -569,8 +569,17 @@ function checkGoals(){
 }
 
 /* ───── 내 계획서 (C-1) ───── */
+// 할 일 힌트: 단계 이름만 알려 주고, 무엇을·어떻게는 학생이 자세히 쓰게
+const PLAN_HINT=[
+  ["제작도 그리기","어떤 면들을, 몇 mm로 그릴까?"],
+  ["우드락에 옮기기","제작도를 우드락에 어떻게 옮겨 그릴까?"],
+  ["우드락 자르기","어떤 도구로, 어떻게 안전하게 자를까?"],
+  ["밑판 작업하기","밑판에 무엇을(모터·기어·축·바퀴·탑승객 자리) 어떻게 달까?"],
+  ["나머지 우드락 붙이기","어떤 판을, 무엇으로, 어떻게 붙일까?"],
+  ["검사하기","무엇을 어떻게 확인할까? (작동·치수·안전)"]
+];
 $("myplan").innerHTML=[0,1,2,3,4,5].map(i=>`<div class="prow"><span class="pn" aria-hidden="true">${i+1}</span>
-  <label class="fl"><span>${i+1}. 할 일</span><textarea data-k="pl${i}-a" placeholder="${i?"":"예) 제작도를 그린다. 모든 면을 조건에 맞게 mm로 적는다."}"></textarea></label>
+  <label class="fl"><span>${i+1}. 할 일 <em style="font-style:normal;font-weight:500;font-size:13.5px;background:var(--accent-soft);color:var(--accent);border-radius:8px;padding:1px 8px;margin-left:4px">💡 ${PLAN_HINT[i][0]}</em></span><textarea data-k="pl${i}-a" placeholder="${PLAN_HINT[i][0]} → ${PLAN_HINT[i][1]}"></textarea></label>
   <label class="fl"><span>시간</span><input type="text" data-k="pl${i}-b" placeholder="예) 1차시"></label>
   <label class="fl"><span>재료</span><input type="text" data-k="pl${i}-c" placeholder="크기·개수까지"></label>
   <label class="fl"><span>도구</span><input type="text" data-k="pl${i}-d" placeholder="사용할 도구"></label></div>`).join("");
