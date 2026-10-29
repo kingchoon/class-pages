@@ -118,6 +118,7 @@ input::placeholder,textarea::placeholder{color:var(--sub);opacity:.8}
 .tool label{display:flex;align-items:center;gap:10px;font-weight:600;min-height:36px;cursor:pointer}
 .tool input{width:20px;height:20px;accent-color:var(--accent);flex:none}
 .tool p{font-size:15px;color:var(--sub)}
+.tool textarea{min-height:58px}
 .alert{border:2px solid var(--bad);background:var(--bad-soft);border-radius:12px;padding:10px 14px;font-size:15px}
 .alert b{color:var(--bad)}
 
@@ -343,7 +344,8 @@ input::placeholder,textarea::placeholder{color:var(--sub);opacity:.8}
 
     <div class="card">
       <div class="ch"><div class="eyebrow">02 · Tools &amp; Safety</div><h2>공구와 안전 수칙</h2>
-        <div class="crit"><span class="badge">C-2</span><span class="top"><b>7-8점</b>도구마다 안전 수칙을 바르게 쓰고, 그대로 지키며 쓴다</span></div></div>
+        <div class="crit"><span class="badge">C-2</span><span class="top"><b>7-8점</b>도구마다 안전 수칙을 바르게 쓰고, 그대로 지키며 쓴다</span></div>
+        <p class="note">빈칸에 도구마다 <b>안전 수칙을 직접</b> 써요. 준비한 도구는 이름 앞 칸에 체크해요.</p></div>
       <div class="tools" id="tools"></div>
       <div class="alert" role="note"><b>글루건이 떨어졌다면?</b> 손으로 잡지 않아요(뜨거운 끝에 화상). 한 발 물러난 뒤, <b>손잡이</b>를 잡아 거치대에 세워요.</div>
     </div>
@@ -590,18 +592,19 @@ const MATS=[
   {h:"차체 및 구동부",items:["5mm 우드락","바퀴 4개","쇠축 2개","기어(구동·종속)","플라스틱 빨대","탑승객(쇠구슬) 1개"]},
   {h:"전원 및 회로",items:["AA 건전지 2개 + 홀더","DC 모터","슬라이드 스위치","전선","수축튜브"]}
 ];
+// [도구 이름, 저장 키, 미리 적어 둔 수칙(없으면 학생이 직접 씀)]
 const TOOLS=[
-  ["커터칼","자를 대고, 칼날이 몸 바깥쪽을 향하게 하여 자른다."],
-  ["쇠자","자를 꾹 눌러 고정하고, 칼날이 자 바깥으로 넘어오지 않게 한다."],
-  ["글루건","달궈진 끝을 만지지 않고, 다 쓴 뒤 거치대에 세워 둔다."],
-  ["니퍼·와이어 스트리퍼","전선 굵기에 맞는 구멍을 쓰고, 피복을 벗길 때 안쪽 구리선까지 자르지 않게 살짝 누른다."],
-  ["우드락 본드","얇게 펴 바르고 창문을 열어 환기한다. 손에 묻으면 바로 닦는다."],
-  ["드라이버","나사의 홈 모양에 맞는 크기를 골라 돌린다."],
-  ["히트건","바람을 수축튜브에만 대고, 사람 쪽으로 향하지 않는다. 쓴 뒤 뜨거운 끝을 만지지 않고 식을 때까지 세워 둔다."]
+  ["커터칼","cutter",""],
+  ["쇠자","ruler","자를 꾹 눌러 고정하고, 칼날이 자 바깥으로 넘어오지 않게 한다."],
+  ["글루건","glue",""],
+  ["우드락 본드","bond",""],
+  ["히트건","heat",""],
+  ["와이어 스트리퍼","wire",""]
 ];
 $("mats").innerHTML=MATS.map((g,gi)=>`<div class="mat"><h3><i></i>${g.h}</h3><div class="chk">${
   g.items.map((it,ii)=>`<label><input type="checkbox" data-c="m${gi}-${ii}"><span>${it}</span></label>`).join("")}</div></div>`).join("");
-$("tools").innerHTML=TOOLS.map(([n,r],i)=>`<div class="tool"><label><input type="checkbox" data-c="tl${i}"><span>${n}</span></label><p>${r}</p></div>`).join("");
+$("tools").innerHTML=TOOLS.map(([n,k,r])=>`<div class="tool"><label><input type="checkbox" data-c="tl-${k}"><span>${n}</span></label>${r?`<p>${r}</p>`:`<textarea data-k="safe-${k}" rows="2" aria-label="${n} 안전 수칙 쓰기" placeholder="안전 수칙 쓰기"></textarea>`}</div>`).join("");
+fill($("tools"));
 document.querySelectorAll("[data-c]").forEach(c=>{c.checked=val(c.dataset.c)==="1"; c.addEventListener("change",()=>save(c.dataset.c,c.checked?"1":""));});
 
 /* ───── 제작 6단계 ───── */
@@ -876,6 +879,7 @@ function sendStats(){
   return [
     ["C-1","목표",cnt([0,1,2].map(i=>"g"+i)),3],
     ["C-1","계획서",r6.filter(i=>["a","b","c","d"].every(f=>has(`pl${i}-${f}`))).length+(has("plwhy")?1:0),7],
+    ["C-2","안전 수칙",TOOLS.filter(t=>!t[2]&&has("safe-"+t[1])).length,TOOLS.filter(t=>!t[2]).length],
     ["C-2","차시별 기록",r6.filter(recFull).length,6],
     ["C-3","자기점검",cnt([0,1,2,3].map(i=>"self"+i)),4],
     ["C-3","사진",VIEWS.filter(([k])=>photos[k]).length,3],
@@ -895,6 +899,7 @@ function collect(){
     goals:[0,1,2].map(i=>({text:g("g"+i),type:g("gt"+i)})),
     plan:[0,1,2,3,4,5].map(i=>({task:g(`pl${i}-a`),time:g(`pl${i}-b`),mat:g(`pl${i}-c`),tool:g(`pl${i}-d`)})),
     planWhy:g("plwhy"),
+    safety:TOOLS.filter(t=>!t[2]).map(([n,k])=>({tool:n,rule:g("safe-"+k)})),
     steps:STEPS.map((s,i)=>({title:s.t,done:isDone(i),today:g(`rec${i}-a`),safety:g(`rec${i}-b`),solve:g(`rec${i}-c`)})),
     self:SELF.map((q,i)=>({q,star:g("self"+i)})),
     changes:[0,1].map(r=>({kind:g(`chg${r}-k`),before:g(`chg${r}-a`),after:g(`chg${r}-b`),why:g(`chg${r}-c`)})),
@@ -999,6 +1004,7 @@ function applyLoaded(out){
   (a.goals||[]).forEach((g,i)=>{S("g"+i,g.text);S("gt"+i,g.type);});
   (a.plan||[]).forEach((p,i)=>{S(`pl${i}-a`,p.task);S(`pl${i}-b`,p.time);S(`pl${i}-c`,p.mat);S(`pl${i}-d`,p.tool);});
   S("plwhy",a.planWhy);
+  (a.safety||[]).forEach(x=>{const t=TOOLS.find(t=>t[0]===x.tool); if(t) S("safe-"+t[1],x.rule);});
   (a.steps||[]).forEach((x,i)=>{S("done"+i,x.done?"1":"");S(`rec${i}-a`,x.today);S(`rec${i}-b`,x.safety);S(`rec${i}-c`,x.solve);});
   (a.self||[]).forEach((x,i)=>S("self"+i,x.star));
   (a.changes||[]).forEach((c,r)=>{S(`chg${r}-k`,c.kind);S(`chg${r}-a`,c.before);S(`chg${r}-b`,c.after);S(`chg${r}-c`,c.why);});
