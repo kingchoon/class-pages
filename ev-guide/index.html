@@ -188,7 +188,7 @@ input::placeholder,textarea::placeholder{color:var(--sub);opacity:.8}
 .tcard{border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-width:0}
 .tcard h3{font-size:18px}
 .set{display:grid;grid-template-columns:minmax(0,1fr) 92px 80px 72px;gap:8px;align-items:end}
-.tri{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.tri{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .tri input{text-align:center;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
 .res{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--surface-2);border-radius:12px;padding:10px 12px}
 .res .avg{font-family:var(--f-mono);font-size:20px;font-variant-numeric:tabular-nums}
@@ -431,7 +431,7 @@ input::placeholder,textarea::placeholder{color:var(--sub);opacity:.8}
         <div class="points">
           <div class="pt"><div><h4>목표 하나에 테스트 하나</h4><p>내 목표 ①②③ 중 2개 이상을 골라, 서로 다른 것을 재는 테스트를 만들어요.</p></div></div>
           <div class="pt"><div><h4>무엇을 · 단위까지</h4><p>"잘 가나?" 대신 "이동 거리(m)", "걸린 시간(초)"처럼 숫자로 재는 것을 정해요. 눈으로 보는 것보다 정확해요.</p></div></div>
-          <div class="pt"><div><h4>같은 방법으로 3번</h4><p>한 번은 우연일 수 있어요. 같은 출발선·같은 바닥에서 3번 재고 평균을 내요.</p></div></div>
+          <div class="pt"><div><h4>같은 방법으로 2번</h4><p>한 번은 우연일 수 있어요. 같은 출발선·같은 바닥에서 2번 재고 평균을 내요.</p></div></div>
         </div>
       </div>
       <div class="tests" id="tdesign"></div>
@@ -442,8 +442,8 @@ input::placeholder,textarea::placeholder{color:var(--sub);opacity:.8}
         <div class="crit"><span class="badge">D-2</span><span class="top"><b>7-8점</b> 실제로 테스트한 <b>결과(숫자)를 근거로</b>, 목표(디자인 사양)를 <b>얼마나 달성했는지 모두</b> 정리</span></div>
 
         </div>
-      <div class="rule"><span style="--c:var(--accent)">달성 = 3회 모두 통과</span><span style="--c:var(--caution)">부분 달성 = 평균은 통과, 못 통과한 회차 있음</span><span style="--c:var(--bad)">미달성 = 평균이 통과 못함</span></div>
-      <p class="note">재는 것·단위·목표 기준을 내 테스트에 맞게 쓰고 3회 결과를 넣어요. 평균은 자동으로 계산돼요. <b>달성 정도와 그렇게 판단한 까닭은 내가 직접</b> 골라 쓰고 써요.</p>
+      <div class="rule"><span style="--c:var(--accent)">달성 = 2회 모두 통과</span><span style="--c:var(--caution)">부분 달성 = 평균은 통과, 못 통과한 회차 있음</span><span style="--c:var(--bad)">미달성 = 평균이 통과 못함</span></div>
+      <p class="note">재는 것·단위·목표 기준을 내 테스트에 맞게 쓰고 2회 결과를 넣어요. 평균은 자동으로 계산돼요. <b>달성 정도와 그렇게 판단한 까닭은 내가 직접</b> 골라 쓰고 써요.</p>
       <div class="tests" id="tres"></div>
       <div class="row"><button class="btn warn" id="resetT" type="button">기록표 지우기</button></div>
 
@@ -778,7 +778,7 @@ $("tres").innerHTML=[0,1].map(t=>`<div class="tcard" id="tc${t}">
     <label class="fl"><span>방향</span><select data-k="t${t}dir"><option>이상</option><option>이하</option></select></label>
     <label class="fl"><span>단위</span><input type="text" data-k="t${t}unit"></label>
   </div>
-  <div class="tri">${[0,1,2].map(r=>`<label class="fl"><span>${r+1}회</span><input type="number" inputmode="decimal" step="any" data-k="t${t}r${r}"></label>`).join("")}</div>
+  <div class="tri">${[0,1].map(r=>`<label class="fl"><span>${r+1}회</span><input type="number" inputmode="decimal" step="any" data-k="t${t}r${r}"></label>`).join("")}</div>
   <div class="res"><div class="avg"><small>평균 (자동 계산)</small><span id="avg${t}">–</span></div></div>
   <div class="fl"><span>달성 정도 (내가 판단)</span><div class="vpick" role="radiogroup" aria-label="테스트 ${t+1} 달성 정도">${["달성","부분 달성","미달성"].map(v=>`<label><input type="radio" name="tv${t}" data-k="t${t}v" value="${v}"><span>${v}</span></label>`).join("")}</div></div>
   <label class="fl"><span>그렇게 판단한 까닭 (숫자를 넣어서)</span><textarea data-k="t${t}why" rows="2"></textarea></label>
@@ -802,12 +802,12 @@ document.addEventListener("input",e=>{ if(e.target.dataset&&/^dim/.test(e.target
 function updateTests(){
   [0,1].forEach(t=>{
     const unit=val(`t${t}unit`)||"";
-    const nums=[0,1,2].map(r=>val(`t${t}r${r}`).trim()).filter(s=>s!=="").map(Number).filter(Number.isFinite);
+    const nums=[0,1].map(r=>val(`t${t}r${r}`).trim()).filter(s=>s!=="").map(Number).filter(Number.isFinite);
     $("avg"+t).textContent=nums.length?fmt(nums.reduce((a,b)=>a+b,0)/nums.length)+" "+unit:"–";
   });
   updateProg();
 }
-twoTap($("resetT"),"기록표 지우기",()=>{[0,1].forEach(t=>[0,1,2].forEach(r=>save(`t${t}r${r}`,""))); fill($("tres")); updateTests();});
+twoTap($("resetT"),"기록표 지우기",()=>{[0,1].forEach(t=>[0,1].forEach(r=>save(`t${t}r${r}`,""))); fill($("tres")); updateTests();});
 
 /* D-3 내 개선 */
 $("mimp").innerHTML=[0,1].map(i=>`<div class="imp mine">
@@ -919,7 +919,7 @@ function sendStats(){
     ["C-3 ④","앞·옆·위 사진",VIEWS.filter(([k])=>live(k)).length,3],
     ["C-4","바꾼 점+이유",two.filter(r=>has(`chg${r}-b`)&&has(`chg${r}-c`)).length,2],
     ["D-1","테스트 방법",two.filter(t=>[0,1,2,3].every(j=>has(`td${t}-${j}`))).length,2],
-    ["D-2","결과 3회",two.filter(t=>[0,1,2].every(r=>has(`t${t}r${r}`))).length,2],
+    ["D-2","결과 2회",two.filter(t=>[0,1].every(r=>has(`t${t}r${r}`))).length,2],
     ["D-2","달성 정도+까닭",two.filter(t=>has(`t${t}v`)&&has(`t${t}why`)).length+(has("overall")?1:0),3],
     ["D-3","개선 방법",two.filter(i=>has(`imp${i}-b`)).length,2],
     ["D-4","사용자 영향",cnt(["d4good","d4bad"]),2],
@@ -942,7 +942,7 @@ function collect(){
     self:SELF.map((q,i)=>({q,star:g("self"+i)})),
     changes:[0,1].map(r=>({kind:g(`chg${r}-k`),before:g(`chg${r}-a`),after:g(`chg${r}-b`),why:g(`chg${r}-c`)})),
     testDesign:[0,1].map(t=>({goal:g(`td${t}-0`),what:g(`td${t}-1`),how:g(`td${t}-2`),count:g(`td${t}-3`)})),
-    tests:[0,1].map(t=>({name:g(`t${t}name`),unit:g(`t${t}unit`),dir:g(`t${t}dir`),target:g(`t${t}target`),r:[0,1,2].map(r=>g(`t${t}r${r}`)),avg:$("avg"+t).textContent,verdict:g(`t${t}v`),reason:g(`t${t}why`)})),
+    tests:[0,1].map(t=>({name:g(`t${t}name`),unit:g(`t${t}unit`),dir:g(`t${t}dir`),target:g(`t${t}target`),r:[0,1].map(r=>g(`t${t}r${r}`)),avg:$("avg"+t).textContent,verdict:g(`t${t}v`),reason:g(`t${t}why`)})),
     overall:g("overall"),
     imps:[0,1].map(i=>({problem:g(`imp${i}-a`),how:g(`imp${i}-b`),effect:g(`imp${i}-c`)})),
     d4:{good:g("d4good"),bad:g("d4bad"),change:g("d4change"),learn:g("d4learn")}
