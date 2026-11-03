@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<base target="_blank">
+<title>친환경 자동차 제작</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* 레이아웃: 주행 트랙처럼 노란 차선이 지나가는 단일 열 + 3개의 출입문 카드 */
+:root{
+  --bg:#EFF2EE; --surface:#FFFFFF; --fg:#16201B; --muted:#5B6B62; --line:#D5DDD7;
+  --accent:#0B6E4F; --accent-ink:#FFFFFF; --lane:#E5A800; --lane-soft:#FFF3CC;
+  --teacher:#26332C; --teacher-ink:#FFFFFF; --paper:#FFFFFF; --scrim:rgba(14,20,17,.55);
+  --display:"Black Han Sans","IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#111613; --surface:#1A211D; --fg:#E7EEE9; --muted:#9AACA1; --line:#2C3631;
+  --accent:#3FBF8F; --accent-ink:#0B1410; --lane:#F2C230; --lane-soft:#2E2A17;
+  --teacher:#CFDAD3; --teacher-ink:#111613; --scrim:rgba(0,0,0,.7); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111613; --surface:#1A211D; --fg:#E7EEE9; --muted:#9AACA1; --line:#2C3631;
+  --accent:#3FBF8F; --accent-ink:#0B1410; --lane:#F2C230; --lane-soft:#2E2A17;
+  --teacher:#CFDAD3; --teacher-ink:#111613; --scrim:rgba(0,0,0,.7); color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.6}
+.wrap{max-width:880px;margin:0 auto;padding-block:40px 56px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:grid;gap:28px}
+
+header{display:grid;gap:8px}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(2.2rem,7vw,3.4rem);line-height:1.1;margin:0;text-wrap:balance}
+h1 .bolt{color:var(--accent)}
+.lane{height:6px;border-radius:3px;background:repeating-linear-gradient(90deg,var(--lane) 0 28px,transparent 28px 44px)}
+
+
+.doors{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+@media (max-width:720px){.doors{grid-template-columns:1fr}}
+.door{display:grid;grid-template-rows:1fr auto;gap:16px;padding:24px 20px;border-radius:14px;
+  background:var(--surface);border:1px solid var(--line);min-width:0}
+.door h2{font-family:var(--display);font-weight:400;font-size:1.6rem;margin:0;line-height:1.2}
+.door.student{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{appearance:none;border:0;cursor:pointer;font:inherit;font-weight:700;text-decoration:none;
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:48px;padding:0 18px;border-radius:10px;flex:1 1 auto}
+.btn.go{background:var(--accent);color:var(--accent-ink)}
+.btn.go.teacher{background:var(--teacher);color:var(--teacher-ink)}
+.btn.ghost{background:transparent;color:var(--fg);border:1px solid var(--line);flex:0 0 auto;font-weight:500}
+.btn:focus-visible,.pin input:focus-visible{outline:3px solid var(--lane);outline-offset:2px}
+.btn[aria-disabled="true"]{background:var(--line);color:var(--muted);cursor:not-allowed}
+
+
+.overlay{position:fixed;inset:0;background:var(--scrim);display:grid;place-items:center;z-index:20;
+  padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.sheet{background:var(--surface);color:var(--fg);border-radius:16px;padding:24px;width:min(420px,100%);display:grid;gap:14px;text-align:center}
+.sheet h4{font-family:var(--display);font-weight:400;font-size:1.5rem;margin:0}
+.qrbox{background:var(--paper);padding:16px;border-radius:12px;justify-self:center;max-width:100%}
+.qrbox img,.qrbox canvas{display:block;max-width:100%;height:auto}
+.pin{display:grid;gap:10px}
+.pin input{font-family:var(--mono);font-size:1.4rem;text-align:center;letter-spacing:.3em;padding:10px;border-radius:10px;
+  border:1px solid var(--line);background:var(--bg);color:var(--fg);width:100%}
+.err{color:#C0392B;font-size:.9rem;min-height:1.4em;margin:0}
+@media (prefers-reduced-motion:no-preference){.btn{transition:transform .12s}.btn:active{transform:scale(.97)}}
+</style>
+<style>
+/* Apps Script용 기본 초기화 */
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>친환경 <span class="bolt">자동차</span> 제작</h1>
+    <div class="lane" aria-hidden="true"></div>
+  </header>
+
+  <section class="doors" aria-label="들어가는 곳">
+    <article class="door student">
+      <h2>학생 페이지</h2>
+      <div class="actions"><a class="btn go" id="go-student">들어가기</a><button class="btn ghost" type="button" data-qr="student">QR</button></div>
+    </article>
+    <article class="door">
+      <h2>영상 제출</h2>
+      <div class="actions"><a class="btn go" id="go-survey">제출하러 가기</a><button class="btn ghost" type="button" data-qr="survey">QR</button></div>
+    </article>
+    <article class="door">
+      <h2>교사 페이지</h2>
+      <div class="actions"><button class="btn go teacher" type="button" id="go-teacher">선생님 입장</button></div>
+    </article>
+  </section>
+</div>
+
+<div class="overlay" id="ov-qr" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="qr-title">
+    <h4 id="qr-title">QR</h4>
+    <div class="qrbox" id="qrbox"></div>
+    <button class="btn ghost" type="button" data-close>닫기</button>
+  </div>
+</div>
+
+<div class="overlay" id="ov-pin" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="pin-title">
+    <h4 id="pin-title">선생님 확인</h4>
+    <form class="pin" id="pin-form">
+      <input id="pin-input" type="password" inputmode="numeric" autocomplete="off" placeholder="비밀번호" aria-label="교사 비밀번호">
+      <p class="err" id="pin-err" aria-live="polite"></p>
+      <button class="btn go teacher" type="submit">확인</button>
+    </form>
+    <a class="btn go teacher" id="pin-open" target="_blank" rel="noopener" hidden>교사 페이지 열기</a>
+    <button class="btn ghost" type="button" data-close>닫기</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+/* ===== 선생님이 바꿀 곳 ===== */
+const LINKS = {
+  student: "https://kingchoon.github.io/class-pages/ev-guide/",   // 학생 페이지 주소
+  survey:  "https://docs.google.com/forms/d/e/1FAIpQLSdJlYlDdGa0GTQv92UlIR1xtY3I_kLxYvs0EFJU6CS0eU2Lhg/viewform",   // 구글 설문 '학생용 주소'
+  teacher: "https://script.google.com/macros/s/AKfycbzUMNuASb5EEOet9YS8htXZTmOXWKcfgx9F17HW9FGZr6QeuqBU5rRWuS_0yLiEfFE/exec?page=teacher"    // 교사 페이지 주소
+};
+const TEACHER_PIN = "1234";  // 비워 두면 비밀번호 없이 열림
+/* ========================== */
+
+const NAMES = {student:"학생 페이지", survey:"영상 제출"};
+let missing = false;
+
+function wire(id, url){
+  const a = document.getElementById(id);
+  if(url){ a.href = url; a.target = "_blank"; a.rel = "noopener"; }
+  else { a.setAttribute("aria-disabled","true"); a.removeAttribute("href"); a.textContent = "주소 준비 중"; missing = true; }
+}
+wire("go-student", LINKS.student);
+wire("go-survey", LINKS.survey);
+if(!LINKS.teacher) missing = true;
+
+document.querySelectorAll("[data-qr]").forEach(b=>{
+  const key = b.dataset.qr;
+  if(!LINKS[key]){ b.hidden = true; return; }
+  b.addEventListener("click",()=>{
+    const box = document.getElementById("qrbox");
+    box.innerHTML = "";
+    document.getElementById("qr-title").textContent = NAMES[key] + " QR";
+    if(window.QRCode){ new QRCode(box,{text:LINKS[key],width:280,height:280,colorDark:"#000000",colorLight:"#ffffff"}); }
+    else { box.textContent = LINKS[key]; }
+    open("ov-qr");
+  });
+});
+
+const pinOpen = document.getElementById("pin-open");
+document.getElementById("go-teacher").addEventListener("click",()=>{
+  if(!LINKS.teacher){ document.getElementById("pin-err").textContent="교사 페이지 주소가 아직 없어요."; }
+  if(!TEACHER_PIN && LINKS.teacher){
+    document.getElementById("pin-form").hidden = true;
+    pinOpen.href = LINKS.teacher; pinOpen.hidden = false;
+  }
+  open("ov-pin");
+  const inp = document.getElementById("pin-input");
+  if(!document.getElementById("pin-form").hidden) inp.focus();
+});
+document.getElementById("pin-form").addEventListener("submit",e=>{
+  e.preventDefault();
+  const inp = document.getElementById("pin-input"), err = document.getElementById("pin-err");
+  if(!LINKS.teacher){ err.textContent="교사 페이지 주소가 아직 없어요."; return; }
+  if(inp.value === TEACHER_PIN){
+    err.textContent=""; pinOpen.href = LINKS.teacher;
+    pinOpen.click();   // 맞으면 바로 교사 페이지를 새 탭으로 열고
+    closeAll();        // 확인창은 닫기
+  } else { err.textContent="비밀번호가 맞지 않아요. 다시 입력해 주세요."; inp.select(); }
+});
+
+pinOpen.addEventListener("click",()=>setTimeout(closeAll,0));
+function open(id){ document.getElementById(id).hidden = false; }
+function closeAll(){
+  document.querySelectorAll(".overlay").forEach(o=>o.hidden=true);
+  document.getElementById("pin-form").hidden = false; pinOpen.hidden = true;
+  document.getElementById("pin-input").value = ""; document.getElementById("pin-err").textContent = "";
+}
+document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",closeAll));
+document.querySelectorAll(".overlay").forEach(o=>o.addEventListener("click",e=>{ if(e.target===o) closeAll(); }));
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeAll(); });
+</script>
+
+</body>
+</html>
