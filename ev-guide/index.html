@@ -967,6 +967,8 @@ function infoProblem(i){
 const writtenCount=()=>sendStats().filter(x=>!x[1].includes("사진")).reduce((s,x)=>s+x[2],0);
 let busy=false, noFlush=false;
 const setDirty=v=>{save("dirty",v?"1":""); updateCloud();};
+// 서버와 통하지 못했을 때: 인터넷 문제인지 서버 문제인지 나눠서 알려 줌
+function netWhy(e){ return /Failed to fetch|NetworkError|Load failed/i.test(String((e&&e.message)||e)) ? "인터넷 연결을 확인하고 다시 눌러 주세요." : "서버가 제대로 답하지 못했어요. 잠시 뒤 다시 누르고, 계속되면 선생님께 알려 주세요."; }
 /* 서버로 보내기: action = save(저장) | submit(최종 제출) */
 async function push(action,quiet){
   const i=info(), prob=infoProblem(i), msgId=action==="submit"?"sendMsg":"saveMsg";
@@ -978,7 +980,7 @@ async function push(action,quiet){
   busy=true; ["saveBtn","sendBtn","cloudBtn"].forEach(id=>$(id).disabled=true);
   if(!quiet) sendMsg("wait",Object.keys(toSend).length?"사진과 기록을 보내는 중… 창을 닫지 말고 잠깐 기다려요 ⏳":"보내는 중… ⏳",msgId);
   $("cloudSt").textContent="☁️ 서버에 저장하는 중…";
-  let ok=false;
+  let ok=false, warn="";
   try{
     const res=await fetch(SUBMIT_URL,{method:"POST",body:JSON.stringify({action,ban:i.ban,no:i.no,name:i.name,pin:i.pin,answers:written?collect():null,photos:toSend})});
     const out=await res.json();
@@ -990,10 +992,10 @@ async function push(action,quiet){
       if(!quiet) sendMsg("ok",action==="submit"
         ?`최종 제출 완료! 🎉 ${out.time||""} · ${out.count}번째 제출이에요.${out.pdf?" 학습지 PDF도 만들어졌어요.":""} 고치고 싶으면 다시 제출해도 돼요.`
         :`☁️ 저장했어요! ${out.time||""} · 다음 시간에 '📥 불러오기'로 이어서 쓸 수 있어요.${written?"":" (이 기기에는 쓴 글이 없어서 사진만 저장했어요.)"}`,msgId);
-    } else if(!quiet) sendMsg("err",out.msg||"저장하지 못했어요. 다시 눌러 주세요.",msgId);
-  }catch(err){ if(!quiet) sendMsg("err","인터넷 연결을 확인하고 다시 눌러 주세요. (기록은 이 기기에 그대로 있어요)",msgId); }
+    } else { warn=out.msg||"저장하지 못했어요. 다시 눌러 주세요."; if(!quiet) sendMsg("err",warn,msgId); }
+  }catch(err){ warn=netWhy(err)+" (기록은 이 기기에 그대로 있어요)"; if(!quiet) sendMsg("err",warn,msgId); }
   busy=false; ["saveBtn","sendBtn","cloudBtn"].forEach(id=>$(id).disabled=false);
-  updateCloud(); return ok;
+  updateCloud(warn); return ok; // 자동 저장이 실패해도 맨 위 막대에 까닭이 보이게
 }
 $("saveBtn").onclick=()=>push("save");
 $("sendBtn").onclick=()=>push("submit");
@@ -1032,7 +1034,7 @@ function updateCloud(warn){
       applyLoaded(out);
       sendMsg("ok","불러왔어요! 화면을 새로 고칠게요…","saveMsg");
       noFlush=true; setTimeout(()=>location.reload(),600);
-    }catch(e){ btn.disabled=false; sendMsg("err","인터넷 연결을 확인하고 다시 눌러 주세요.","saveMsg"); }
+    }catch(e){ btn.disabled=false; sendMsg("err",netWhy(e),"saveMsg"); }
   });
 })();
 function applyLoaded(out){
