@@ -138,6 +138,15 @@ body.pmode { cursor: auto; user-select: auto; -webkit-user-select: auto; }
 body.pmode #bar, body.pmode #help, body.pmode #progress { display: none; }
 /* 발표자 화면에서 연 청중 화면: 아래 조작 버튼·도움말 숨김 (키보드·클릭 넘김은 그대로) */
 body.aud #bar, body.aud #help { display: none !important; }
+/* 시험 영상 플레이어 */
+.vplayer video { position: absolute; left: 80px; top: 210px; width: 1440px; height: 810px; background: #000; border-radius: 18px; border: 3px solid #2B3B55; }
+.vplayer .vside { position: absolute; left: 1560px; top: 210px; width: 280px; display: flex; flex-direction: column; gap: 18px; }
+.vbtn { font-family: var(--body); font-weight: 800; font-size: 40px; color: #EEF4FA; background: #17233A; border: 3px solid #2B3B55; border-radius: 16px; padding: 18px 0; cursor: pointer; }
+.vbtn:hover { border-color: #2BE4F0; }
+.vbtn.on { background: #2BE4F0; border-color: #2BE4F0; color: #070B14; }
+.vbtn.ctl { font-size: 32px; background: #121C30; }
+.vbtn.play { background: #FFD23F; border-color: #FFD23F; color: #070B14; }
+.vside .vgap { height: 14px; }
 body.pmode #presenter { position: fixed; inset: 0; display: grid; grid-template-rows: auto 1fr; gap: 12px; padding: 12px max(16px, env(safe-area-inset-right, 0px)) 14px max(16px, env(safe-area-inset-left, 0px)); background: #0A0F1A; color: var(--fg); font-family: var(--body); }
 .p-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .p-brand { font-family: var(--display); font-weight: 700; font-size: 15px; letter-spacing: 3px; color: var(--cyan); }
@@ -524,7 +533,7 @@ body.pmode #viewport { position: absolute; inset: 0; }
     </div>
   </div>
   <div class="timer" data-min="14" style="--tc:#FFD23F;top:96px;left:1372px;width:420px"></div>
-  <div class="notes">처음 3분: 교사가 전자칠판에 3회 영상을 차례로 틀어 주고(옆 영상 → 자 영상) 모두 함께 기록한다. 1회차에서 시간 읽는 법(출발선 통과 ~ 도착선 통과)과 자 눈금 읽는 법(가운데 0)을 시범. 이후 11분은 개인 계산·작성. 계산기 허용. 까닭은 부분 달성·미달성인 쪽 하나만(둘 다 달성이면 아무거나 하나). 순회하며 “그렇게 판단한 숫자는?”으로 근거를 묻는다. 피드백 기준: 시간·이탈 거리 두 가지 모두 숫자 근거(평균·목표와 차이)로 달성 정도를 판단했는가. 모두 같은 차(선생님 차)를 분석하므로, 같은 기록을 보고도 판단이 갈리는 학생을 찾아 두었다가 정리 단계 발표자로 쓴다. 먼저 끝난 학생은 ★도전: 종합 정리 ②‘선생님이 정한 목표가 적절했나’. 타이머: 시계를 누르면 시작/일시정지.</div>
+  <div class="notes">타이머를 누르고 바로 다음 슬라이드(시험 영상)로 넘긴다. 처음 3분: 3회 영상을 차례로 틀어 주고 모두 함께 기록(약 1분 × 3). 이후 11분은 개인 계산·작성. 계산기 허용. 까닭은 부분 달성·미달성인 쪽 하나만(둘 다 달성이면 아무거나 하나). 순회하며 “그렇게 판단한 숫자는?”으로 근거를 묻는다. 피드백 기준: 시간·이탈 거리 두 가지 모두 숫자 근거(평균·목표와 차이)로 달성 정도를 판단했는가. 모두 같은 차(선생님 차)를 분석하므로, 같은 기록을 보고도 판단이 갈리는 학생을 찾아 두었다가 정리 단계 발표자로 쓴다. 먼저 끝난 학생은 ★도전: 종합 정리 ②‘선생님이 정한 목표가 적절했나’. 타이머: 시계를 누르면 시작/일시정지.</div>
   <div class="script">
 [전개 2 · 12~26분 · 개인 분석 14분]
 
@@ -539,7 +548,7 @@ body.pmode #viewport { position: absolute; inset: 0; }
 
 시간은 14분이에요. (타이머 시계를 눌러 시작)
 
-(1회 영상부터 차례로 재생 — 1회차에서 출발선·도착선 통과 순간, 자 눈금 가운데 0 읽는 법 시범)
+(타이머 시작 후 바로 다음 슬라이드로 넘겨 1회 영상부터 재생)
 
 (순회하며 묻기)
 · “그렇게 판단한 숫자는 뭐야? 목표랑 몇 초 차이야?”
@@ -547,6 +556,45 @@ body.pmode #viewport { position: absolute; inset: 0; }
 · 먼저 끝난 학생 → ★도전 ②: “선생님이 정한 목표가 너무 쉽거나 어렵지 않았을까?”
 
 (5분 남았을 때) 5분 남았어요. 까닭에 평균과 목표와 차이, 숫자 두 개가 들어갔는지 꼭 확인하세요.
+  </div>
+</section>
+
+<!-- 9-1. 시험 영상 -->
+<section class="slide" data-title="시험 영상 보며 기록하기" style="background:#070b14">
+  <div class="stripe"></div>
+  <div class="vplayer" id="vPlayer">
+    <p class="eyebrow" style="position:absolute;left:80px;top:56px;color:#ffd23f">MISSION 01 · 시험 영상</p>
+    <h2 class="title" style="position:absolute;left:80px;top:118px;font-size:60px">영상을 보며 <span style="color:#2be4f0">학습지 D-2</span>에 기록해요</h2>
+    <video preload="auto" playsinline muted src="trial1.mp4" poster=""></video>
+    <div class="vside">
+      <button class="vbtn on" type="button" data-v="sel" data-n="1">1회</button>
+      <button class="vbtn" type="button" data-v="sel" data-n="2">2회</button>
+      <button class="vbtn" type="button" data-v="sel" data-n="3">3회</button>
+      <div class="vgap"></div>
+      <button class="vbtn ctl play" type="button" data-v="toggle">▶ 재생</button>
+      <button class="vbtn ctl" type="button" data-v="restart">⟲ 처음부터</button>
+    </div>
+  </div>
+  <div class="notes">미션 1 타이머를 앞 슬라이드에서 시작한 뒤 넘어온다(타이머는 계속 돈다). 1회 → 2회 → 3회 순서로 재생. 각 영상(17.5초) = 제목 → 실제 속도 주행(스톱워치는 도착 후에도 계속 감) → 도착선 느린 화면(1/4) → 도착 지점 자 확대. 1회에서는 도착선 느린 화면에서 한 번 멈추고 “앞 끝이 도착선에 닿는 순간의 숫자”를, 자 화면에서 “가운데 0에서 벌어진 거리(방향 무관)”를 시범으로 읽어 준다. 2·3회는 멈추지 않고 학생 스스로 읽게 한다(읽은 값이 조금씩 다르면 종합 정리 ‘오차’로 연결). 예시 정답: 2.80초·6cm / 2.85초·9cm / 2.90초·12cm. 버튼은 발표자 화면에서 눌러도 청중 화면이 같이 움직인다. 영상 위를 클릭하면 재생/멈춤.</div>
+  <div class="script">
+[전개 2 · 12~15분 · 영상 함께 보기]
+
+지금부터 선생님 차의 시험 영상을 보여 줄게요. 학습지 D-2 표를 펴세요.
+
+(1회 재생)
+먼저 옆에서 본 모습이에요. 스톱워치는 도착선을 지나도 멈추지 않아요.
+차 앞 끝이 도착선에 닿는 순간의 숫자를 여러분이 직접 읽어야 해요.
+(느린 화면에서 멈추고) 지금! 앞 끝이 도착선에 닿았죠? 숫자가 몇이에요? 시간 1회 칸에 쓰세요.
+(이어서 재생) 이번엔 도착 지점 자예요. 확대 창에서 차 앞 끝 가운데가 0에서 몇 cm 벗어났는지 읽어요. 이탈 거리 1회 칸에 쓰세요.
+
+(2회 재생) 2회는 선생님이 멈추지 않을게요. 스스로 읽어 보세요.
+왼쪽으로 벗어나도 오른쪽으로 벗어나도, 벌어진 거리만 쓰면 돼요.
+
+(3회 재생) 마지막 3회예요.
+
+다 썼으면 평균과 목표와 차이를 계산하세요. 계산기 써도 돼요.
+
+[클릭 → 다음 슬라이드: 문장 틀 띄워 두기]
   </div>
 </section>
 
@@ -678,7 +726,7 @@ body.pmode #viewport { position: absolute; inset: 0; }
     <span class="p-now" id="pNow">--:--</span>
     <button class="p-btn warn" id="pOpen" type="button">📺 청중 화면 열기</button>
     <button class="p-btn" id="pPrev" type="button">◀ 이전</button>
-    <span class="p-now" id="pCount">1 / 12</span>
+    <span class="p-now" id="pCount">1 / 13</span>
     <button class="p-btn main" id="pNext" type="button">다음 ▶</button>
   </header>
   <div class="p-main">
@@ -711,7 +759,7 @@ body.pmode #viewport { position: absolute; inset: 0; }
 <nav id="bar" aria-label="슬라이드 조작">
   <button id="bFirst" type="button" title="처음 (Home)">⏮</button>
   <button id="bPrev" type="button" title="이전 (←)">◀ <span class="label">이전</span></button>
-  <span id="count">1 / 12</span>
+  <span id="count">1 / 13</span>
   <span id="stepdots" aria-hidden="true"></span>
   <button id="bNext" class="main" type="button" title="다음 (→, 스페이스, 클릭)"><span class="label">다음</span> ▶</button>
   <button id="bPresenter" type="button" title="발표자 화면 (P)">🎤 <span class="label">발표자</span></button>
@@ -774,6 +822,7 @@ body.pmode #viewport { position: absolute; inset: 0; }
     else if (m.t === 'hello') { send({ t: 'go', i: cur, s: step }); timers.forEach(function (tb, idx) { tb.sync(idx); }); }
     else if (m.t === 'ping') { /* alive */ }
     else if (m.t === 'tstate') { var tt = timers[m.idx]; if (tt) tt.setState(m); }
+    else if (m.t === 'vid') { vidAct(m, true); }
   }
   if (chan) chan.onmessage = function (e) { onMsg(e.data); };
   window.addEventListener('storage', function (e) {
@@ -810,6 +859,8 @@ body.pmode #viewport { position: absolute; inset: 0; }
     if (!PRESENTER) { try { history.replaceState(null, '', '#s' + (i + 1)); } catch (e) {} }
     var v = document.getElementById('coverVideo');
     if (v) { try { if (i === 0) { var p = v.play(); if (p && p.catch) p.catch(function () {}); } else v.pause(); } catch (e) {} }
+    var vp = document.getElementById('vPlayer');
+    if (vp && !slides[i].contains(vp)) { try { vp.querySelector('video').pause(); vidUi(); } catch (e) {} }
     if (PRESENTER && (changed || !nextBuiltFor || nextBuiltFor !== i)) buildNext();
     if (PRESENTER) loadScript();
     if (!fromPeer) send({ t: 'go', i: cur, s: step });
@@ -953,8 +1004,51 @@ body.pmode #viewport { position: absolute; inset: 0; }
   });
   document.getElementById('bPresenter').addEventListener('click', openPresenter);
 
+  /* ── 시험 영상 플레이어 (두 화면 함께) ── */
+  var vpBox = document.getElementById('vPlayer'), vpVid = vpBox ? vpBox.querySelector('video') : null, vpN = 1;
+  function vidUi() {
+    if (!vpBox) return;
+    vpBox.querySelectorAll('[data-v="sel"]').forEach(function (b) { b.classList.toggle('on', Number(b.getAttribute('data-n')) === vpN); });
+    var tg = vpBox.querySelector('[data-v="toggle"]');
+    tg.textContent = vpVid.paused ? '▶ 재생' : '❚❚ 멈춤';
+  }
+  function vidAct(m, fromPeer) {
+    if (!vpVid) return;
+    try {
+      if (m.act === 'sel') {
+        if (vpN !== m.n) { vpN = m.n; vpVid.src = 'trial' + m.n + '.mp4'; }
+        vpVid.pause(); vpVid.currentTime = 0;
+      } else if (m.act === 'play') {
+        if (typeof m.time === 'number' && Math.abs(vpVid.currentTime - m.time) > 0.25) vpVid.currentTime = m.time;
+        var pr = vpVid.play(); if (pr && pr.catch) pr.catch(function () {});
+      } else if (m.act === 'pause') {
+        vpVid.pause(); if (typeof m.time === 'number') vpVid.currentTime = m.time;
+      } else if (m.act === 'restart') {
+        vpVid.currentTime = 0; var pr2 = vpVid.play(); if (pr2 && pr2.catch) pr2.catch(function () {});
+      }
+    } catch (e) {}
+    vidUi();
+    if (!fromPeer) send({ t: 'vid', act: m.act, n: m.n, time: vpVid.currentTime });
+  }
+  if (vpBox) {
+    vpBox.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-v]');
+      if (b) {
+        var a = b.getAttribute('data-v');
+        if (a === 'sel') vidAct({ act: 'sel', n: Number(b.getAttribute('data-n')) });
+        else if (a === 'toggle') vidAct({ act: vpVid.paused ? 'play' : 'pause' });
+        else vidAct({ act: a });
+        e.stopPropagation(); return;
+      }
+      if (e.target === vpVid) { vidAct({ act: vpVid.paused ? 'play' : 'pause' }); e.stopPropagation(); }
+    });
+    vpVid.addEventListener('ended', vidUi);
+    vpVid.addEventListener('pause', vidUi);
+    vpVid.addEventListener('play', vidUi);
+  }
+
   /* ── 조작 ── */
-  viewport.addEventListener('click', function (e) { if (e.target.closest('.timer, a, button')) return; next(); });
+  viewport.addEventListener('click', function (e) { if (e.target.closest('.timer, a, button, .vplayer video')) return; next(); });
   viewport.addEventListener('contextmenu', function (e) { e.preventDefault(); prev(); });
   document.getElementById('bNext').addEventListener('click', next);
   document.getElementById('bPrev').addEventListener('click', prev);
