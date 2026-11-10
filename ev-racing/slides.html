@@ -204,7 +204,7 @@ body.pmode #viewport { position: absolute; inset: 0; }
 
 자, 다 앉았나요? 시작하겠습니다.
 오늘은 차를 '평가하는 법'을 연습하는 날이에요.
-선생님이 미리 만들어 둔 전기자동차로 시험 주행을 세 번씩 찍어 왔어요.
+선생님이 미리 만들어 둔 전기자동차로 3m 시험 주행을 세 번 찍어 왔어요.
 그 영상과 기록을 보고, 이 차가 목표를 달성했는지 따져 볼 거예요.
 오늘 익힌 방법으로 다음 시간에는 여러분 차를 직접 평가합니다.
 
@@ -273,7 +273,7 @@ body.pmode #viewport { position: absolute; inset: 0; }
 오늘 우리가 할 일은 두 가지예요.
 
 [클릭] 첫째, 시험 데이터를 근거로 자동차가 설계 목표를 달성했는지 판단하기.
-선생님 차의 목표는 선생님이 미리 정해 뒀어요. 3m를 몇 초 안에 가는지.
+선생님 차의 목표는 선생님이 미리 정해 뒀어요. 3m를 몇 초 안에 가는지, 그리고 얼마나 똑바로 가는지.
 그 목표랑 실제 기록을 비교하는 거예요.
 다음 시간엔 여러분이 정한 목표로 똑같이 해 봅니다.
 
@@ -335,40 +335,44 @@ body.pmode #viewport { position: absolute; inset: 0; }
 </section>
 
 <!-- 5. 테스트 -->
-<section class="slide" data-title="오늘의 테스트" style="background:linear-gradient(160deg, #0D1526 0%, #070B14 70%)">
+<section class="slide" data-title="한 번 달리고 두 가지를 잰다" style="background:linear-gradient(160deg, #0D1526 0%, #070B14 70%)">
   <div class="stripe"></div>
   <div class="frame">
     <p class="eyebrow" style="color:#2BE4F0">D-1 · TEST DESIGN</p>
-    <h2 class="title">테스트는 하나, <span style="color:#FFD23F">짧을수록</span> 좋은 기록</h2>
-    <div class="row mt" style="gap:32px">
-      <div class="f card" style="flex:1.3;box-shadow:0 0 0 2px rgba(43,228,240,0.35), 0 0 40px rgba(43,228,240,0.15)">
-        <p style="font-size:72px;line-height:1">⚡</p>
-        <h3 class="card-h" style="color:#2BE4F0">3m 주행</h3>
-        <p class="body" style="color:#A9BCD0">평평한 바닥 3m를 가는 데 걸린 시간</p>
+    <h2 class="title">3m 한 번 달리고, <span style="color:#FFD23F">두 가지</span>를 잰다</h2>
+    <div class="row mt" style="gap:40px">
+      <div class="f card" style="flex:1;box-shadow:0 0 0 2px rgba(43,228,240,0.35), 0 0 40px rgba(43,228,240,0.15);gap:14px">
+        <div style="display:flex;gap:20px;align-items:center"><p style="font-size:64px;line-height:1">⏱️</p><h3 class="card-h" style="color:#2BE4F0">속도</h3></div>
+        <p class="body">출발선에서 3m 도착까지 걸린 <b>시간</b></p>
+        <p class="body" style="color:#A9BCD0">📹 옆에서 찍은 영상으로 확인</p>
+        <p class="unit">단위: 초 ↓ · 3번</p>
       </div>
-      <div style="flex:1;display:flex;flex-direction:column;gap:20px">
-        <p class="f body stmt" style="border-left:8px solid #2be4f0"><b>무엇을</b> · 3m 가는 시간 (초)</p>
-        <p class="f body stmt" style="border-left:8px solid #ffd23f"><b>어떻게</b> · 같은 출발선, 초시계</p>
-        <p class="f body stmt" style="border-left:8px solid #ff2d55"><b>몇 번</b> · 3번</p>
+      <div class="f card" style="flex:1;box-shadow:0 0 0 2px rgba(255,45,85,0.35), 0 0 40px rgba(255,45,85,0.15);gap:14px">
+        <div style="display:flex;gap:20px;align-items:center"><p style="font-size:64px;line-height:1">↔️</p><h3 class="card-h" style="color:#FF6E8A">직진성</h3></div>
+        <p class="body">도착 지점에서 가운데 선과 벌어진 <b>이탈 거리</b></p>
+        <p class="body" style="color:#A9BCD0">📏 도착 지점의 자를 찍은 영상으로 확인</p>
+        <p class="unit">단위: cm ↓ · 3번</p>
       </div>
     </div>
     <p class="f lead mt" style="font-weight:500;color:#A9BCD0">테스트 설계에는 <b style="color:#EEF4FA">무엇을(단위)</b> · <b style="color:#EEF4FA">어떻게</b> · <b style="color:#EEF4FA">몇 번</b>이 모두 들어가야 해요.</p>
   </div>
-  <div class="notes">학습지 D-1(테스트 방법 정하기)과 연결. 초시계로 재고, 숫자가 작을수록 좋다. 피드백 기준: 무엇을·어떻게·몇 번까지 구체적으로 썼는가. 선생님 차 1대로 3m 주행만 3회 촬영했다. 수업 시간 관계로 테스트는 하나만 — 다음 시간 내 차 평가(총괄)에서는 IB 기준 D-1 상위 점수를 위해 서로 다른 테스트 2가지 이상이 필요하다는 점을 마무리에 예고.</div>
+  <div class="notes">학습지 D-1(테스트 방법 정하기)과 연결. 3m 주행 한 번에 두 가지(시간·이탈 거리)를 함께 잰다. 둘 다 숫자가 작을수록 좋다. 시간은 옆에서 찍은 영상(출발선~도착선이 한 화면에 보이게), 이탈 거리는 차가 도착한 뒤 도착 지점에 가로로 놓은 자(가운데 선 = 0)를 찍은 영상으로 읽는다. 선생님 차 1대로 3회 촬영. 피드백 기준: 두 가지 각각 무엇을·어떻게·몇 번까지 구체적으로 썼는가.</div>
   <div class="script">
 [전개 1 · 6~7분]
 
-오늘 선생님 차로 한 테스트는 하나예요.
+선생님 차로 3m 주행을 했어요. 그런데 한 번 달릴 때 두 가지를 같이 잽니다.
 
-[클릭] 3m 주행. 평평한 바닥 3m를 가는 데 걸린 시간이에요.
-시간이 짧을수록 좋은 기록이죠.
+[클릭] 첫째, 속도. 출발선에서 3m 도착까지 걸린 시간이에요.
+옆에서 찍은 영상을 보면 출발과 도착이 다 보여요. 단위는 초.
+
+[클릭] 둘째, 직진성. 차가 얼마나 똑바로 갔는지예요.
+도착 지점에 자를 가로로 놓고, 차가 가운데 선에서 몇 cm 벗어났는지 찍어 뒀어요. 이걸 이탈 거리라고 해요.
+
+둘 다 세 번씩 쟀고, 둘 다 숫자가 작을수록 좋은 기록이에요.
 
 [클릭] 테스트 방법을 쓸 때는 세 가지가 꼭 들어가야 해요.
-무엇을 재는지 단위까지 — 3m 가는 시간, 초.
-[클릭] 어떻게 재는지 — 같은 출발선에서 초시계로.
-[클릭] 그리고 몇 번 재는지 — 3번.
-
-학습지의 D-1 칸이 바로 이 자리예요. 지금 1분 동안 빠진 칸이 없는지 확인해 보세요.
+무엇을 재는지 단위까지, 어떻게 재는지, 그리고 몇 번 재는지.
+학습지의 D-1 칸이 바로 이 자리예요. 속도와 직진성 두 가지 모두 빠진 칸이 없는지 1분 동안 확인해 보세요.
 
 [클릭 → 다음 슬라이드]
   </div>
@@ -429,9 +433,9 @@ body.pmode #viewport { position: absolute; inset: 0; }
     </div>
     <p class="f lead mt" style="font-weight:500;color:#A9BCD0">20%를 넘는 기록은? 빼지 말고 <b style="color:#EEF4FA">종합 정리 ‘믿을 수 있나요?’</b>에 적어요.</p>
   </div>
-  <div class="notes">예시(8·9장과 같은 기록): 3m 주행 1회 2.80초, 2회 2.85초, 3회 2.90초. 가장 빠른 2.80초와 가장 느린 2.90초의 차이 0.10초 ÷ 2.80초 ≈ 0.036 → 약 4%. 20%는 수업에서 정한 어림 기준. 막대 길이는 기록(초)에 비례(1초 = 150px). 발문: “만약 한 번만 3.60초가 나왔다면 빼고 평가해도 될까?” → 이유 없이 빼면 좋은 기록만 골라 쓰는 것. 빼지 말고 신뢰성 항목에 적는다.</div>
+  <div class="notes">예시(8·9장과 같은 기록): 3m 주행 1회 2.80초, 2회 2.85초, 3회 2.90초. 가장 빠른 2.80초와 가장 느린 2.90초의 차이 0.10초 ÷ 2.80초 ≈ 0.036 → 약 4%. 20%는 수업에서 정한 어림 기준. 이탈 거리는 cm 단위로 작은 수라(예: 6cm와 12cm는 100% 차이) %로 따지지 않고 시간에만 적용한다. 막대 길이는 기록(초)에 비례(1초 = 150px). 발문: “만약 한 번만 3.60초가 나왔다면 빼고 평가해도 될까?” → 이유 없이 빼면 좋은 기록만 골라 쓰는 것. 빼지 말고 신뢰성 항목에 적는다.</div>
   <div class="script">
-[전개 1 · 8~11분]
+[전개 1 · 8~10분]
 
 이 차의 3m 주행 기록을 볼게요.
 
@@ -472,7 +476,7 @@ body.pmode #viewport { position: absolute; inset: 0; }
   </div>
   <div class="notes">학습지 D-2에는 평균과 ‘목표와 얼마나 차이 나는지’를 학생이 직접 계산해 쓴다. 소수 둘째 자리까지. 예시 목표: 3m 3.00초 이하. 시간 기록이라 평균이 목표보다 작으면 여유, 크면 부족.</div>
   <div class="script">
-[전개 1 · 11~12분]
+[전개 1 · 10~11분]
 
 이제 평균을 내 볼게요.
 1회 2.80초, 2회 2.85초, 3회 2.90초.
@@ -518,9 +522,9 @@ body.pmode #viewport { position: absolute; inset: 0; }
     </div>
     <p class="f lead mt">A와 B는 평균이 같아요. 그래서 <span style="color:#FFD23F">회차 기록까지</span> 보고 판단해요.</p>
   </div>
-  <div class="notes">학습지 D-2의 판단 기준 그대로: 달성 = 3회 모두 통과 / 부분 달성 = 평균은 통과, 못 통과한 회차 있음 / 미달성 = 평균이 통과 못함. A·B 평균 모두 (2.80+2.85+2.90)÷3 = (2.55+2.96+3.04)÷3 = 2.85초. B의 최대 차이는 0.49÷2.55 ≈ 19%로 20% 기준 이내. A는 7·8장의 예시 차 기록과 같다. C는 (3.10+3.20+3.30)÷3 = 3.20초, 목표보다 0.20초 부족. 설명용 가상 차 3대. 달성 정도는 학생이 학습지에 직접 고른다. 여기까지가 전개 1 (13분 지점).</div>
+  <div class="notes">학습지 D-2의 판단 기준 그대로: 달성 = 3회 모두 통과 / 부분 달성 = 평균은 통과, 못 통과한 회차 있음 / 미달성 = 평균이 통과 못함. A·B 평균 모두 (2.80+2.85+2.90)÷3 = (2.55+2.96+3.04)÷3 = 2.85초. B의 최대 차이는 0.49÷2.55 ≈ 19%로 20% 기준 이내. A는 7·8장의 예시 차 기록과 같다. C는 (3.10+3.20+3.30)÷3 = 3.20초, 목표보다 0.20초 부족. 설명용 가상 차 3대. 달성 정도는 학생이 학습지에 직접 고른다. 같은 기준을 다음 장에서 이탈 거리에도 적용.</div>
   <div class="script">
-[전개 1 · 12~13분]
+[전개 1 · 11~12분]
 
 목표가 3m 3.00초 이하인 차 세 대를 볼게요.
 
@@ -531,6 +535,39 @@ body.pmode #viewport { position: absolute; inset: 0; }
 [클릭] A와 B, 평균은 같은데 판단이 달라요.
 그래서 평균만 보지 말고 회차 기록까지 봐야 해요.
 학습지에서 달성 정도는 여러분이 직접 고르고, 까닭에 숫자를 넣어 쓰는 거예요.
+
+그럼 이 기준을 직진성에도 똑같이 써 볼까요?
+
+[클릭 → 다음 슬라이드]
+  </div>
+</section>
+
+<!-- 9-2. 두 가지 판단 -->
+<section class="slide" data-title="속도와 직진성, 따로 판단" style="background:linear-gradient(160deg, #0D1526 0%, #070B14 70%)">
+  <div class="stripe"></div>
+  <div class="frame">
+    <p class="eyebrow" style="color:#2BE4F0">D-2 · TWO RESULTS</p>
+    <h2 class="title">속도와 직진성, <span style="color:#FFD23F">따로</span> 판단해요</h2>
+    <table class="grid mt" style="width:1664px;font-size:40px;color:#eef4fa;text-align:center">
+      <tr style="background:#16223a"><th style="width:22%"></th><th>1회</th><th>2회</th><th>3회</th><th>평균</th><th>목표</th><th style="width:20%">판단</th></tr>
+      <tr class="f" style="background:#0E1E26"><td style="color:#2BE4F0;font-weight:700">⏱️ 시간</td><td>2.80</td><td>2.85</td><td>2.90</td><td style="font-weight:700">2.85초</td><td>3.00초 이하</td><td><span style="font-weight:700;color:#070B14;background:#2BE4F0;padding:6px 20px;border-radius:10px">달성</span></td></tr>
+      <tr class="f" style="background:#221B0C"><td style="color:#FF6E8A;font-weight:700">↔️ 이탈 거리</td><td>6</td><td>9</td><td style="color:#FF6E8A;font-weight:700">12</td><td style="font-weight:700">9cm</td><td>10cm 이하</td><td><span style="font-weight:700;color:#070B14;background:#FFD23F;padding:6px 20px;border-radius:10px">부분 달성</span></td></tr>
+    </table>
+    <p class="f lead mt">빠르지만 <span style="color:#FF6E8A">휘어지는</span> 차 → 고칠 곳은 <span style="color:#FFD23F">바퀴 정렬 · 좌우 균형</span></p>
+  </div>
+  <div class="notes">설명용 예시(선생님 차 실제 기록 아님). 시간: (2.80+2.85+2.90)÷3 = 2.85초, 3회 모두 3.00초 이하 → 달성. 이탈 거리: (6+9+12)÷3 = 9cm, 평균은 10cm 이하지만 3회 12cm가 넘음 → 부분 달성(목표보다 1cm 여유, 한 회차는 2cm 초과). 한 번 달려도 결과는 두 가지로 따로 판단해야 하고, 못 미친 쪽이 D-3 개선의 출발점이 된다. 여기까지가 전개 1 (13분 지점).</div>
+  <div class="script">
+[전개 1 · 12~13분]
+
+같은 3번의 주행에서 나온 두 가지 기록이에요.
+
+[클릭] 시간. 2.80, 2.85, 2.90초. 평균 2.85초, 세 번 다 3초 안. 그래서 ‘달성’.
+[클릭] 이탈 거리. 6cm, 9cm, 12cm. 평균은 9cm로 목표 10cm보다 1cm 여유가 있어요.
+그런데 3회에 12cm, 한 번은 목표를 넘었죠? 그래서 ‘부분 달성’.
+
+[클릭] 이 차는 빠르긴 한데 조금씩 휘어져요.
+그럼 고칠 곳은 모터가 아니라 바퀴 정렬이나 좌우 균형 쪽이겠죠.
+이렇게 두 가지를 따로 판단해야 어디를 고칠지 보여요.
 
 자, 이제 읽는 법은 다 배웠어요. 선생님 차를 분석해 볼 시간입니다.
 
@@ -547,23 +584,23 @@ body.pmode #viewport { position: absolute; inset: 0; }
     <p class="eyebrow" style="color:#ffd23f">MISSION 01 · 개인 분석</p>
     <h2 class="intro title">선생님 머신을 분석하라!</h2>
     <div class="mt" style="display:flex;flex-direction:column;gap:18px">
-      <div class="f left step" style="border-left:8px solid #2be4f0"><p class="num" style="font-size:52px;font-style:normal;color:#2be4f0">1</p><p class="body">웹앱에서 선생님 차의 <b>3회 기록</b>과 <b>영상</b> 확인</p></div>
-      <div class="f left step" style="border-left:8px solid #ffd23f"><p class="num" style="font-size:52px;font-style:normal;color:#ffd23f">2</p><p class="body">가장 빠른·느린 기록 차이가 <b>20%</b>를 넘는지 계산</p></div>
-      <div class="f left step" style="border-left:8px solid #2be4f0"><p class="num" style="font-size:52px;font-style:normal;color:#2be4f0">3</p><p class="body"><b>학습지 D-2</b>에 기록 3회 쓰고 <b>평균</b> 계산</p></div>
+      <div class="f left step" style="border-left:8px solid #2be4f0"><p class="num" style="font-size:52px;font-style:normal;color:#2be4f0">1</p><p class="body">웹앱 영상으로 <b>시간</b>과 <b>이탈 거리</b> 3회 읽기</p></div>
+      <div class="f left step" style="border-left:8px solid #ffd23f"><p class="num" style="font-size:52px;font-style:normal;color:#ffd23f">2</p><p class="body">시간 기록 차이가 <b>20%</b>를 넘는지 계산</p></div>
+      <div class="f left step" style="border-left:8px solid #2be4f0"><p class="num" style="font-size:52px;font-style:normal;color:#2be4f0">3</p><p class="body"><b>학습지 D-2</b>에 두 가지 기록 쓰고 <b>평균</b> 계산</p></div>
       <div class="f left step" style="border-left:8px solid #ff2d55"><p class="num" style="font-size:52px;font-style:normal;color:#ff6e8a">4</p><p class="body"><b>달성 정도</b> 고르고, <b>까닭</b>을 숫자로 · <b>종합 정리</b></p></div>
     </div>
   </div>
   <div class="timer" data-min="17" style="--tc:#FFD23F;top:96px;left:1372px;width:420px"></div>
-  <div class="notes">순회하며 “그렇게 판단한 숫자는?”으로 근거를 묻는다. 피드백 기준: 숫자 근거(평균·목표와 차이)로 달성 정도를 판단했는가. 모두 같은 차(선생님 차)를 분석하므로, 같은 기록을 보고도 판단이 갈리는 학생을 찾아 두었다가 정리 단계 발표자로 쓴다. 먼저 끝난 학생에게는 종합 정리의 ‘이 결과를 믿을 수 있나요(오차·아쉬운 점)?’와 ‘선생님이 정한 목표가 적절했나’를 예고. 타이머: 시계를 누르면 시작/일시정지.</div>
+  <div class="notes">순회하며 “그렇게 판단한 숫자는?”으로 근거를 묻는다. 피드백 기준: 시간·이탈 거리 두 가지 모두 숫자 근거(평균·목표와 차이)로 달성 정도를 판단했는가. 영상에서 시간을 읽는 방법(출발선 통과 ~ 도착선 통과)과 자 눈금 읽는 법(가운데 0)을 첫 2분 안에 한 번 시범. 모두 같은 차(선생님 차)를 분석하므로, 같은 기록을 보고도 판단이 갈리는 학생을 찾아 두었다가 정리 단계 발표자로 쓴다. 먼저 끝난 학생에게는 종합 정리의 ‘이 결과를 믿을 수 있나요(오차·아쉬운 점)?’와 ‘선생님이 정한 목표가 적절했나’를 예고. 타이머: 시계를 누르면 시작/일시정지.</div>
   <div class="script">
 [전개 2 · 13~30분 · 개인 분석 17분]
 
 미션 1, 선생님 머신을 분석하라!
 
-[클릭] 웹앱에서 선생님 차의 3회 기록과 영상을 확인하세요.
-[클릭] 세 기록이 고르게 나왔는지 확인하세요. 가장 빠른 기록과 가장 느린 기록 차이가 20%를 넘는지 계산해 보는 거예요.
-[클릭] 학습지 D-2에 기록 3번을 쓰고, 평균을 직접 계산하세요.
-[클릭] 그리고 달성 정도를 직접 고르고, 그렇게 판단한 까닭을 숫자를 넣어서 쓰세요. 마지막에 종합 정리까지.
+[클릭] 웹앱에서 선생님 차의 영상 3개를 보고, 시간과 이탈 거리를 읽으세요. 시간은 옆에서 찍은 영상, 이탈 거리는 도착 지점 자 영상이에요.
+[클릭] 시간 기록이 고르게 나왔는지 확인하세요. 가장 빠른 기록과 가장 느린 기록 차이가 20%를 넘는지 계산해 보는 거예요.
+[클릭] 학습지 D-2에 시간과 이탈 거리 기록을 3번씩 쓰고, 평균을 직접 계산하세요.
+[클릭] 그리고 달성 정도를 직접 고르고, 그렇게 판단한 까닭을 숫자를 넣어서 쓰세요. 속도와 직진성 두 가지 모두요. 마지막에 종합 정리까지.
 
 시간은 17분이에요. (타이머 시계를 눌러 시작)
 
@@ -572,7 +609,7 @@ body.pmode #viewport { position: absolute; inset: 0; }
 · “세 기록 차이는 몇 %야? 20% 넘으면 종합 정리에 뭐라고 쓸 거야?”
 · 먼저 끝난 학생 → 종합 정리: “이 결과 믿을 수 있어? 선생님이 정한 목표가 너무 쉽거나 어렵지 않았을까?”
 
-(5분 남았을 때) 5분 남았어요. 까닭에 숫자가 들어갔는지 꼭 확인하세요.
+(5분 남았을 때) 5분 남았어요. 속도와 직진성 두 가지 모두 까닭에 숫자가 들어갔는지 꼭 확인하세요.
   </div>
 </section>
 
@@ -583,9 +620,9 @@ body.pmode #viewport { position: absolute; inset: 0; }
     <p class="eyebrow" style="color:#2BE4F0">DRIVER’S REPORT</p>
     <h2 class="title">이 틀에 맞춰 쓰세요</h2>
     <div class="mt" style="display:flex;flex-direction:column;gap:24px;background:#121C30;padding:44px 60px;border-radius:28px;border:2px solid rgba(43,228,240,0.5);box-shadow:0 0 50px rgba(43,228,240,0.18)">
-      <p class="f" style="font-size:42px;line-height:1.55"><b style="color:#FFD23F">D-2 까닭</b> &nbsp;( 테스트 )에서 1회 <b><span style="color:#2BE4F0">( 　 )</span></b>, 2회 <b><span style="color:#2BE4F0">( 　 )</span></b>, 3회 <b><span style="color:#2BE4F0">( 　 )</span></b>, 평균 <b><span style="color:#2BE4F0">( 　 )</span></b>로<br>목표 <b><span style="color:#FFD23F">( 　 )</span></b>보다 <b><span style="color:#FFD23F">( 차이 )</span></b>만큼 빨라서 / 느려서 <b><span style="color:#FFD23F">달성 · 부분 달성 · 미달성</span></b></p>
+      <p class="f" style="font-size:42px;line-height:1.55"><b style="color:#FFD23F">D-2 까닭</b> &nbsp;( 시간 · 이탈 거리 )는 1회 <b><span style="color:#2BE4F0">( 　 )</span></b>, 2회 <b><span style="color:#2BE4F0">( 　 )</span></b>, 3회 <b><span style="color:#2BE4F0">( 　 )</span></b>, 평균 <b><span style="color:#2BE4F0">( 　 )</span></b>로<br>목표 <b><span style="color:#FFD23F">( 　 )</span></b>보다 <b><span style="color:#FFD23F">( 차이 )</span></b>만큼 여유 있어서 / 부족해서 <b><span style="color:#FFD23F">달성 · 부분 달성 · 미달성</span></b></p>
       <div class="f" style="border-top:2px dashed #2B3B55" data-with="next"></div>
-      <p class="f" style="font-size:42px;line-height:1.55"><b style="color:#FF6E8A">D-3 개선</b> &nbsp;문제점 <b><span style="color:#FF6E8A">( 테스트 결과 )</span></b> → 개선 방법 <b><span style="color:#FF6E8A">( 무엇을 · 어떻게 )</span></b><br>→ 기대 효과 <b><span style="color:#FF6E8A">( 몇 초 줄어들까 )</span></b></p>
+      <p class="f" style="font-size:42px;line-height:1.55"><b style="color:#FF6E8A">D-3 개선</b> &nbsp;문제점 <b><span style="color:#FF6E8A">( 테스트 결과 )</span></b> → 개선 방법 <b><span style="color:#FF6E8A">( 무엇을 · 어떻게 )</span></b><br>→ 기대 효과 <b><span style="color:#FF6E8A">( 몇 초 · 몇 cm 줄어들까 )</span></b></p>
     </div>
     <div class="f row" style="gap:20px">
       <p class="label" style="color:#070B14;background:#2BE4F0;padding:8px 26px;border-radius:999px">숫자</p>
@@ -599,8 +636,8 @@ body.pmode #viewport { position: absolute; inset: 0; }
 
 까닭 쓰기가 어렵다면 이 틀에 맞춰 쓰세요.
 
-[클릭] D-2 까닭. “3m 주행에서 1회 몇 초, 2회 몇 초, 3회 몇 초, 평균 몇 초로, 목표 몇 초보다 얼마만큼 빨라서 달성.”
-[클릭] D-3 개선. 문제점은 테스트 결과로, 개선 방법은 무엇을 어떻게 바꿀지, 기대 효과는 몇 초 줄어들지.
+[클릭] D-2 까닭. “이탈 거리는 1회 6cm, 2회 9cm, 3회 12cm, 평균 9cm로, 목표 10cm보다 1cm 여유 있지만 한 번 넘어서 부분 달성.” 시간도 똑같이 써요.
+[클릭] D-3 개선. 문제점은 테스트 결과로, 개선 방법은 무엇을 어떻게 바꿀지, 기대 효과는 몇 초, 몇 cm 줄어들지.
 학습지 D-3 칸 세 개가 이 순서 그대로예요.
 
 [클릭] 숫자, 판단, 개선. 아까 배운 세 단계 그대로예요.
@@ -612,16 +649,16 @@ body.pmode #viewport { position: absolute; inset: 0; }
 </section>
 
 <!-- 12. 미션 2 -->
-<section class="slide" data-title="어디를 고치면 빨라질까?" style="background:linear-gradient(160deg, #1a0a14 0%, #070b14 70%)">
+<section class="slide" data-title="어디를 고치면 좋아질까?" style="background:linear-gradient(160deg, #1a0a14 0%, #070b14 70%)">
   <div class="stripe"></div>
   <div class="timer compact" data-min="8" style="--tc:#FF6E8A;top:40px;left:1412px;width:380px"></div>
   <div class="frame">
     <p class="eyebrow" style="color:#ff6e8a">MISSION 02 · 피트 크루 회의 · D-3</p>
-    <h2 class="intro title" style="max-width:1240px">어디를 고치면 빨라질까?</h2>
+    <h2 class="intro title" style="max-width:1240px">어디를 고치면 좋아질까?</h2>
     <table class="grid mt" style="width:1664px;font-size:40px;color:#eef4fa">
       <tr style="background:#2a1220"><th style="width:38%">이럴 때</th><th style="width:62%">살펴볼 부분</th></tr>
-      <tr class="f left" style="background:#121c30"><td>⚡ 3m 주행이 느리다</td><td>모터 출력, 배터리 전압, 차 무게, 바퀴 마찰</td></tr>
-      <tr class="f left" style="background:#0f1828"><td>↗ 휘어져서 3m가 늦다</td><td>바퀴 정렬, 축 휘어짐, 좌우 무게 균형</td></tr>
+      <tr class="f left" style="background:#121c30"><td>⏱️ 시간이 오래 걸린다</td><td>모터 출력, 배터리 전압, 차 무게, 바퀴 마찰</td></tr>
+      <tr class="f left" style="background:#0f1828"><td>↔️ 이탈 거리가 크다</td><td>바퀴 정렬, 축 휘어짐, 좌우 무게 균형</td></tr>
       <tr class="f left" style="background:#121c30"><td>⏸️ 출발이 늦다·중간에 멈칫</td><td>기어 맞물림, 전선 연결, 바퀴 미끄러짐</td></tr>
     </table>
     <p class="f lead" style="text-align:center">“더 잘 만들기” ✕ &nbsp;→&nbsp; <span style="color:#ffd23f">“무엇을 · 어떻게 바꿀까?”</span> ✓ &nbsp;· 개선 <b>2가지 이상</b></p>
@@ -637,8 +674,8 @@ body.pmode #viewport { position: absolute; inset: 0; }
 목표를 못 이룬 테스트의 원인과 개선 방법을 함께 찾아보세요.
 막히면 이 표를 참고하세요.
 
-[클릭] 3m 주행이 느리다면 → 모터 출력, 배터리 전압, 차 무게, 바퀴 마찰.
-[클릭] 옆으로 휘어서 3m가 늦어졌다면 → 바퀴 정렬, 축이 휘었는지, 좌우 무게 균형.
+[클릭] 시간이 오래 걸린다면 → 모터 출력, 배터리 전압, 차 무게, 바퀴 마찰.
+[클릭] 옆으로 휘어서 이탈 거리가 크다면 → 바퀴 정렬, 축이 휘었는지, 좌우 무게 균형.
 [클릭] 출발이 늦거나 중간에 멈칫한다면 → 기어가 잘 맞물렸는지, 전선이 헐겁지 않은지, 바퀴가 미끄러지는지.
 
 [클릭] 그리고 ‘더 잘 만들기’는 개선 방법이 아니에요.
@@ -686,7 +723,7 @@ body.pmode #viewport { position: absolute; inset: 0; }
 그리고 오늘 나는 ‘느낌’으로 평가했는지, ‘근거’로 평가했는지도 돌아보세요.
 2분 줄게요. 다 못 쓰면 다음 시간에 이어서 써요.
 
-[클릭] 다음 시간에는 오늘 연습한 숫자 → 판단 → 개선 순서로, 이번엔 여러분 차를 직접 평가합니다. 그때는 테스트를 두 가지 이상 해 봐요. 그게 진짜 평가예요!
+[클릭] 다음 시간에는 오늘 연습한 숫자 → 판단 → 개선 순서로, 이번엔 여러분 차를 직접 평가합니다. 그게 진짜 평가예요!
 
 (학습지에 이름 썼는지 확인하고 걷기) 수고했어요. 오늘 수업 마치겠습니다.
   </div>
@@ -705,7 +742,7 @@ body.pmode #viewport { position: absolute; inset: 0; }
     <span class="p-now" id="pNow">--:--</span>
     <button class="p-btn warn" id="pOpen" type="button">📺 청중 화면 열기</button>
     <button class="p-btn" id="pPrev" type="button">◀ 이전</button>
-    <span class="p-now" id="pCount">1 / 13</span>
+    <span class="p-now" id="pCount">1 / 14</span>
     <button class="p-btn main" id="pNext" type="button">다음 ▶</button>
   </header>
   <div class="p-main">
@@ -738,7 +775,7 @@ body.pmode #viewport { position: absolute; inset: 0; }
 <nav id="bar" aria-label="슬라이드 조작">
   <button id="bFirst" type="button" title="처음 (Home)">⏮</button>
   <button id="bPrev" type="button" title="이전 (←)">◀ <span class="label">이전</span></button>
-  <span id="count">1 / 13</span>
+  <span id="count">1 / 14</span>
   <span id="stepdots" aria-hidden="true"></span>
   <button id="bNext" class="main" type="button" title="다음 (→, 스페이스, 클릭)"><span class="label">다음</span> ▶</button>
   <button id="bPresenter" type="button" title="발표자 화면 (P)">🎤 <span class="label">발표자</span></button>
