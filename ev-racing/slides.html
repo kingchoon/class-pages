@@ -219,10 +219,10 @@ body.pmode #viewport { position: absolute; inset: 0; }
   <p class="intro eyebrow" style="position:absolute;top:140px;left:128px;width:1664px;color:#ffd23f">QUESTION · 생각해 볼까요?</p>
   <h1 class="intro d1 hero" style="position:absolute;top:270px;left:128px;width:1664px;color:#fff3f5;text-shadow:0 0 40px #ff2d55cc, 0 6px 0 #00000080">어떤 전기자동차가<br>가장 잘 만든 차일까?</h1>
   <div style="position:absolute;top:730px;left:128px;width:1664px;display:flex;gap:40px;justify-content:center">
-    <p class="f pop pill" style="color:#14060c;background:#2be4f0;box-shadow:0 0 30px #2be4f099">⚡ 3m 주행 1위</p>
-    <p class="f pop pill" style="color:#fff3f5;background:#ff2d55;box-shadow:0 0 30px #ff2d5599">⛰️ 경사 오르기 1위</p>
+    <p class="f pop pill" style="color:#14060c;background:#2be4f0;box-shadow:0 0 30px #2be4f099">⚡ 3m 가장 빠른 차</p>
+    <p class="f pop pill" style="color:#fff3f5;background:#ff2d55;box-shadow:0 0 30px #ff2d5599">🎯 목표를 달성한 차</p>
   </div>
-  <div class="notes">도입 (0~5분). 이 슬라이드를 띄우고 바로 전자칠판 리더보드 탭으로 전환해 부문별 1위를 비교한다. 두 부문 1위 차가 서로 다른 반이 많다. 학생 의견을 2~3명 듣고, 답은 주지 않는다. “좋은 차의 기준은 순위가 아니라 내가 정한 설계 목표다”는 결론은 정리 단계에서 다시 연결.</div>
+  <div class="notes">도입 (0~5분). “가장 빠른 차”와 “목표를 달성한 차” 두 선택지를 던지고 옆 친구와 10초 이야기. 학생 의견을 2~3명 듣고, 답은 주지 않는다. 예: 목표 2.5초를 세웠는데 2.7초 나온 차 vs 목표 3.5초를 세우고 3.2초 나온 차 — 누가 더 잘 만들었나? “좋은 차의 기준은 순위가 아니라 내가 정한 설계 목표다”는 결론은 정리 단계에서 다시 연결.</div>
   <div class="script">
 [도입 · 0~3분]
 
@@ -230,11 +230,11 @@ body.pmode #viewport { position: absolute; inset: 0; }
 어떤 전기자동차가 가장 잘 만든 차일까요?
 
 [클릭] 3m를 가장 빨리 간 차일까요?
-[클릭] 아니면 경사를 제일 빨리 오른 차?
+[클릭] 아니면 처음에 정한 목표를 달성한 차일까요?
 
-(전자칠판 리더보드로 바꿔서 두 부문 1위를 보여 준다)
-보세요. 두 부문 1위가 같은 차인가요? 다르죠.
-그럼 이 중에 누가 제일 잘 만든 걸까요? 옆 친구랑 10초만 이야기해 보세요.
+예를 들어 볼게요. 한 친구는 목표를 2.5초로 세웠는데 2.7초가 나왔어요.
+다른 친구는 목표를 3.5초로 세웠는데 3.2초가 나왔어요.
+더 빠른 건 첫 번째 차예요. 그런데 누가 더 잘 만든 걸까요? 옆 친구랑 10초만 이야기해 보세요.
 
 (2~3명 발표 듣기 — 답은 정해 주지 않는다)
 좋아요. 다양한 의견이 나왔어요.
@@ -273,7 +273,7 @@ body.pmode #viewport { position: absolute; inset: 0; }
 오늘 우리가 할 일은 두 가지예요.
 
 [클릭] 첫째, 시험 데이터를 근거로 자동차가 설계 목표를 달성했는지 판단하기.
-선생님 차의 목표는 선생님이 미리 정해 뒀어요. 3m 몇 초, 경사 1m 몇 초.
+선생님 차의 목표는 선생님이 미리 정해 뒀어요. 3m를 몇 초 안에 가는지.
 그 목표랑 실제 기록을 비교하는 거예요.
 다음 시간엔 여러분이 정한 목표로 똑같이 해 봅니다.
 
@@ -334,41 +334,40 @@ body.pmode #viewport { position: absolute; inset: 0; }
   </div>
 </section>
 
-<!-- 5. 두 가지 테스트 -->
-<section class="slide" data-title="두 가지 테스트" style="background:linear-gradient(160deg, #0D1526 0%, #070B14 70%)">
+<!-- 5. 테스트 -->
+<section class="slide" data-title="오늘의 테스트" style="background:linear-gradient(160deg, #0D1526 0%, #070B14 70%)">
   <div class="stripe"></div>
   <div class="frame">
     <p class="eyebrow" style="color:#2BE4F0">D-1 · TEST DESIGN</p>
-    <h2 class="title">두 가지 테스트, <span style="color:#FFD23F">짧을수록</span> 좋은 기록</h2>
-    <div class="row mt">
-      <div class="f card" style="flex:1;box-shadow:0 0 0 2px rgba(43,228,240,0.35), 0 0 40px rgba(43,228,240,0.15)">
+    <h2 class="title">테스트는 하나, <span style="color:#FFD23F">짧을수록</span> 좋은 기록</h2>
+    <div class="row mt" style="gap:32px">
+      <div class="f card" style="flex:1.3;box-shadow:0 0 0 2px rgba(43,228,240,0.35), 0 0 40px rgba(43,228,240,0.15)">
         <p style="font-size:72px;line-height:1">⚡</p>
-        <h3 class="card-h" style="color:#2BE4F0">테스트 ① 3m 주행</h3>
+        <h3 class="card-h" style="color:#2BE4F0">3m 주행</h3>
         <p class="body" style="color:#A9BCD0">평평한 바닥 3m를 가는 데 걸린 시간</p>
-        <p class="unit">단위: 초 ↓ · 3번</p>
       </div>
-      <div class="f card" style="flex:1;box-shadow:0 0 0 2px rgba(255,45,85,0.35), 0 0 40px rgba(255,45,85,0.15)">
-        <p style="font-size:72px;line-height:1">⛰️</p>
-        <h3 class="card-h" style="color:#FF6E8A">테스트 ② 경사 오르기</h3>
-        <p class="body" style="color:#A9BCD0">15° 경사판 1m를 오르는 데 걸린 시간</p>
-        <p class="unit">단위: 초 ↓ · 3번</p>
+      <div style="flex:1;display:flex;flex-direction:column;gap:20px">
+        <p class="f body stmt" style="border-left:8px solid #2be4f0"><b>무엇을</b> · 3m 가는 시간 (초)</p>
+        <p class="f body stmt" style="border-left:8px solid #ffd23f"><b>어떻게</b> · 같은 출발선, 초시계</p>
+        <p class="f body stmt" style="border-left:8px solid #ff2d55"><b>몇 번</b> · 3번</p>
       </div>
     </div>
     <p class="f lead mt" style="font-weight:500;color:#A9BCD0">테스트 설계에는 <b style="color:#EEF4FA">무엇을(단위)</b> · <b style="color:#EEF4FA">어떻게</b> · <b style="color:#EEF4FA">몇 번</b>이 모두 들어가야 해요.</p>
   </div>
-  <div class="notes">학습지 D-1(테스트 방법 정하기)과 연결. 두 테스트 모두 초시계로 재고, 숫자가 작을수록 좋다. 피드백 기준: 서로 다른 테스트 2가지 이상, 각각 무엇을·어떻게·몇 번까지 구체적으로 썼는가. 선생님 차 1대로 테스트마다 3회씩 촬영했다. 이탈 거리 테스트는 이번에 하지 않았다.</div>
+  <div class="notes">학습지 D-1(테스트 방법 정하기)과 연결. 초시계로 재고, 숫자가 작을수록 좋다. 피드백 기준: 무엇을·어떻게·몇 번까지 구체적으로 썼는가. 선생님 차 1대로 3m 주행만 3회 촬영했다. 수업 시간 관계로 테스트는 하나만 — 다음 시간 내 차 평가(총괄)에서는 IB 기준 D-1 상위 점수를 위해 서로 다른 테스트 2가지 이상이 필요하다는 점을 마무리에 예고.</div>
   <div class="script">
 [전개 1 · 6~7분]
 
-선생님 차로 한 테스트는 두 가지예요.
+오늘 선생님 차로 한 테스트는 하나예요.
 
-[클릭] 테스트 1, 평평한 바닥 3m를 가는 데 걸린 시간.
-[클릭] 테스트 2, 15도 경사판 1m를 오르는 데 걸린 시간.
-
-두 가지 모두 세 번씩 초시계로 쟀고, 시간이 짧을수록 좋은 기록이에요.
+[클릭] 3m 주행. 평평한 바닥 3m를 가는 데 걸린 시간이에요.
+시간이 짧을수록 좋은 기록이죠.
 
 [클릭] 테스트 방법을 쓸 때는 세 가지가 꼭 들어가야 해요.
-무엇을 재는지 단위까지, 어떻게 재는지, 그리고 몇 번 재는지.
+무엇을 재는지 단위까지 — 3m 가는 시간, 초.
+[클릭] 어떻게 재는지 — 같은 출발선에서 초시계로.
+[클릭] 그리고 몇 번 재는지 — 3번.
+
 학습지의 D-1 칸이 바로 이 자리예요. 지금 1분 동안 빠진 칸이 없는지 확인해 보세요.
 
 [클릭 → 다음 슬라이드]
@@ -555,7 +554,7 @@ body.pmode #viewport { position: absolute; inset: 0; }
     </div>
   </div>
   <div class="timer" data-min="17" style="--tc:#FFD23F;top:96px;left:1372px;width:420px"></div>
-  <div class="notes">순회하며 “그렇게 판단한 숫자는?”으로 근거를 묻는다. 피드백 기준: 테스트 2개 모두 숫자 근거로 달성 정도를 판단했는가. 모두 같은 차(선생님 차)를 분석하므로, 같은 기록을 보고도 판단이 갈리는 학생을 찾아 두었다가 정리 단계 발표자로 쓴다. 먼저 끝난 학생에게는 종합 정리의 ‘이 결과를 믿을 수 있나요(오차·아쉬운 점)?’와 ‘선생님이 정한 목표가 적절했나’를 예고. 타이머: 시계를 누르면 시작/일시정지.</div>
+  <div class="notes">순회하며 “그렇게 판단한 숫자는?”으로 근거를 묻는다. 피드백 기준: 숫자 근거(평균·목표와 차이)로 달성 정도를 판단했는가. 모두 같은 차(선생님 차)를 분석하므로, 같은 기록을 보고도 판단이 갈리는 학생을 찾아 두었다가 정리 단계 발표자로 쓴다. 먼저 끝난 학생에게는 종합 정리의 ‘이 결과를 믿을 수 있나요(오차·아쉬운 점)?’와 ‘선생님이 정한 목표가 적절했나’를 예고. 타이머: 시계를 누르면 시작/일시정지.</div>
   <div class="script">
 [전개 2 · 13~30분 · 개인 분석 17분]
 
@@ -564,7 +563,7 @@ body.pmode #viewport { position: absolute; inset: 0; }
 [클릭] 웹앱에서 선생님 차의 3회 기록과 영상을 확인하세요.
 [클릭] 세 기록이 고르게 나왔는지 확인하세요. 가장 빠른 기록과 가장 느린 기록 차이가 20%를 넘는지 계산해 보는 거예요.
 [클릭] 학습지 D-2에 기록 3번을 쓰고, 평균을 직접 계산하세요.
-[클릭] 그리고 달성 정도를 직접 고르고, 그렇게 판단한 까닭을 숫자를 넣어서 쓰세요. 테스트 두 개 모두요. 마지막에 종합 정리까지.
+[클릭] 그리고 달성 정도를 직접 고르고, 그렇게 판단한 까닭을 숫자를 넣어서 쓰세요. 마지막에 종합 정리까지.
 
 시간은 17분이에요. (타이머 시계를 눌러 시작)
 
@@ -573,7 +572,7 @@ body.pmode #viewport { position: absolute; inset: 0; }
 · “세 기록 차이는 몇 %야? 20% 넘으면 종합 정리에 뭐라고 쓸 거야?”
 · 먼저 끝난 학생 → 종합 정리: “이 결과 믿을 수 있어? 선생님이 정한 목표가 너무 쉽거나 어렵지 않았을까?”
 
-(5분 남았을 때) 5분 남았어요. 테스트 2개 모두 까닭까지 꼭 써 주세요.
+(5분 남았을 때) 5분 남았어요. 까닭에 숫자가 들어갔는지 꼭 확인하세요.
   </div>
 </section>
 
@@ -623,11 +622,11 @@ body.pmode #viewport { position: absolute; inset: 0; }
       <tr style="background:#2a1220"><th style="width:38%">이럴 때</th><th style="width:62%">살펴볼 부분</th></tr>
       <tr class="f left" style="background:#121c30"><td>⚡ 3m 주행이 느리다</td><td>모터 출력, 배터리 전압, 차 무게, 바퀴 마찰</td></tr>
       <tr class="f left" style="background:#0f1828"><td>↗ 휘어져서 3m가 늦다</td><td>바퀴 정렬, 축 휘어짐, 좌우 무게 균형</td></tr>
-      <tr class="f left" style="background:#121c30"><td>⛰️ 경사를 못 오른다·느리다</td><td>기어 크기(기어비), 무게중심 위치, 바퀴 미끄러짐</td></tr>
+      <tr class="f left" style="background:#121c30"><td>⏸️ 출발이 늦다·중간에 멈칫</td><td>기어 맞물림, 전선 연결, 바퀴 미끄러짐</td></tr>
     </table>
     <p class="f lead" style="text-align:center">“더 잘 만들기” ✕ &nbsp;→&nbsp; <span style="color:#ffd23f">“무엇을 · 어떻게 바꿀까?”</span> ✓ &nbsp;· 개선 <b>2가지 이상</b></p>
   </div>
-  <div class="notes">선생님 차 영상(필요하면 실물을 앞에 두고)과 구조가 비슷한 자기 차를 함께 보며, 선생님 차가 달성 못한(또는 부분 달성) 테스트의 개선안을 학습지 D-3 ‘내 개선 1·2’에 쓴다. 피드백 기준: 테스트 결과를 바탕으로 개선 방법 2가지 이상을 무엇을·어떻게까지 구체적으로 썼는가. 선생님 차가 두 테스트 모두 달성했다면 ‘더 줄이려면’으로 쓰게 한다. 개선안이 막연하면 “무엇을 어떻게?”로 되묻기. 타이머: 시계를 누르면 시작/일시정지.</div>
+  <div class="notes">선생님 차 영상(필요하면 실물을 앞에 두고)과 구조가 비슷한 자기 차를 함께 보며, 선생님 차가 달성 못한(또는 부분 달성) 테스트의 개선안을 학습지 D-3 ‘내 개선 1·2’에 쓴다. 피드백 기준: 테스트 결과를 바탕으로 개선 방법 2가지 이상을 무엇을·어떻게까지 구체적으로 썼는가. 선생님 차가 목표를 달성했다면 ‘더 줄이려면’으로 쓰게 한다. 개선안이 막연하면 “무엇을 어떻게?”로 되묻기. 타이머: 시계를 누르면 시작/일시정지.</div>
   <div class="script">
 [전개 3 · 30~38분 · 모둠 8분]
 
@@ -640,16 +639,16 @@ body.pmode #viewport { position: absolute; inset: 0; }
 
 [클릭] 3m 주행이 느리다면 → 모터 출력, 배터리 전압, 차 무게, 바퀴 마찰.
 [클릭] 옆으로 휘어서 3m가 늦어졌다면 → 바퀴 정렬, 축이 휘었는지, 좌우 무게 균형.
-[클릭] 경사를 못 오르거나 느리다면 → 기어비, 무게중심 위치, 바퀴가 미끄러지는지.
+[클릭] 출발이 늦거나 중간에 멈칫한다면 → 기어가 잘 맞물렸는지, 전선이 헐겁지 않은지, 바퀴가 미끄러지는지.
 
 [클릭] 그리고 ‘더 잘 만들기’는 개선 방법이 아니에요.
 ‘무엇을, 어떻게 바꿀지’를 써야 해요. 학습지 D-3에 개선 2가지 이상 쓰세요.
-선생님 차가 두 테스트를 다 달성했다면 ‘여기서 더 줄이려면?’으로 쓰면 됩니다.
+선생님 차가 목표를 달성했다면 ‘여기서 더 줄이려면?’으로 쓰면 됩니다.
 
 여러분 차를 직접 손에 들고 비교해 보세요. 8분 줄게요. (타이머 시작)
 
 (순회하며) 개선안이 막연하면 → “무엇을 어떻게 바꿀 건데? 그러면 몇 초 줄어들 것 같아?”
-(막히는 모둠이 많으면) 모터 쪽 기어를 작게, 바퀴 쪽 기어를 크게 하면 힘은 세져서 경사는 잘 오르지만 속도는 느려져요. 하나를 고치면 다른 테스트도 바뀐다는 걸 생각해 보세요.
+(막히는 모둠이 많으면) 모터 쪽 기어를 크게, 바퀴 쪽 기어를 작게 하면 속도는 빨라지지만 힘이 약해져서 출발이 늦거나 멈출 수 있어요. 하나를 고치면 다른 점도 바뀐다는 걸 생각해 보세요.
   </div>
 </section>
 
@@ -687,7 +686,7 @@ body.pmode #viewport { position: absolute; inset: 0; }
 그리고 오늘 나는 ‘느낌’으로 평가했는지, ‘근거’로 평가했는지도 돌아보세요.
 2분 줄게요. 다 못 쓰면 다음 시간에 이어서 써요.
 
-[클릭] 다음 시간에는 오늘 연습한 숫자 → 판단 → 개선 순서로, 이번엔 여러분 차를 직접 평가합니다. 그게 진짜 평가예요!
+[클릭] 다음 시간에는 오늘 연습한 숫자 → 판단 → 개선 순서로, 이번엔 여러분 차를 직접 평가합니다. 그때는 테스트를 두 가지 이상 해 봐요. 그게 진짜 평가예요!
 
 (학습지에 이름 썼는지 확인하고 걷기) 수고했어요. 오늘 수업 마치겠습니다.
   </div>
