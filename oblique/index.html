@@ -186,34 +186,9 @@
           <div class="space-y-2">
             <label class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center space-x-1.5">
               <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-              <span>기본 입체 형상 선택</span>
+              <span>기본 입체 형상 선택 (16종)</span>
             </label>
-            <div class="grid grid-cols-3 gap-2 text-xs">
-              <button class="shape-btn p-2 rounded-xl border border-brand-500 bg-brand-50 text-brand-800 font-semibold flex flex-col items-center justify-center space-y-1 transition-all" data-shape="box">
-                <svg class="w-5 h-5 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
-                <span>직육면체</span>
-              </button>
-              <button class="shape-btn p-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:border-slate-300 font-medium flex flex-col items-center justify-center space-y-1 transition-all" data-shape="stair">
-                <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 19h18M3 19v-6h6v-6h6V3h6v16"/></svg>
-                <span>L자 계단</span>
-              </button>
-              <button class="shape-btn p-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:border-slate-300 font-medium flex flex-col items-center justify-center space-y-1 transition-all" data-shape="groove">
-                <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h4v6h8V6h4v12H4V6z"/></svg>
-                <span>홈 블록 (ㄷ자)</span>
-              </button>
-              <button class="shape-btn p-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:border-slate-300 font-medium flex flex-col items-center justify-center space-y-1 transition-all" data-shape="hollow_hole">
-                <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" stroke-width="2"/><rect x="4" y="4" width="16" height="16" rx="2" stroke-width="2"/></svg>
-                <span>원형 구멍 블록</span>
-              </button>
-              <button class="shape-btn p-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:border-slate-300 font-medium flex flex-col items-center justify-center space-y-1 transition-all" data-shape="cylinder">
-                <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="7" ry="3" stroke-width="2"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5v14c0 1.66 3.13 3 7 3s7-1.34 7-3V5"/></svg>
-                <span>원기둥</span>
-              </button>
-              <button class="shape-btn p-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:border-slate-300 font-medium flex flex-col items-center justify-center space-y-1 transition-all" data-shape="chamfer">
-                <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 18V6l8-3h8v15H4z"/></svg>
-                <span>경사면 블록</span>
-              </button>
-            </div>
+            <div id="shape-grid" class="grid grid-cols-3 gap-2 text-xs"></div>
           </div>
 
           <!-- Dimensions Sliders -->
@@ -731,18 +706,41 @@
     return { front: faces[0].pts, sides: sides.map(f => ({ pts: f.pts, n: f.n })), vis, hid };
   }
 
-  // 도형별 정면 다각형(반시계 방향)
+  // 도형 목록: poly(w, h)는 정면 모양의 꼭짓점(반시계 방향, mm). 이 모양을 안쪽(깊이)으로 밀어낸 입체를 그린다.
+  // 새 도형은 여기에 한 줄 추가하면 버튼·숨은선·음영·치수선이 자동으로 따라온다.
+  const SHAPE_DEFS = [
+    { key: 'box', label: '직육면체', poly: (w, h) => [[0, 0], [w, 0], [w, h], [0, h]] },
+    { key: 'stair', label: 'L자 계단', poly: (w, h) => [[0, 0], [w, 0], [w, h * 0.5], [w * 0.5, h * 0.5], [w * 0.5, h], [0, h]] },
+    { key: 'groove', label: '홈 블록 (ㄷ자)', poly: (w, h) => {
+      const x1 = w * 0.3, x2 = w * 0.7, gy = h * 0.5;
+      return [[0, 0], [w, 0], [w, h], [x2, h], [x2, gy], [x1, gy], [x1, h], [0, h]];
+    } },
+    { key: 'hollow_hole', label: '원형 구멍 블록', special: 'hole', poly: (w, h) => [[0, 0], [w, 0], [w, h], [0, h]],
+      icon: '<circle cx="12" cy="12" r="4" stroke-width="2"/><rect x="4" y="4" width="16" height="16" rx="2" stroke-width="2"/>' },
+    { key: 'cylinder', label: '원기둥', special: 'cylinder', poly: (w, h) => [[0, 0], [w, 0], [w, h], [0, h]],
+      icon: '<ellipse cx="12" cy="5" rx="7" ry="3" stroke-width="2"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5v14c0 1.66 3.13 3 7 3s7-1.34 7-3V5"/>' },
+    { key: 'chamfer', label: '경사면 블록', poly: (w, h) => [[0, 0], [w, 0], [w, h], [w * 0.5, h], [0, h * 0.4]] },
+    // ---- 추가 도형 10개 ----
+    { key: 'tee', label: 'T자 블록', poly: (w, h) => {
+      const x1 = w * 0.3, x2 = w * 0.7, by = h * 0.65;
+      return [[x1, 0], [x2, 0], [x2, by], [w, by], [w, h], [0, h], [0, by], [x1, by]];
+    } },
+    { key: 'angle', label: 'ㄱ자 앵글', poly: (w, h) => [[0, 0], [w, 0], [w, h * 0.3], [w * 0.3, h * 0.3], [w * 0.3, h], [0, h]] },
+    { key: 'stair3', label: '3단 계단', poly: (w, h) => [[0, 0], [w, 0], [w, h / 3], [w * 2 / 3, h / 3], [w * 2 / 3, h * 2 / 3], [w / 3, h * 2 / 3], [w / 3, h], [0, h]] },
+    { key: 'wedge', label: '삼각기둥', poly: (w, h) => [[0, 0], [w, 0], [0, h]] },
+    { key: 'cross', label: '십자 블록', poly: (w, h) => {
+      const x1 = w * 0.35, x2 = w * 0.65, y1 = h * 0.35, y2 = h * 0.65;
+      return [[x1, 0], [x2, 0], [x2, y1], [w, y1], [w, y2], [x2, y2], [x2, h], [x1, h], [x1, y2], [0, y2], [0, y1], [x1, y1]];
+    } },
+    { key: 'house', label: '집 모양 (오각)', poly: (w, h) => [[0, 0], [w, 0], [w, h * 0.6], [w * 0.5, h], [0, h * 0.6]] },
+    { key: 'trapezoid', label: '사다리꼴', poly: (w, h) => [[0, 0], [w, 0], [w * 0.8, h], [w * 0.2, h]] },
+    { key: 'zshape', label: 'Z자 블록', poly: (w, h) => [[0, 0], [w * 0.6, 0], [w * 0.6, h * 0.5], [w, h * 0.5], [w, h], [w * 0.4, h], [w * 0.4, h * 0.5], [0, h * 0.5]] },
+    { key: 'vgroove', label: 'V홈 블록', poly: (w, h) => [[0, 0], [w, 0], [w, h], [w * 0.65, h], [w * 0.5, h * 0.55], [w * 0.35, h], [0, h]] },
+    { key: 'hexagon', label: '육각기둥', poly: (w, h) => [[w * 0.25, 0], [w * 0.75, 0], [w, h * 0.5], [w * 0.75, h], [w * 0.25, h], [0, h * 0.5]] }
+  ];
   function shapePolygon(shape, w, h) {
-    if (shape === 'stair') {
-      const sw = w * 0.5, sh = h * 0.5;
-      return [[0, 0], [w, 0], [w, sh], [sw, sh], [sw, h], [0, h]];
-    }
-    if (shape === 'groove') {
-      const gw = w * 0.4, gh = h * 0.5, x1 = (w - gw) / 2, x2 = x1 + gw;
-      return [[0, 0], [w, 0], [w, h], [x2, h], [x2, h - gh], [x1, h - gh], [x1, h], [0, h]];
-    }
-    if (shape === 'chamfer') return [[0, 0], [w, 0], [w, h], [w * 0.5, h], [0, h * 0.4]];
-    return [[0, 0], [w, 0], [w, h], [0, h]]; // box, hollow_hole
+    const def = SHAPE_DEFS.find(s => s.key === shape) || SHAPE_DEFS[0];
+    return def.poly(w, h);
   }
 
   // 블록 쌓기: 마우스가 가리키는 선(시선)이 처음 만나는 블록 찾기
@@ -1244,12 +1242,22 @@
     });
   });
 
+  // 도형 버튼: 목록(SHAPE_DEFS)에서 자동으로 만들고, 아이콘은 정면 모양 그대로 그린다
+  const SHAPE_ON = 'shape-btn p-2 rounded-xl border border-brand-500 bg-brand-50 text-brand-800 font-semibold flex flex-col items-center justify-center space-y-1 transition-all';
+  const SHAPE_OFF = 'shape-btn p-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:border-slate-300 font-medium flex flex-col items-center justify-center space-y-1 transition-all';
+  function shapeIconSVG(def) {
+    const inner = def.icon || `<polygon points="${def.poly(18, 18).map(p => `${p[0] + 3},${21 - p[1]}`).join(' ')}" stroke-width="2" stroke-linejoin="round"/>`;
+    return `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">${inner}</svg>`;
+  }
+  document.getElementById('shape-grid').innerHTML = SHAPE_DEFS.map((def, i) =>
+    `<button class="${i === 0 ? SHAPE_ON : SHAPE_OFF}" data-shape="${def.key}">${shapeIconSVG(def)}<span>${def.label}</span></button>`).join('');
+
   // 도형 선택
   const shapeButtons = document.querySelectorAll('.shape-btn');
   shapeButtons.forEach(b => {
     b.addEventListener('click', () => {
-      shapeButtons.forEach(ob => { ob.className = 'shape-btn p-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:border-slate-300 font-medium flex flex-col items-center justify-center space-y-1 transition-all'; });
-      b.className = 'shape-btn p-2 rounded-xl border border-brand-500 bg-brand-50 text-brand-800 font-semibold flex flex-col items-center justify-center space-y-1 transition-all';
+      shapeButtons.forEach(ob => { ob.className = SHAPE_OFF; });
+      b.className = SHAPE_ON;
       state.parametric.shape = b.dataset.shape;
       document.getElementById('sub-param-container').classList.toggle('hidden', b.dataset.shape !== 'hollow_hole');
       render();
