@@ -212,9 +212,19 @@
             <p class="text-xs text-indigo-800 leading-relaxed">
               • <strong>클릭</strong>: 바닥 칸이나 블록의 보이는 면 위에 블록을 쌓습니다.<br>
               • <strong>블록 우클릭</strong> 또는 <strong>지우기 모드</strong>: 가리킨 블록을 지웁니다.<br>
-              • <strong>Shift + 드래그</strong>: 화면을 옮깁니다.
+              • <strong>Shift + 드래그</strong>: 화면을 옮깁니다.<br>
+              • <strong>블록 합쳐 보기</strong>: 같은 평면으로 이어진 면의 경계선을 지워 하나의 도형처럼 보여 줍니다.
             </p>
           </div>
+
+          <!-- 합쳐 보기 -->
+          <label class="flex items-center justify-between p-2.5 rounded-lg hover:bg-slate-50 border border-slate-200/70 cursor-pointer text-xs">
+            <div class="flex flex-col">
+              <span class="font-semibold text-slate-800">블록 합쳐 보기</span>
+              <span class="text-[10px] text-slate-500">블록 사이의 줄을 지우고 바깥 윤곽만 남겨요</span>
+            </div>
+            <input id="chk-voxel-merge" type="checkbox" class="w-4 h-4 text-brand-600 rounded border-slate-300 focus:ring-brand-500">
+          </label>
 
           <!-- Voxel Actions -->
           <div class="grid grid-cols-2 gap-2 text-xs">
@@ -510,7 +520,7 @@
     display: { hiddenLines: true, dimensions: true, shading: true, grid: true, axes: false, lineWidth: 2.0 },
     view: { zoom: 1.0, panX: 0, panY: 0, isPanning: false, startX: 0, startY: 0 },
     parametric: { shape: 'box', w: 80, h: 60, d: 60, subParam: 30 },
-    voxel: { gridSize: 6, cellSize: 20, blocks: new Set(), tool: 'add', hover: null },
+    voxel: { gridSize: 6, cellSize: 20, blocks: new Set(), tool: 'add', hover: null, merge: false },
     sketch: { lines: [], start: null, hover: null } // 좌표는 도면 위 mm
   };
 
@@ -1080,12 +1090,33 @@
     // 먼 블록부터 그림: 안쪽(z 큰 것) → 보는 쪽에서 먼 높이 → 보는 쪽에서 먼 좌우
     list.sort((p, q) => (q[2] - p[2]) || ((p[1] - q[1]) * pp.uy) || ((p[0] - q[0]) * pp.ux));
 
-    const shade = state.display.shading;
+    const shade = state.display.shading, merge = state.voxel.merge;
+    const DX = pp.ux, DY = pp.uy;
+    // 보이는 면인지 (이웃 칸이 같은 방향의 보이는 면이면 "한 평면으로 이어진 것")
+    const visFront = (x, y, z) => has(x, y, z) && !has(x, y, z - 1);
+    const visCap = (x, y, z) => has(x, y, z) && !has(x, y + DY, z);
+    const visSide = (x, y, z) => has(x, y, z) && !has(x + DX, y, z);
+    // 면의 네 변(꼭짓점 순서대로)이 맞닿는 이웃 칸
+    const FACE = {
+      side: { vis: visSide, nb: [[0, 0, -1], [0, 1, 0], [0, 0, 1], [0, -1, 0]], fill: C_SIDE },
+      cap: { vis: visCap, nb: [[0, 0, -1], [1, 0, 0], [0, 0, 1], [-1, 0, 0]], fill: DY > 0 ? C_TOP : C_BOTTOM },
+      front: { vis: visFront, nb: [[0, -1, 0], [1, 0, 0], [0, 1, 0], [-1, 0, 0]], fill: C_FRONT }
+    };
+    function drawFace(kind, pts, bx, by, bz) {
+      const F = FACE[kind], fill = shade ? F.fill : '#ffffff';
+      if (!merge) { sc.poly(pts, fill, INK, lw); return; }
+      // 합쳐 보기: 같은 색 테두리로 이웃 면과의 틈을 메우고, 같은 평면으로 이어지지 않는 변에만 선을 긋는다
+      sc.poly(pts, fill, fill, 1.5);
+      for (let i = 0; i < 4; i++) {
+        const o = F.nb[i];
+        if (!F.vis(bx + o[0], by + o[1], bz + o[2])) sc.line(pts[i], pts[(i + 1) % 4], INK, lw);
+      }
+    }
     list.forEach(([bx, by, bz]) => {
       const f = cubeFaces(T3, bx * cs, by * cs, bz * cs, cs, pp);
-      if (!has(bx + pp.ux, by, bz)) sc.poly(f.side, shade ? C_SIDE : '#ffffff', INK, lw);
-      if (!has(bx, by + pp.uy, bz)) sc.poly(f.cap, shade ? (pp.uy > 0 ? C_TOP : C_BOTTOM) : '#ffffff', INK, lw);
-      if (!has(bx, by, bz - 1)) sc.poly(f.front, shade ? C_FRONT : '#ffffff', INK, lw);
+      if (!has(bx + DX, by, bz)) drawFace('side', f.side, bx, by, bz);
+      if (!has(bx, by + DY, bz)) drawFace('cap', f.cap, bx, by, bz);
+      if (!has(bx, by, bz - 1)) drawFace('front', f.front, bx, by, bz);
     });
 
     const hv = state.voxel.hover;
@@ -1301,6 +1332,7 @@
     btnVoxelDel.className = 'voxel-tool-btn py-2 px-3 rounded-lg border border-red-500 bg-red-50 text-red-700 font-semibold flex items-center justify-center space-x-1';
     btnVoxelAdd.className = VTOOL_OFF;
   });
+  document.getElementById('chk-voxel-merge').addEventListener('change', e => { state.voxel.merge = e.target.checked; render(); });
   document.getElementById('btn-voxel-clear').addEventListener('click', () => {
     state.voxel.blocks.clear(); state.voxel.hover = null;
     render();
