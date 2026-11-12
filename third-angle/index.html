@@ -1923,7 +1923,46 @@
     showToast('SVG 도면을 저장했습니다.');
   });
 
+  // ===== 물체 이어받기: 투상법을 바꿔도 지금 보던 물체(도형·치수·블록)를 그대로 넘겨준다 =====
+  function objectQuery() {
+    const p = state.parametric;
+    return `shape=${p.shape}&w=${p.w}&h=${p.h}&d=${p.d}&sub=${p.subParam}&mode=${state.mode}&merge=${state.voxel.merge ? 1 : 0}` +
+           `&blocks=${Array.from(state.voxel.blocks).map(k => k.replace(/,/g, '.')).join('_')}`;
+  }
+  function applyObjectQuery() {
+    let q;
+    try { q = new URLSearchParams(location.search); } catch (err) { return; }
+    if (!q.has('shape') && !q.has('blocks')) return;
+    if (q.has('blocks')) {
+      const gs = state.voxel.gridSize;
+      state.voxel.blocks.clear();
+      q.get('blocks').split('_').forEach(t => {
+        const c = t.split('.').map(Number);
+        if (c.length === 3 && c.every(n => Number.isInteger(n) && n >= 0 && n < gs)) state.voxel.blocks.add(c.join(','));
+      });
+    }
+    const setSlider = (id, v) => {
+      const el = $(id), n = Number(v);
+      if (!el || v === null || !isFinite(n)) return;
+      el.value = Math.max(Number(el.min), Math.min(Number(el.max), n));
+      el.dispatchEvent(new Event('input'));
+    };
+    setSlider('slider-dim-w', q.get('w')); setSlider('slider-dim-h', q.get('h')); setSlider('slider-dim-d', q.get('d')); setSlider('slider-sub-param', q.get('sub'));
+    const sb = Array.from(document.querySelectorAll('.shape-btn')).find(b => b.dataset.shape === q.get('shape'));
+    if (sb) sb.click();
+    const mg = $('chk-voxel-merge');
+    if (mg && q.has('merge')) { mg.checked = q.get('merge') === '1'; mg.dispatchEvent(new Event('change')); }
+    const tab = { parametric: 'tab-parametric', voxel: 'tab-voxel', sketch: 'tab-sketch' }[q.get('mode')];
+    if (tab) $(tab).click();
+    setTimeout(() => showToast('앞 화면에서 보던 물체를 그대로 불러왔습니다.'), 300);
+  }
+  document.querySelectorAll('#kind-switch a').forEach(a => {
+    a.title = '지금 보는 물체를 ' + a.textContent + '로 보기';
+    a.addEventListener('click', e => { e.preventDefault(); location.href = a.getAttribute('href') + '&' + objectQuery(); });
+  });
+
   // ===== 시작 =====
+  applyObjectQuery();
   canvasContainer.style.cursor = 'grab';
   setTimeout(() => { resizeCanvas(); }, 50);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(render);
