@@ -867,14 +867,14 @@
   function shapeObject(shape, w, h, d, sub) {
     if (shape === 'cylinder') {
       const R = Math.min(w, h) / 2;
-      return { W: 2 * R, H: 2 * R, D: d, views: cylinderViews(R, d), texts: { w: `ø ${2 * R} mm`, h: null, d: `D = ${d} mm` } };
+      return { W: 2 * R, H: 2 * R, D: d, views: cylinderViews(R, d), texts: { w: `ø${2 * R}`, h: null, d: `${d}` } };
     }
     const def = SHAPE_DEFS.find(s => s.key === shape) || SHAPE_DEFS[0];
     const poly = def.poly(w, h);
-    const texts = { w: `W = ${w} mm`, h: `H = ${h} mm`, d: `D = ${d} mm` };
+    const texts = { w: `${w}`, h: `${h}`, d: `${d}` };
     if (shape === 'hollow_hole') {
       const R = holeRadiusOf(w, h, sub);
-      texts.hole = `ø ${Math.round(R * 20) / 10} mm`;
+      texts.hole = `ø${Math.round(R * 20) / 10}`;
       return { W: w, H: h, D: d, views: holeBlockViews(w, h, d, R), texts, hole: { c: [w / 2, h / 2], R } };
     }
     return { W: w, H: h, D: d, views: prismViews(poly, d), texts };
@@ -932,7 +932,7 @@
     }
     const views = {};
     Object.keys(defs).forEach(k => { views[k] = viewOf(defs[k]); });
-    const cnt = n => `${n}칸 (${n * cs} mm)`;
+    const cnt = n => `${n * cs}`;
     return {
       W: nx * cs, H: ny * cs, D: nz * cs, views, n: [nx, ny, nz], min: mn,
       texts: { w: `W = ${cnt(nx)}`, h: `H = ${cnt(ny)}`, d: `D = ${cnt(nz)}` }
@@ -965,7 +965,7 @@
       line(p, q, stroke, width, dash) { items.push({ t: 'line', p, q, stroke, width, dash }); },
       poly(pts, fill, stroke, width, dash) { items.push({ t: 'poly', pts, fill, stroke, width, dash }); },
       open(pts, stroke, width, dash) { items.push({ t: 'open', pts, stroke, width, dash }); }, // 닫지 않는 꺾은선
-      text(x, y, str, color, bg) { items.push({ t: 'text', x, y, str, color, bg, tw: textWidth(str) }); }
+      text(x, y, str, color, bg, ang, dy) { items.push({ t: 'text', x, y, str, color, bg, ang: ang || 0, dy: dy || 0, tw: textWidth(str) }); }
     };
   }
 
@@ -990,7 +990,8 @@
         ctx.font = TEXT_FONT;
         if (it.bg) { ctx.fillStyle = it.bg; ctx.fillRect(it.x - it.tw / 2 - 3, it.y - 7, it.tw + 6, 14); }
         ctx.fillStyle = it.color; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText(it.str, it.x, it.y);
+        if (it.ang || it.dy) { ctx.save(); ctx.translate(it.x, it.y); ctx.rotate(it.ang); ctx.fillText(it.str, 0, -it.dy); ctx.restore(); }
+        else ctx.fillText(it.str, it.x, it.y);
       } else {
         ctx.beginPath();
         if (it.t === 'line') { ctx.moveTo(it.p.x, it.p.y); ctx.lineTo(it.q.x, it.q.y); }
@@ -1021,7 +1022,8 @@
         out.push(`<${it.t === 'poly' ? 'polygon' : 'polyline'} points="${it.pts.map(p => `${n(p.x)},${n(p.y)}`).join(' ')}"${style(it)}/>`);
       } else if (it.t === 'text') {
         if (it.bg) out.push(`<rect x="${n(it.x - it.tw / 2 - 3)}" y="${n(it.y - 7)}" width="${n(it.tw + 6)}" height="14" fill="${it.bg}"/>`);
-        out.push(`<text x="${n(it.x)}" y="${n(it.y)}" text-anchor="middle" dominant-baseline="central" font-family="Inter, 'Noto Sans KR', sans-serif" font-size="11" fill="${it.color}">${esc(it.str)}</text>`);
+        const tr = (it.ang || it.dy) ? ` transform="translate(${n(it.x)} ${n(it.y)}) rotate(${n(it.ang * 180 / Math.PI)})"` : '';
+        out.push(`<text x="${tr ? 0 : n(it.x)}" y="${tr ? n(-it.dy) : n(it.y)}"${tr} text-anchor="middle" dominant-baseline="central" font-family="Inter, 'Noto Sans KR', sans-serif" font-size="11" fill="${it.color}">${esc(it.str)}</text>`);
       }
     });
     out.push('</svg>');
@@ -1098,20 +1100,37 @@
   }
   window.addEventListener('resize', resizeCanvas);
 
-  // ----- 치수선 -----
+  // ----- 치수선 (제도통칙: KS B 0001 / KS A ISO 129 기준) -----
+  // 치수 보조선: 물체에서 조금 띄워 시작해 치수선 밖으로 조금 더 나간다 · 치수선: 가는 실선 · 화살표: 속이 찬 닫힌 화살표(길이:폭 ≈ 3:1)
+  // 치수 숫자: 단위(mm)를 쓰지 않고, 치수선 위쪽 가운데에 선과 나란하게 쓴다(수직 치수는 왼쪽에 눕혀 쓴다)
+  const DIM_COLOR = '#334155', DIM_LW = 0.8, DIM_GAP = 3, DIM_OVER = 4, ARROW_LEN = 9, ARROW_HALF = 1.6;
   function dimLine(sc, p1, p2, text, e1, e2) {
-    sc.line(e1, p1, '#94a3b8', 1);
-    sc.line(e2, p2, '#94a3b8', 1);
-    sc.line(p1, p2, '#2563eb', 1.2);
-    [[p1, p2], [p2, p1]].forEach(([from, to]) => {
-      const ang = Math.atan2(to.y - from.y, to.x - from.x), len = 7;
-      sc.poly([
-        to,
-        { x: to.x - len * Math.cos(ang - Math.PI / 7), y: to.y - len * Math.sin(ang - Math.PI / 7) },
-        { x: to.x - len * Math.cos(ang + Math.PI / 7), y: to.y - len * Math.sin(ang + Math.PI / 7) }
-      ], '#2563eb');
+    [[e1, p1], [e2, p2]].forEach(([e, p]) => {
+      const dx = p.x - e.x, dy = p.y - e.y, L = Math.hypot(dx, dy);
+      if (L < 1e-6) return;
+      const ux = dx / L, uy = dy / L, g = Math.min(DIM_GAP, L * 0.5);
+      sc.line({ x: e.x + ux * g, y: e.y + uy * g }, { x: p.x + ux * DIM_OVER, y: p.y + uy * DIM_OVER }, DIM_COLOR, DIM_LW);
     });
-    sc.text((p1.x + p2.x) / 2, (p1.y + p2.y) / 2, text, '#1d4ed8', '#ffffff');
+    sc.line(p1, p2, DIM_COLOR, DIM_LW);
+    [[p1, p2], [p2, p1]].forEach(([from, to]) => {
+      const ang = Math.atan2(to.y - from.y, to.x - from.x);
+      const bx = to.x - ARROW_LEN * Math.cos(ang), by = to.y - ARROW_LEN * Math.sin(ang);
+      sc.poly([to, { x: bx - ARROW_HALF * Math.sin(ang), y: by + ARROW_HALF * Math.cos(ang) }, { x: bx + ARROW_HALF * Math.sin(ang), y: by - ARROW_HALF * Math.cos(ang) }], DIM_COLOR);
+    });
+    let a = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+    if (a > Math.PI / 2 + 1e-9) a -= Math.PI; else if (a <= -Math.PI / 2 + 1e-9) a += Math.PI; // 글자가 거꾸로 서지 않게
+    sc.text((p1.x + p2.x) / 2, (p1.y + p2.y) / 2, text, '#0f172a', null, a, 8);
+  }
+
+  // 지름·반지름 표시: 지시선(화살표 + 꺾인 선)을 그리고 숫자는 선 위에 쓴다
+  function leaderNote(sc, tip, text, dirx, diry) {
+    const sx = dirx >= 0 ? 1 : -1, sy = diry >= 0 ? 1 : -1;
+    const k = { x: tip.x + sx * 16, y: tip.y + sy * 16 }, e = { x: k.x + sx * (textWidth(text) + 8), y: k.y };
+    sc.line(tip, k, DIM_COLOR, DIM_LW); sc.line(k, e, DIM_COLOR, DIM_LW);
+    const a = Math.atan2(k.y - tip.y, k.x - tip.x);
+    sc.poly([tip, { x: tip.x + ARROW_LEN * Math.cos(a) - ARROW_HALF * Math.sin(a), y: tip.y + ARROW_LEN * Math.sin(a) + ARROW_HALF * Math.cos(a) },
+                  { x: tip.x + ARROW_LEN * Math.cos(a) + ARROW_HALF * Math.sin(a), y: tip.y + ARROW_LEN * Math.sin(a) - ARROW_HALF * Math.cos(a) }], DIM_COLOR);
+    sc.text((k.x + e.x) / 2, k.y, text, '#0f172a', null, 0, 8);
   }
 
 
@@ -1151,11 +1170,10 @@
       if (t.h) { const a = T(0, 0), b = T(0, H); dimLine(sc, sh(a, -36, 0), sh(b, -36, 0), t.h, a, b); }
       if (t.d) {
         const a = T(0, H + GAP), b = T(0, H + GAP + D); dimLine(sc, sh(a, -36, 0), sh(b, -36, 0), t.d, a, b);
-        const c = T(W + GAP, 0), e = T(W + GAP + D, 0); dimLine(sc, sh(c, 0, 26), sh(e, 0, 26), t.d, c, e);
       }
       if (obj.hole) {
-        const c = P('front', obj.hole.c), b = P('front', [obj.hole.c[0], obj.hole.c[1] - obj.hole.R]);
-        sc.text(c.x, b.y + 12, obj.texts.hole, '#1d4ed8', '#ffffff');
+        const k = Math.SQRT1_2, c = P('front', [obj.hole.c[0] + obj.hole.R * k, obj.hole.c[1] - obj.hole.R * k]);
+        leaderNote(sc, c, obj.texts.hole, 1, 1);
       }
     }
     if (o.labels) drawLabels(sc, T, obj, L, o.dims);
