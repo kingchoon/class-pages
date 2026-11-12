@@ -783,7 +783,7 @@
   // ===== 제3각법 3면도 계산 =====
   // 한 방향에서 본 그림: vis 보이는 선, hid 숨은선, cl 중심선(각각 [[x,y],[x,y]] 목록), circles 원 [{c:[x,y], r}]
   // 좌표는 mm, 그림의 왼쪽 아래가 (0, 0)
-  const GAP = 20;     // 도면 사이 간격(mm)
+  const GAP = 30;     // 도면 사이 간격(mm)
   const INSET = 120;  // 오른쪽 위 입체도 칸의 크기(mm)
   const GRID = 10;    // 모눈 한 칸(mm)
 
@@ -943,7 +943,7 @@
   function layoutOf(obj, inset) {
     const { W, H, D } = obj;
     const box = inset ? Math.max(D, INSET) : D;
-    const x0 = -22, y0 = -28, x1 = W + GAP + box, y1 = H + GAP + box + 8;
+    const x0 = -34, y0 = -42, x1 = W + GAP + box + 14, y1 = H + GAP + box + 18;
     return {
       org: { front: [0, 0], top: [0, H + GAP], side: [W + GAP, 0] },
       bounds: [x0, y0, x1, y1],
@@ -1112,13 +1112,17 @@
       sc.line({ x: e.x + ux * g, y: e.y + uy * g }, { x: p.x + ux * DIM_OVER, y: p.y + uy * DIM_OVER }, DIM_COLOR, DIM_LW);
     });
     sc.line(p1, p2, DIM_COLOR, DIM_LW);
+    // 간격이 좁아 화살표가 안 들어가면 화살표를 바깥에서 안쪽으로 향하게 그린다
+    const tight = Math.hypot(p2.x - p1.x, p2.y - p1.y) < ARROW_LEN * 2 + 6;
     [[p1, p2], [p2, p1]].forEach(([from, to]) => {
-      const ang = Math.atan2(to.y - from.y, to.x - from.x);
+      const ang = Math.atan2(to.y - from.y, to.x - from.x) + (tight ? Math.PI : 0);
       const bx = to.x - ARROW_LEN * Math.cos(ang), by = to.y - ARROW_LEN * Math.sin(ang);
       sc.poly([to, { x: bx - ARROW_HALF * Math.sin(ang), y: by + ARROW_HALF * Math.cos(ang) }, { x: bx + ARROW_HALF * Math.sin(ang), y: by - ARROW_HALF * Math.cos(ang) }], DIM_COLOR);
+      if (tight) sc.line(to, { x: to.x - (ARROW_LEN + 5) * Math.cos(ang), y: to.y - (ARROW_LEN + 5) * Math.sin(ang) }, DIM_COLOR, DIM_LW);
     });
+    // 숫자 방향: 가로 치수는 아래에서, 세로 치수는 오른쪽에서 읽도록(세로 치수 숫자는 치수선 왼쪽에 눕혀 쓴다)
     let a = Math.atan2(p2.y - p1.y, p2.x - p1.x);
-    if (a > Math.PI / 2 + 1e-9) a -= Math.PI; else if (a <= -Math.PI / 2 + 1e-9) a += Math.PI; // 글자가 거꾸로 서지 않게
+    if (a > Math.PI / 2 - 1e-9) a -= Math.PI; else if (a < -Math.PI / 2 - 1e-9) a += Math.PI;
     sc.text((p1.x + p2.x) / 2, (p1.y + p2.y) / 2, text, '#0f172a', null, a, 8);
   }
 
@@ -1164,26 +1168,88 @@
       });
     });
 
-    if (o.dims) {
-      const t = obj.texts;
-      if (t.w) { const a = T(0, 0), b = T(W, 0); dimLine(sc, sh(a, 0, 26), sh(b, 0, 26), t.w, a, b); }
-      if (t.h) { const a = T(0, 0), b = T(0, H); dimLine(sc, sh(a, -36, 0), sh(b, -36, 0), t.h, a, b); }
-      if (t.d) {
-        const a = T(0, H + GAP), b = T(0, H + GAP + D); dimLine(sc, sh(a, -36, 0), sh(b, -36, 0), t.d, a, b);
-      }
+    let topDim = false;
+    if (o.dims) topDim = drawDims(sc, T, P, obj);
+    if (o.labels) drawLabels(sc, T, obj, L, o.dims, topDim);
+  }
+
+  // ----- 치수 기입 -----
+  // ① 정면도에 가장 많이: 꼭짓점 위치마다 끊어서(직렬 치수) 쓰고, 그 바깥 줄에 전체 치수를 쓴다.
+  // ② 정면도에서 알 수 없는 것만 평면도(깊이, 정면도에 안 보이는 가로 위치)·우측면도(나머지)에 쓴다.
+  // ③ 이미 쓴 위치는 다른 그림에 다시 쓰지 않는다. 숨은선에는 치수를 쓰지 않는다.
+  function drawDims(sc, T, P, obj) {
+    const { W, H, D, views } = obj;
+    const s = Math.abs(T(1, 0).x - T(0, 0).x);
+    const R1 = 20, R2 = 42, RG = Math.min(20, GAP * s * 0.5); // 첫째 줄, 둘째 줄, 그림 사이 틈에 쓰는 줄(px)
+    const r2 = n => Math.round(n * 100) / 100;
+    const size = { front: [W, H], top: [W, D], side: [D, H] };
+    // 보이는 선의 끝점 위치 모음: 좌표 → 그 좌표에서 반대쪽 축의 최소·최대(치수 보조선을 어디서 뽑을지)
+    const marks = (k, ax) => {
+      const m = new Map();
+      views[k].vis.forEach(seg => seg.forEach(p => {
+        const c = r2(p[ax]), v = p[1 - ax], e = m.get(c);
+        if (e) { e.lo = Math.min(e.lo, v); e.hi = Math.max(e.hi, v); } else m.set(c, { lo: v, hi: v });
+      }));
+      return m;
+    };
+    const inner = (m, max) => Array.from(m.keys()).filter(c => c > 1e-6 && c < max - 1e-6).sort((p, q) => p - q);
+    // 그 위치의 꼭짓점이 어느 변에 가까운지에 따라 치수를 쓸 쪽을 나눈다(a: 아래/왼쪽, b: 위/오른쪽)
+    const split = (m, max, omax) => {
+      const out = { a: [], b: [] };
+      inner(m, max).forEach(c => { const e = m.get(c); (e.lo < 1e-6 ? out.a : e.hi > omax - 1e-6 ? out.b : e.lo <= omax - e.hi ? out.a : out.b).push(c); });
+      return out;
+    };
+    const hd = (k, a, b, m, far, off) => { // 가로 치수(far: 그림 위쪽에)
+      const vmax = size[k][1], from = c => { const e = m.get(r2(c)); return P(k, [c, e ? (far ? e.hi : e.lo) : (far ? vmax : 0)]); };
+      const e1 = from(a), e2 = from(b), y = P(k, [0, far ? vmax : 0]).y + (far ? -off : off);
+      dimLine(sc, { x: e1.x, y }, { x: e2.x, y }, fmt(b - a), e1, e2);
+    };
+    const vd = (k, a, b, m, far, off) => { // 세로 치수(far: 그림 오른쪽에)
+      const hmax = size[k][0], from = c => { const e = m.get(r2(c)); return P(k, [e ? (far ? e.hi : e.lo) : (far ? hmax : 0), c]); };
+      const e1 = from(a), e2 = from(b), x = P(k, [far ? hmax : 0, 0]).x + (far ? off : -off);
+      dimLine(sc, { x, y: e1.y }, { x, y: e2.y }, fmt(b - a), e1, e2);
+    };
+    const chain = (fn, k, pts, m, far, off) => { for (let i = 0; i + 1 < pts.length; i++) fn(k, pts[i], pts[i + 1], m, far, off); };
+
+    // --- 정면도 ---
+    let mx = new Map(), my = new Map();
+    const F = views.front;
+    if (!F.vis.length && F.circles.length) { // 원기둥: 지름만
+      const c = F.circles[0], e1 = P('front', [c.c[0] - c.r, c.c[1]]), e2 = P('front', [c.c[0] + c.r, c.c[1]]), y = P('front', [0, 0]).y + R1;
+      dimLine(sc, { x: e1.x, y }, { x: e2.x, y }, obj.texts.w, e1, e2);
+    } else {
+      mx = marks('front', 0); my = marks('front', 1);
+      const X = split(mx, W, H), Y = split(my, H, W);
+      if (X.a.length) chain(hd, 'front', [0, ...X.a, W], mx, false, R1);
+      hd('front', 0, W, mx, false, X.a.length ? R2 : R1);
+      if (X.b.length) chain(hd, 'front', [0, ...X.b, W], mx, true, RG);
+      if (Y.a.length) chain(vd, 'front', [0, ...Y.a, H], my, false, R1);
+      vd('front', 0, H, my, false, Y.a.length ? R2 : R1);
+      if (Y.b.length) chain(vd, 'front', [0, ...Y.b, H], my, true, RG);
       if (obj.hole) {
-        const k = Math.SQRT1_2, c = P('front', [obj.hole.c[0] + obj.hole.R * k, obj.hole.c[1] - obj.hole.R * k]);
+        const q = Math.SQRT1_2, c = P('front', [obj.hole.c[0] + obj.hole.R * q, obj.hole.c[1] - obj.hole.R * q]);
         leaderNote(sc, c, obj.texts.hole, 1, 1);
       }
     }
-    if (o.labels) drawLabels(sc, T, obj, L, o.dims);
+    // --- 평면도: 깊이, 그리고 정면도에서 보이지 않던 가로 위치 ---
+    const mz = marks('top', 1), Z = inner(mz, D);
+    if (Z.length) chain(vd, 'top', [0, ...Z, D], mz, false, R1);
+    vd('top', 0, D, mz, false, Z.length ? R2 : R1);
+    const mxt = marks('top', 0), newX = inner(mxt, W).filter(c => !mx.has(c));
+    if (newX.length && F.vis.length) chain(hd, 'top', [0, ...newX, W], mxt, true, R1);
+    // --- 우측면도: 정면도·평면도 어디에도 안 나온 위치만 ---
+    const msz = marks('side', 0), newZ = inner(msz, D).filter(c => !mz.has(r2(D - c)));
+    if (newZ.length) chain(hd, 'side', [0, ...newZ, D], msz, false, R1);
+    const msy = marks('side', 1), newY = inner(msy, H).filter(c => !my.has(c));
+    if (newY.length && F.vis.length) chain(vd, 'side', [0, ...newY, H], msy, true, R1);
+    return newX.length > 0 && F.vis.length > 0;
   }
 
-  function drawLabels(sc, T, obj, L, dims) {
-    const { W, H, D } = obj, dy = dims ? 52 : 24;
+  function drawLabels(sc, T, obj, L, dims, topDim) {
+    const { W, H, D } = obj, dy = dims ? 66 : 24;
     const at = (X, Y, ox, oy, s) => { const p = T(X, Y); sc.text(p.x + ox, p.y + oy, s, '#475569', '#ffffff'); };
     at(W / 2, 0, 0, dy, VIEW_NAMES.front);
-    at(W / 2, H + GAP + D, 0, -14, VIEW_NAMES.top);
+    at(W / 2, H + GAP + D, 0, topDim ? -46 : -14, VIEW_NAMES.top);
     at(W + GAP + D / 2, 0, 0, dy, VIEW_NAMES.side);
   }
 

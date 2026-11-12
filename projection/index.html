@@ -1071,13 +1071,17 @@
       sc.line({ x: e.x + ux * g, y: e.y + uy * g }, { x: p.x + ux * DIM_OVER, y: p.y + uy * DIM_OVER }, DIM_COLOR, DIM_LW);
     });
     sc.line(p1, p2, DIM_COLOR, DIM_LW);
+    // 간격이 좁아 화살표가 안 들어가면 화살표를 바깥에서 안쪽으로 향하게 그린다
+    const tight = Math.hypot(p2.x - p1.x, p2.y - p1.y) < ARROW_LEN * 2 + 6;
     [[p1, p2], [p2, p1]].forEach(([from, to]) => {
-      const ang = Math.atan2(to.y - from.y, to.x - from.x);
+      const ang = Math.atan2(to.y - from.y, to.x - from.x) + (tight ? Math.PI : 0);
       const bx = to.x - ARROW_LEN * Math.cos(ang), by = to.y - ARROW_LEN * Math.sin(ang);
       sc.poly([to, { x: bx - ARROW_HALF * Math.sin(ang), y: by + ARROW_HALF * Math.cos(ang) }, { x: bx + ARROW_HALF * Math.sin(ang), y: by - ARROW_HALF * Math.cos(ang) }], DIM_COLOR);
+      if (tight) sc.line(to, { x: to.x - (ARROW_LEN + 5) * Math.cos(ang), y: to.y - (ARROW_LEN + 5) * Math.sin(ang) }, DIM_COLOR, DIM_LW);
     });
+    // 숫자 방향: 가로 치수는 아래에서, 세로 치수는 오른쪽에서 읽도록(세로 치수 숫자는 치수선 왼쪽에 눕혀 쓴다)
     let a = Math.atan2(p2.y - p1.y, p2.x - p1.x);
-    if (a > Math.PI / 2 + 1e-9) a -= Math.PI; else if (a <= -Math.PI / 2 + 1e-9) a += Math.PI; // 글자가 거꾸로 서지 않게
+    if (a > Math.PI / 2 - 1e-9) a -= Math.PI; else if (a < -Math.PI / 2 - 1e-9) a += Math.PI;
     sc.text((p1.x + p2.x) / 2, (p1.y + p2.y) / 2, text, '#0f172a', null, a, 8);
   }
 
