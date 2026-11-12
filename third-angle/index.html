@@ -421,7 +421,7 @@
           <span class="text-slate-300">|</span>
           <span class="flex items-center space-x-1">
             <span class="w-2 h-2 rounded-full bg-blue-500"></span>
-            <span class="font-medium" id="status-z-info">평면도 아래쪽·우측면도 오른쪽이 물체의 앞쪽</span>
+            <span class="font-medium" id="status-z-info">평면도 아래쪽·우측면도 왼쪽이 물체의 앞쪽</span>
           </span>
         </div>
 
@@ -477,7 +477,7 @@
             • <strong>정면도 ↔ 평면도</strong>: 가로 길이가 같습니다. 세로선을 위아래로 맞춰 그립니다.<br>
             • <strong>정면도 ↔ 우측면도</strong>: 높이가 같습니다. 가로선을 좌우로 맞춰 그립니다.<br>
             • <strong>평면도 ↔ 우측면도</strong>: 깊이가 같습니다. 두 그림 모두 <strong>정면도 쪽이 물체의 앞쪽</strong>입니다.
-            (평면도에서는 아래쪽, 우측면도에서는 오른쪽이 앞쪽이에요.)
+            (평면도에서는 아래쪽, 우측면도에서는 왼쪽이 앞쪽이에요.)
           </p>
         </div>
 
@@ -822,12 +822,12 @@
   const noTiny = list => list.filter(s => Math.hypot(s[1][0] - s[0][0], s[1][1] - s[0][1]) > 1e-6);
 
   // 정면 모양(poly)을 깊이 d만큼 밀어낸 각기둥의 3면도
-  // 정면도: 오른쪽 x, 위 y / 평면도: 오른쪽 x, 위 z(깊이, 아래쪽이 앞) / 우측면도: 오른쪽 d - z(앞이 오른쪽), 위 y
+  // 정면도: 오른쪽 x, 위 y / 평면도: 오른쪽 x, 위 z(깊이, 아래쪽이 앞) / 우측면도: 오른쪽 z(앞이 왼쪽 = 정면도 쪽), 위 y
   function prismViews(poly, d) {
     const defs = {
       front: [(x, y, z) => [x, y], [0, 0, -1]],
       top: [(x, y, z) => [x, z], [0, 1, 0]],
-      side: [(x, y, z) => [d - z, y], [1, 0, 0]]
+      side: [(x, y, z) => [z, y], [1, 0, 0]]
     };
     const out = {};
     Object.keys(defs).forEach(k => {
@@ -893,7 +893,7 @@
     const defs = {
       front: { nu: nx, nv: ny, nk: nz, f: (u, v, k) => has(u, v, k) },
       top: { nu: nx, nv: nz, nk: ny, f: (u, v, k) => has(u, ny - 1 - k, v) },
-      side: { nu: nz, nv: ny, nk: nx, f: (u, v, k) => has(nx - 1 - k, v, nz - 1 - u) }
+      side: { nu: nz, nv: ny, nk: nx, f: (u, v, k) => has(nx - 1 - k, v, u) }
     };
     function viewOf({ nu, nv, nk, f }) {
       const fill = (u, v, k) => u >= 0 && u < nu && v >= 0 && v < nv && f(u, v, k);
@@ -1238,7 +1238,7 @@
     const mxt = marks('top', 0), newX = inner(mxt, W).filter(c => !mx.has(c));
     if (newX.length && F.vis.length) chain(hd, 'top', [0, ...newX, W], mxt, true, R1);
     // --- 우측면도: 정면도·평면도 어디에도 안 나온 위치만 ---
-    const msz = marks('side', 0), newZ = inner(msz, D).filter(c => !mz.has(r2(D - c)));
+    const msz = marks('side', 0), newZ = inner(msz, D).filter(c => !mz.has(r2(c)));
     if (newZ.length) chain(hd, 'side', [0, ...newZ, D], msz, false, R1);
     const msy = marks('side', 1), newY = inner(msy, H).filter(c => !my.has(c));
     if (newY.length && F.vis.length) chain(vd, 'side', [0, ...newY, H], msy, true, R1);
