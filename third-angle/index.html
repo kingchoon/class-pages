@@ -495,6 +495,7 @@
                 <tr><td class="p-2.5 font-bold text-brand-700">치수선</td><td class="p-2.5">가는 실선 + 화살표</td><td class="p-2.5">길이 표시</td></tr>
               </tbody>
             </table>
+            <p class="mt-2 text-xs text-slate-600 leading-relaxed"><b>선이 겹칠 때 우선순위:</b> 외형선 → 숨은선 → 절단선 → 중심선 → 무게중심선 → 치수 보조선. 겹치는 부분은 앞 순위의 선만 그립니다. 치수선은 다른 선과 겹치지 않게 그림 밖이나 빈 곳으로 옮겨 쓰고, 숨은선에는 치수를 기입하지 않습니다.</p>
           </div>
         </div>
 
@@ -1159,7 +1160,7 @@
     ['front', 'top', 'side'].forEach(k => {
       const V = views[k];
       if (o.hidden) lines(V.hid, k, o.hidColor, 1.2, DASH_HID);
-      if (o.centers) lines(V.cl, k, o.clColor, 1, DASH_CENTER);
+      if (o.centers) lines(subtractCovered(V.cl, V.vis.concat(o.hidden ? V.hid : [])), k, o.clColor, 1, DASH_CENTER); // 겹치면 외형선·숨은선이 우선
       lines(V.vis, k, o.color, o.lw);
       V.circles.forEach(c => {
         const pts = [];
@@ -1177,6 +1178,7 @@
   // ① 정면도에 가장 많이: 꼭짓점 위치마다 끊어서(직렬 치수) 쓰고, 그 바깥 줄에 전체 치수를 쓴다.
   // ② 정면도에서 알 수 없는 것만 평면도(깊이, 정면도에 안 보이는 가로 위치)·우측면도(나머지)에 쓴다.
   // ③ 이미 쓴 위치는 다른 그림에 다시 쓰지 않는다. 숨은선에는 치수를 쓰지 않는다.
+  // ④ 치수선은 다른 선과 겹치지 않게 그림 밖에 쓰고, 치수 보조선이 물체를 가로질러야 하는 곳(홈의 깊이 등)은 그 빈 곳 안에 쓴다.
   function drawDims(sc, T, P, obj) {
     const { W, H, D, views } = obj;
     const s = Math.abs(T(1, 0).x - T(0, 0).x);
@@ -1194,10 +1196,61 @@
     };
     const inner = (m, max) => Array.from(m.keys()).filter(c => c > 1e-6 && c < max - 1e-6).sort((p, q) => p - q);
     // 그 위치의 꼭짓점이 어느 변에 가까운지에 따라 치수를 쓸 쪽을 나눈다(a: 아래/왼쪽, b: 위/오른쪽)
-    const split = (m, max, omax) => {
-      const out = { a: [], b: [] };
-      inner(m, max).forEach(c => { const e = m.get(c); (e.lo < 1e-6 ? out.a : e.hi > omax - 1e-6 ? out.b : e.lo <= omax - e.hi ? out.a : out.b).push(c); });
+    // 선분 p→q가 그 그림의 외형선을 가로지르는지(끝점에서 만나는 것과 나란히 겹치는 것은 제외)
+    const crossesVis = (k, p, q) => views[k].vis.some(([a, b]) => {
+      const rx = q[0] - p[0], ry = q[1] - p[1], sx = b[0] - a[0], sy = b[1] - a[1], den = rx * sy - ry * sx;
+      if (Math.abs(den) < 1e-9) return false;
+      const t = ((a[0] - p[0]) * sy - (a[1] - p[1]) * sx) / den, u = ((a[0] - p[0]) * ry - (a[1] - p[1]) * rx) / den;
+      return t > 1e-6 && t < 1 - 1e-6 && u > -1e-9 && u < 1 + 1e-9;
+    });
+    // 치수 보조선이 나가는 길: ax=0(가로 위치 c)은 아래(a)/위(b)로, ax=1(세로 위치 c)은 왼쪽(a)/오른쪽(b)으로
+    const extFree = (k, ax, c, e, side) => {
+      const om = size[k][1 - ax], v0 = side === 'a' ? e.lo : e.hi, v1 = side === 'a' ? -1 : om + 1;
+      const pt = v => ax === 0 ? [c, v] : [v, c];
+      return !crossesVis(k, pt(v0), pt(v1));
+    };
+    // 그 위치의 꼭짓점이 어느 변에 가까운지에 따라 치수를 쓸 쪽을 나눈다(a: 아래/왼쪽, b: 위/오른쪽).
+    // 어느 쪽으로 빼도 물체를 가로지르면(홈의 바닥 등) local로 보내 빈 곳에 따로 쓴다.
+    const split = (k, ax, m, max, omax, sides) => {
+      const out = { a: [], b: [], local: [] };
+      inner(m, max).forEach(c => {
+        const e = m.get(c);
+        const pref = e.lo < 1e-6 ? 'a' : e.hi > omax - 1e-6 ? 'b' : e.lo <= omax - e.hi ? 'a' : 'b';
+        const order = [pref, pref === 'a' ? 'b' : 'a'].filter(sd => sides.includes(sd));
+        const ok = order.find(sd => extFree(k, ax, c, e, sd));
+        if (ok) out[ok].push(c); else out.local.push([c, order[0] || sides[0]]);
+      });
       return out;
+    };
+    // 빈 곳에 쓸 치수를 먼저 시도하고, 숫자가 안 들어갈 만큼 좁으면 바깥 치수 줄로 보낸다(이때만 보조선이 외형선을 가로지름)
+    const settle = (S, k, ax, m, max, keep) => {
+      S.local.forEach(([c, pref]) => { if (keep && !keep(c)) return; if (!localDim(k, ax, c, m, max)) S[pref].push(c); });
+      S.a.sort((p, q) => p - q); S.b.sort((p, q) => p - q);
+      return S;
+    };
+    // 빈 곳(홈 안쪽)에 쓰는 치수: 위치 c에서 가장 가까운 다음 위치까지, 물체를 가로지르지 않는 쪽으로
+    const localDim = (k, ax, c, m, max) => {
+      const e = m.get(c), mid = (e.lo + e.hi) / 2, pt = v => ax === 0 ? [v, mid] : [mid, v];
+      const all = [0, ...inner(m, max), max];
+      const up = all.filter(v => v > c + 1e-6), dn = all.filter(v => v < c - 1e-6).reverse();
+      const c2 = [up[0], dn[0]].filter(v => v !== undefined).find(v => !crossesVis(k, pt(c), pt(v)));
+      if (c2 === undefined) return false;
+      let best = null, bd = Infinity; // c2 위치에 있는 꼭짓점 중 가장 가까운 것에서 치수 보조선을 뽑는다
+      views[k].vis.forEach(sg => sg.forEach(q => {
+        if (Math.abs(q[ax] - c2) > 1e-6) return;
+        const dd = Math.abs(q[1 - ax] - mid);
+        if (dd < bd) { bd = dd; best = q; }
+      }));
+      const p1 = P(k, pt(c)), p2 = P(k, pt(c2)), txt = fmt(Math.abs(c2 - c));
+      // 숫자가 들어갈 자리(치수선 옆)에 외형선이 지나가면 너무 좁은 것 → 여기에는 쓰지 않는다
+      const s1 = Math.abs(T(1, 0).x - T(0, 0).x), tw = (textWidth(txt) + 4) / s1, off = 9 / s1, cm = (c + c2) / 2;
+      const side = ax === 1 ? -off : off, lo = Math.min(c, c2), hi = Math.max(c, c2);
+      if (Math.abs(c2 - c) * s1 < textWidth(txt) + ARROW_LEN * 2 + 8) return false;
+      const ta = ax === 0 ? [cm - tw / 2, mid + side] : [mid + side, cm - tw / 2], tb = ax === 0 ? [cm + tw / 2, mid + side] : [mid + side, cm + tw / 2];
+      const tm = ax === 0 ? [cm, mid + side * 1.6] : [mid + side * 1.6, cm];
+      if (crossesVis(k, ta, tb) || crossesVis(k, pt(cm), tm) || cm < lo || cm > hi) return false;
+      dimLine(sc, p1, p2, txt, p1, best ? P(k, best) : p2);
+      return true;
     };
     const hd = (k, a, b, m, far, off) => { // 가로 치수(far: 그림 위쪽에)
       const vmax = size[k][1], from = c => { const e = m.get(r2(c)); return P(k, [c, e ? (far ? e.hi : e.lo) : (far ? vmax : 0)]); };
@@ -1219,7 +1272,7 @@
       dimLine(sc, { x: e1.x, y }, { x: e2.x, y }, obj.texts.w, e1, e2);
     } else {
       mx = marks('front', 0); my = marks('front', 1);
-      const X = split(mx, W, H), Y = split(my, H, W);
+      const X = settle(split('front', 0, mx, W, H, ['a', 'b']), 'front', 0, mx, W), Y = settle(split('front', 1, my, H, W, ['a', 'b']), 'front', 1, my, H);
       if (X.a.length) chain(hd, 'front', [0, ...X.a, W], mx, false, R1);
       hd('front', 0, W, mx, false, X.a.length ? R2 : R1);
       if (X.b.length) chain(hd, 'front', [0, ...X.b, W], mx, true, RG);
@@ -1232,15 +1285,15 @@
       }
     }
     // --- 평면도: 깊이, 그리고 정면도에서 보이지 않던 가로 위치 ---
-    const mz = marks('top', 1), Z = inner(mz, D);
+    const mz = marks('top', 1), Z = settle(split('top', 1, mz, D, W, ['a']), 'top', 1, mz, D).a;
     if (Z.length) chain(vd, 'top', [0, ...Z, D], mz, false, R1);
     vd('top', 0, D, mz, false, Z.length ? R2 : R1);
-    const mxt = marks('top', 0), newX = inner(mxt, W).filter(c => !mx.has(c));
+    const mxt = marks('top', 0), newX = settle(split('top', 0, mxt, W, D, ['b']), 'top', 0, mxt, W, c => !mx.has(c)).b.filter(c => !mx.has(c));
     if (newX.length && F.vis.length) chain(hd, 'top', [0, ...newX, W], mxt, true, R1);
     // --- 우측면도: 정면도·평면도 어디에도 안 나온 위치만 ---
-    const msz = marks('side', 0), newZ = inner(msz, D).filter(c => !mz.has(r2(c)));
+    const msz = marks('side', 0), newZ = settle(split('side', 0, msz, D, H, ['a']), 'side', 0, msz, D, c => !mz.has(r2(c))).a.filter(c => !mz.has(r2(c)));
     if (newZ.length) chain(hd, 'side', [0, ...newZ, D], msz, false, R1);
-    const msy = marks('side', 1), newY = inner(msy, H).filter(c => !my.has(c));
+    const msy = marks('side', 1), newY = settle(split('side', 1, msy, H, D, ['b']), 'side', 1, msy, H, c => !my.has(c)).b.filter(c => !my.has(c));
     if (newY.length && F.vis.length) chain(vd, 'side', [0, ...newY, H], msy, true, R1);
     return newX.length > 0 && F.vis.length > 0;
   }
