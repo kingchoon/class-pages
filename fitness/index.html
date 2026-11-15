@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1f2a44">
+<title>헬스 코치 노트</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
+<style>
+:root{--bg:#f3f5fa;--card:#fff;--ink:#1d2433;--sub:#6b7488;--line:#e6e9f2;--navy:#1f2a44;--acc:#ff6b35;--acc2:#2ec4b6;--soft:#fff3ec}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;font-family:Pretendard,'Malgun Gothic',sans-serif;background:var(--bg);color:var(--ink)}
+.wrap{max-width:1200px;margin:0 auto;padding:0 20px}
+.top{background:linear-gradient(120deg,#1f2a44,#2c3e66);color:#fff;position:sticky;top:0;z-index:5;box-shadow:0 4px 18px rgba(0,0,0,.15);padding-top:env(safe-area-inset-top)}
+.top-in{display:flex;align-items:center;justify-content:space-between;height:70px}
+.brand{font-size:22px;font-weight:800}.brand small{display:block;font-size:12px;font-weight:400;opacity:.7}
+.tabs button{background:transparent;border:0;color:#cfd6e6;font:inherit;font-weight:700;padding:10px 16px;border-radius:999px;cursor:pointer;margin-left:4px}
+.tabs button.on{background:var(--acc);color:#fff}
+.tab{display:none;padding:22px 0}.tab.on{display:block}
+.grid2{display:grid;grid-template-columns:1.1fr 1fr;gap:18px;align-items:start}
+.card{background:var(--card);border-radius:18px;padding:20px 22px;box-shadow:0 2px 10px rgba(30,40,70,.06);margin-bottom:18px}
+h2{font-size:17px;margin:0 0 14px}
+.row{display:flex;align-items:center;gap:10px}.between{justify-content:space-between}.wrapf{flex-wrap:wrap}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.chip{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:8px 14px;font:inherit;font-weight:700;cursor:pointer;color:var(--ink)}
+.chip.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.equip{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.eq{border:1.5px solid var(--line);background:#fafbfe;border-radius:12px;padding:12px 10px;font:inherit;font-size:14px;cursor:pointer;text-align:left;transition:.15s;color:var(--ink)}
+.eq:hover{border-color:var(--acc)}
+.eq.on{background:var(--soft);border-color:var(--acc);font-weight:700}
+.eq.custom{border-style:dashed;color:var(--sub)}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin:10px 0}
+.fld{display:block}
+.fld span,.lab{display:block;font-size:12.5px;color:var(--sub);margin-bottom:4px;font-weight:600}
+input,select,textarea{width:100%;font:inherit;font-size:16px;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;background:#fff;color:var(--ink)}
+textarea{resize:vertical;min-height:70px}
+input:focus,select:focus,textarea:focus{outline:0;border-color:var(--acc2)}
+.date{font-size:13px;color:var(--sub);display:flex;align-items:center;gap:6px}.date input{width:auto;padding:6px 10px}
+.seg{display:flex;gap:6px;margin-bottom:12px}
+.seg button{flex:1;border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:10px 4px;font:inherit;font-size:13px;cursor:pointer;color:var(--ink)}
+.seg button.on{background:var(--acc2);border-color:var(--acc2);color:#fff;font-weight:700}
+.btn{border:0;border-radius:12px;padding:11px 18px;font:inherit;font-weight:700;cursor:pointer;background:#eef1f7;color:var(--ink)}
+.btn.main{background:var(--acc);color:#fff}.btn.main:active{filter:brightness(.95)}
+.btn:disabled{opacity:.6}
+.w100{width:100%}
+.preview{background:#f1fbfa;color:#137a70;border-radius:10px;padding:10px 12px;font-size:14px;margin:10px 0;font-weight:600}
+.last{font-size:13px;color:var(--sub);background:#f6f7fb;border-radius:8px;padding:6px 10px;margin:8px 0}
+.sel-name{display:flex;align-items:center;gap:8px;font-size:16px}
+.tag{display:inline-block;font-size:12px;font-weight:700;background:#e9eefb;color:#3651a8;border-radius:6px;padding:3px 8px;white-space:nowrap}
+.tag.t2{background:#fde9df;color:#c24914}
+.tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
+.tile{background:#f7f8fc;border-radius:14px;padding:12px 14px}
+.tile small{color:var(--sub);font-size:12px}.tile b{display:block;font-size:20px;margin-top:2px;word-break:keep-all}
+.tile em{font-style:normal;font-size:12px;color:var(--acc);font-weight:700}
+.item{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.item small{display:block;color:var(--sub);font-size:13px;margin-top:2px}.grow{flex:1;min-width:0}
+.kc{font-size:13px;color:var(--acc);font-weight:700;white-space:nowrap}
+.del{border:0;background:transparent;color:#b3b9c7;cursor:pointer;font-size:16px;padding:6px}.del:hover{color:#e5484d}
+.muted{color:var(--sub)}.sm{font-size:13px}.empty{padding:16px 0;text-align:center}
+.ai{border:2px solid #ffe1d3}
+.md h3{font-size:16px;margin:16px 0 6px;color:var(--navy)}
+.md h4{font-size:15px;margin:12px 0 4px}
+.md ul,.md ol{margin:4px 0 8px;padding-left:22px}.md li{margin:3px 0;line-height:1.6}
+.md p{line-height:1.65;margin:6px 0}
+.md .tw{overflow-x:auto}
+.md table{border-collapse:collapse;width:100%;margin:8px 0;font-size:14px}
+.md th,.md td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+.md th{background:#f3f5fb;white-space:nowrap}
+.score{display:flex;align-items:center;gap:14px;margin-bottom:8px}
+.ring{width:76px;height:76px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--c) calc(var(--p)*1%),#eef0f5 0)}
+.ring b{background:#fff;width:60px;height:60px;border-radius:50%;display:grid;place-items:center;font-size:22px;font-weight:800}
+.bars{display:flex;align-items:stretch;gap:5px;height:200px;padding-top:6px}
+.bar{flex:1;display:flex;flex-direction:column;align-items:center;cursor:pointer;min-width:0}
+.bar .col{flex:1;width:100%;display:flex;align-items:flex-end;justify-content:center}
+.bar i{display:block;width:100%;max-width:28px;background:linear-gradient(var(--acc),#ffa07a);border-radius:6px 6px 2px 2px;min-height:2px}
+.bar em{font-style:normal;font-size:11px;color:var(--sub);height:16px}
+.bar span{font-size:10.5px;color:var(--sub);margin-top:5px;white-space:nowrap}
+.hb{display:flex;align-items:center;gap:10px;margin:9px 0;font-size:14px}
+.hb b{width:56px}.hb .tr{flex:1;height:14px;background:#eef0f5;border-radius:999px;overflow:hidden}
+.hb .tr i{display:block;height:100%;background:var(--acc2);border-radius:999px}
+.hb span{width:40px;text-align:right;color:var(--sub);font-size:13px}
+.aiItem{border-top:1px solid var(--line);padding:10px 0}
+.aiItem summary{cursor:pointer;font-weight:700;display:flex;gap:8px;align-items:center}
+.aiItem .md{padding:6px 4px 0}
+.form2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form2 .full{grid-column:1/-1}
+svg.wt{width:100%;height:auto}
+svg.wt .ln{fill:none;stroke:var(--acc);stroke-width:2.5}
+svg.wt circle{fill:#fff;stroke:var(--acc);stroke-width:2}
+svg.wt text{font-size:11px;fill:#6b7488}
+svg.wt .goal{stroke:var(--acc2);stroke-dasharray:5 4;stroke-width:1.5}
+svg.wt .gt{fill:#137a70;font-weight:700}
+.keybox{display:flex;gap:8px}
+.ok{color:#137a70;font-weight:700}.no{color:#e5484d;font-weight:700}
+.note{background:#fff8e6;border-radius:10px;padding:10px 12px;font-size:13px;color:#7a5a00;line-height:1.5}
+#toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:#1f2a44;color:#fff;padding:12px 20px;border-radius:12px;opacity:0;transition:.25s;pointer-events:none;z-index:20;font-weight:600;max-width:90vw;text-align:center}
+#toast.on{opacity:1;transform:translateX(-50%)}#toast.bad{background:#d9363e}
+#loading{position:fixed;inset:0;background:rgba(243,245,250,.8);display:none;place-items:center;z-index:15;text-align:center;padding:20px}
+#loading.on{display:grid}
+.spin{width:44px;height:44px;border:5px solid #ffd9c9;border-top-color:var(--acc);border-radius:50%;animation:sp 1s linear infinite;margin:0 auto 10px}
+@keyframes sp{to{transform:rotate(360deg)}}
+footer{text-align:center;color:var(--sub);font-size:12px;padding:10px 20px 30px}
+
+/* ---------- 휴대폰 화면 ---------- */
+@media (max-width:820px){
+  html,body{overflow-x:hidden}
+  .wrap{padding:0 12px}
+  .row.between{flex-wrap:wrap}
+  .date input{font-size:14px;max-width:150px;padding:6px 8px}
+  .grid2>div{min-width:0}
+  .top-in{height:56px}
+  .brand{font-size:18px}.brand small{display:none}
+  .tabs{position:fixed;left:0;right:0;bottom:0;display:flex;background:#fff;border-top:1px solid var(--line);z-index:10;padding:6px 6px calc(6px + env(safe-area-inset-bottom));box-shadow:0 -4px 14px rgba(30,40,70,.08)}
+  .tabs button{flex:1;margin:0;color:var(--sub);font-size:13px;padding:10px 4px;border-radius:12px}
+  .tabs button.on{background:var(--soft);color:var(--acc)}
+  .tab{padding:14px 0 90px}
+  .grid2{grid-template-columns:1fr;gap:0}
+  .card{padding:16px;border-radius:16px;margin-bottom:12px}
+  .equip{grid-template-columns:repeat(2,1fr)}
+  .eq{padding:12px 10px;font-size:14px}
+  .chips{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;margin-left:-4px;margin-right:-4px}
+  .chip{flex:none}
+  .fields{grid-template-columns:repeat(2,1fr)}
+  .tile b{font-size:18px}
+  .seg button{font-size:12px}
+  #toast{bottom:calc(84px + env(safe-area-inset-bottom))}
+  footer{padding-bottom:100px}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap top-in">
+    <div class="brand">💪 헬스 코치 노트<small>기록하고, AI에게 코칭받기</small></div>
+    <nav class="tabs" id="tabs">
+      <button data-tab="today" class="on">🏋️ 오늘 운동</button>
+      <button data-tab="hist">📈 기록·분석</button>
+      <button data-tab="me">🎯 내 정보·코칭</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- 탭 1: 오늘 운동 -->
+  <section id="tab-today" class="tab on">
+    <div class="grid2">
+      <div>
+        <div class="card">
+          <div class="row between"><h2>① 기구 고르기</h2><label class="date">날짜 <input type="date" id="day"></label></div>
+          <div id="cats" class="chips"></div>
+          <div id="equip" class="equip"></div>
+        </div>
+        <div class="card" id="formCard"><h2>② 기록 입력</h2><div id="form"></div></div>
+      </div>
+      <div>
+        <div class="card"><h2 id="dayTitle">오늘 한 운동</h2><div id="tiles" class="tiles"></div><div id="list"></div></div>
+        <div class="card ai">
+          <div class="row between wrapf"><h2>③ AI 운동 분석</h2><button class="btn main" id="btnAnalyze">🤖 이 날 운동 분석</button></div>
+          <div id="score"></div>
+          <div id="dayAi" class="md"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 탭 2: 기록·분석 -->
+  <section id="tab-hist" class="tab">
+    <div class="grid2">
+      <div class="card"><h2>최근 14일 운동 시간(분)</h2><div id="chart"></div></div>
+      <div class="card"><h2>최근 14일 부위 균형 <small class="muted sm">(운동한 날 수)</small></h2><div id="balance"></div></div>
+    </div>
+    <div class="card"><h2>AI 분석·코칭 기록</h2><div id="aiList"></div></div>
+  </section>
+
+  <!-- 탭 3: 내 정보·코칭 -->
+  <section id="tab-me" class="tab">
+    <div class="grid2">
+      <div>
+        <div class="card">
+          <h2>내 몸 정보</h2>
+          <div class="form2">
+            <label class="fld"><span>성별</span><select id="p_sex"><option>남</option><option>여</option></select></label>
+            <label class="fld"><span>나이</span><input id="p_age" type="number" inputmode="numeric" min="10" max="99"></label>
+            <label class="fld"><span>키(cm)</span><input id="p_height" type="number" inputmode="decimal" step="0.1"></label>
+            <label class="fld"><span>현재 몸무게(kg)</span><input id="p_weight" type="number" inputmode="decimal" step="0.1"></label>
+            <label class="fld"><span>목표</span><select id="p_goal">
+              <option>체중 감량</option><option>체지방 줄이고 근육 늘리기</option><option>근육 증가(벌크업)</option><option>체력 향상</option><option>건강 유지</option></select></label>
+            <label class="fld"><span>목표 몸무게(kg)</span><input id="p_target" type="number" inputmode="decimal" step="0.1"></label>
+            <label class="fld"><span>주당 운동 가능 일수</span><select id="p_days">
+              <option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select></label>
+            <label class="fld full"><span>특이사항 (부상·통증, 운동 경력, 식습관 등)</span><textarea id="p_note" placeholder="예: 헬스 3개월 차, 왼쪽 무릎이 가끔 아픔, 저녁 야식 자주 먹음"></textarea></label>
+          </div>
+          <button class="btn main w100" id="btnSave" style="margin-top:12px">💾 저장하기 (몸무게 기록도 함께 남아요)</button>
+        </div>
+      </div>
+      <div>
+        <div class="card"><h2>내 몸 지표</h2><div id="meTiles" class="tiles"></div><div id="wtChart"></div></div>
+        <div class="card ai">
+          <div class="row between wrapf"><h2>🎯 AI 목표 코칭</h2><button class="btn main" id="btnCoach">🤖 코칭 받기</button></div>
+          <div id="coachAi" class="md"></div>
+        </div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h2>⚙️ 제미나이 API 키 <span id="keyState"></span></h2>
+        <p class="muted sm"><a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> 에서 무료 키를 발급받아 붙여 넣으세요. 키는 <b>이 휴대폰 안에만</b> 저장되고 깃허브에는 올라가지 않아요.</p>
+        <div class="keybox"><input id="k_key" type="password" placeholder="AIza…" autocomplete="off"><button class="btn" id="btnKey">저장</button></div>
+        <button class="btn w100" id="btnKeyDel" style="margin-top:8px">키 지우기</button>
+      </div>
+      <div class="card">
+        <h2>🗂️ 데이터 백업</h2>
+        <p class="note">운동 기록은 <b>이 휴대폰 브라우저</b>에 저장돼요. 브라우저 데이터를 지우거나 폰을 바꾸면 사라지니, 가끔 백업 파일로 내보내 두세요.</p>
+        <div class="row" style="margin-top:10px">
+          <button class="btn w100" id="btnExport">⬇️ 백업 파일 내보내기</button>
+          <button class="btn w100" id="btnImport">⬆️ 백업 불러오기</button>
+        </div>
+        <input type="file" id="fileImport" accept=".json,application/json" hidden>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>칼로리는 MET 공식으로 계산한 추정치예요. AI 코칭은 참고용이며, 통증이나 질환이 있으면 전문가와 상의하세요.</footer>
+<div id="toast"></div>
+<div id="loading"><div><div class="spin"></div><p id="loadMsg">불러오는 중…</p></div></div>
+
+<script>
+/* ===== 설정 ===== */
+// 앞에서부터 차례로 시도. 404(모델 없음)·429(한도)면 다음 모델로 넘어감
+const MODELS=['gemini-2.5-flash','gemini-2.0-flash','gemini-2.5-flash-lite'];
+const DB_KEY='fitcoach_v1', API_KEY='fitcoach_gemini_key';
+
+/* ===== 기구 데이터 (met: [가볍게, 보통, 힘들게]) ===== */
+const CATS=[{k:'유산소',e:'🏃'},{k:'가슴',e:'🏋️'},{k:'등',e:'🧗'},{k:'하체',e:'🦵'},{k:'어깨',e:'🤸'},{k:'팔',e:'💪'},{k:'코어',e:'🧘'}];
+const SM=[3.5,5,6]; // 근력운동 MET
+const CM=[3.5,3.8,4.5]; // 코어 MET
+const EQUIP=[
+  {n:'트레드밀 걷기',c:'유산소',t:'cardio',met:[3.5,4.3,5.3]},
+  {n:'트레드밀 달리기',c:'유산소',t:'cardio',met:[7,9,11]},
+  {n:'실내 자전거',c:'유산소',t:'cardio',met:[3.5,6.8,8.8]},
+  {n:'일립티컬',c:'유산소',t:'cardio',met:[4.6,5,6.5]},
+  {n:'로잉머신',c:'유산소',t:'cardio',met:[4.8,7,8.5]},
+  {n:'스텝밀(천국의 계단)',c:'유산소',t:'cardio',met:[5,8,9]},
+  {n:'벤치프레스(바벨)',c:'가슴',t:'strength',met:SM},
+  {n:'인클라인 벤치프레스',c:'가슴',t:'strength',met:SM},
+  {n:'덤벨 프레스',c:'가슴',t:'strength',met:SM},
+  {n:'체스트 프레스 머신',c:'가슴',t:'strength',met:SM},
+  {n:'펙덱 플라이',c:'가슴',t:'strength',met:SM},
+  {n:'케이블 크로스오버',c:'가슴',t:'strength',met:SM},
+  {n:'랫풀다운',c:'등',t:'strength',met:SM},
+  {n:'시티드 케이블 로우',c:'등',t:'strength',met:SM},
+  {n:'바벨 로우',c:'등',t:'strength',met:SM},
+  {n:'원암 덤벨 로우',c:'등',t:'strength',met:SM},
+  {n:'어시스트 풀업',c:'등',t:'strength',met:SM},
+  {n:'데드리프트',c:'등',t:'strength',met:SM},
+  {n:'백 익스텐션',c:'등',t:'strength',met:SM},
+  {n:'바벨 스쿼트',c:'하체',t:'strength',met:SM},
+  {n:'스미스머신 스쿼트',c:'하체',t:'strength',met:SM},
+  {n:'레그프레스',c:'하체',t:'strength',met:SM},
+  {n:'레그 익스텐션',c:'하체',t:'strength',met:SM},
+  {n:'레그 컬',c:'하체',t:'strength',met:SM},
+  {n:'런지(덤벨)',c:'하체',t:'strength',met:SM},
+  {n:'힙 어브덕션',c:'하체',t:'strength',met:SM},
+  {n:'힙 어덕션',c:'하체',t:'strength',met:SM},
+  {n:'카프 레이즈',c:'하체',t:'strength',met:SM},
+  {n:'숄더 프레스 머신',c:'어깨',t:'strength',met:SM},
+  {n:'덤벨 숄더 프레스',c:'어깨',t:'strength',met:SM},
+  {n:'사이드 레터럴 레이즈',c:'어깨',t:'strength',met:SM},
+  {n:'리어 델트 머신',c:'어깨',t:'strength',met:SM},
+  {n:'페이스 풀',c:'어깨',t:'strength',met:SM},
+  {n:'바벨 컬',c:'팔',t:'strength',met:SM},
+  {n:'덤벨 컬',c:'팔',t:'strength',met:SM},
+  {n:'해머 컬',c:'팔',t:'strength',met:SM},
+  {n:'케이블 푸시다운',c:'팔',t:'strength',met:SM},
+  {n:'오버헤드 익스텐션',c:'팔',t:'strength',met:SM},
+  {n:'어시스트 딥스',c:'팔',t:'strength',met:SM},
+  {n:'복근 크런치 머신',c:'코어',t:'strength',met:CM},
+  {n:'케이블 크런치',c:'코어',t:'strength',met:CM},
+  {n:'행잉 레그레이즈',c:'코어',t:'strength',met:CM},
+  {n:'플랭크',c:'코어',t:'time',met:[3,3.8,4.5]},
+  {n:'사이드 플랭크',c:'코어',t:'time',met:[3,3.8,4.5]}
+];
+const LAB={cardio:['가볍게','보통(숨이 참)','힘들게(말하기 힘듦)'],strength:['여유 있음','적당히 힘듦','한계까지'],time:['여유 있음','적당히 힘듦','한계까지']};
+
+/* ===== 저장소 (휴대폰 브라우저 localStorage) ===== */
+let S=loadDB();
+let cat='유산소', sel=null, inten=1;
+function loadDB(){
+  let d={};
+  try{d=JSON.parse(localStorage.getItem(DB_KEY))||{};}catch(e){}
+  return{profile:d.profile||{},records:Array.isArray(d.records)?d.records:[],weights:Array.isArray(d.weights)?d.weights:[],ai:Array.isArray(d.ai)?d.ai:[]};
+}
+function saveDB(){
+  try{localStorage.setItem(DB_KEY,JSON.stringify(S));return true;}
+  catch(e){toast('저장 공간이 부족해요. 백업 후 오래된 AI 기록을 정리하세요.',true);return false;}
+}
+function getKey(){try{return localStorage.getItem(API_KEY)||'';}catch(e){return '';}}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
+
+/* ===== 도구 ===== */
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function loading(on,msg){$('loading').classList.toggle('on',on);if(msg)$('loadMsg').textContent=msg;}
+function toast(m,bad){const t=$('toast');t.textContent=m;t.className='on'+(bad?' bad':'');clearTimeout(t._t);t._t=setTimeout(()=>t.className='',3000);}
+function addDays(ymd,n){const[y,m,d]=ymd.split('-').map(Number);return new Date(Date.UTC(y,m-1,d+n)).toISOString().slice(0,10);}
+function localToday(){const d=new Date();return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);}
+function nowStr(){const d=new Date();return localToday()+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
+function bw(){return +S.profile.weight||65;}
+function effMin(r){return r.type==='strength'?(r.min||r.sets*2):r.type==='time'?r.min*(r.sets||1):r.min;}
+function summ(r){
+  if(r.type==='cardio')return `${r.min}분${r.speed?' · '+r.speed:''}${r.dist?' · '+r.dist+'km':''} · ${r.inten}`;
+  if(r.type==='time')return `${r.sets||1}세트 × ${r.min}분 · ${r.inten}`;
+  return `${r.w}kg × ${r.reps}회 × ${r.sets}세트 · ${r.inten}`;
+}
+function tile(ic,lb,val,sub){return `<div class="tile"><small>${ic} ${lb}</small><b>${val}</b>${sub?`<em>${sub}</em>`:''}</div>`;}
+function sortRecords(){S.records.sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:(a.at||'')<(b.at||'')?-1:1);}
+
+/* 간단한 마크다운 → HTML */
+function md(src){
+  const inline=s=>esc(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
+  let h='',list=null,table=[];
+  const fl=()=>{if(list){h+='</'+list+'>';list=null;}};
+  const ft=()=>{if(!table.length)return;
+    const rows=table.filter(r=>!/^\|?\s*:?-{2,}/.test(r));
+    h+='<div class="tw"><table>'+rows.map((r,i)=>{const cs=r.replace(/^\||\|$/g,'').split('|').map(c=>inline(c.trim()).replace(/&lt;br\s*\/?&gt;/gi,'<br>'));const tg=i===0?'th':'td';return '<tr>'+cs.map(c=>`<${tg}>${c}</${tg}>`).join('')+'</tr>';}).join('')+'</table></div>';
+    table=[];};
+  for(const raw of String(src||'').split('\n')){
+    const l=raw.trim(); let m;
+    if(l.startsWith('|')){fl();table.push(l);continue;} else ft();
+    if(!l){fl();continue;}
+    if(m=l.match(/^(#{1,4})\s+(.*)/)){fl();const lv=Math.min(m[1].length+1,4);h+=`<h${lv}>${inline(m[2])}</h${lv}>`;continue;}
+    if(m=l.match(/^[-*•]\s+(.*)/)){if(list!=='ul'){fl();h+='<ul>';list='ul';}h+='<li>'+inline(m[1])+'</li>';continue;}
+    if(m=l.match(/^\d+[.)]\s+(.*)/)){if(list!=='ol'){fl();h+='<ol>';list='ol';}h+='<li>'+inline(m[1])+'</li>';continue;}
+    fl();h+='<p>'+inline(l)+'</p>';
+  }
+  fl();ft();return h;
+}
+
+/* ===== 탭 1: 기구·입력 ===== */
+function renderCats(){$('cats').innerHTML=CATS.map(c=>`<button class="chip ${c.k===cat?'on':''}" data-c="${c.k}">${c.e} ${c.k}</button>`).join('');}
+function renderEquip(){
+  $('equip').innerHTML=EQUIP.filter(e=>e.c===cat).map(e=>`<button class="eq ${sel&&!sel.custom&&sel.n===e.n?'on':''}" data-n="${esc(e.n)}">${esc(e.n)}</button>`).join('')
+    +`<button class="eq custom ${sel&&sel.custom&&sel.c===cat?'on':''}" data-n="__custom">✏️ 직접 입력</button>`;
+}
+function pick(n){
+  if(n==='__custom'){const cardio=cat==='유산소';sel={n:'',c:cat,t:cardio?'cardio':'strength',met:cardio?[4,6.5,8.5]:SM,custom:true};}
+  else sel=EQUIP.find(e=>e.n===n);
+  inten=1; renderEquip(); renderForm();
+  if(window.innerWidth<=820)$('formCard').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function lastOf(name){for(let i=S.records.length-1;i>=0;i--)if(S.records[i].name===name)return S.records[i];return null;}
+function fld(id,label,val,type='number',ph=''){
+  const num=type==='number';
+  return `<label class="fld"><span>${label}</span><input id="${id}" type="${type}" value="${esc(val)}" placeholder="${esc(ph)}" ${num?'step="any" min="0" inputmode="decimal"':''}></label>`;
+}
+function renderForm(){
+  if(!sel){$('form').innerHTML='<p class="muted">위에서 기구를 먼저 고르세요.</p>';return;}
+  const L=sel.custom?null:lastOf(sel.n);
+  let f=`<div class="sel-name">${sel.custom?`<input id="f_name" placeholder="기구·운동 이름 입력">`:`<b>${esc(sel.n)}</b>`}<span class="tag">${sel.c}</span></div>`;
+  if(L)f+=`<p class="last">🕘 지난 기록(${L.date}): ${esc(summ(L))}</p>`;
+  if(sel.t==='cardio')f+=`<div class="fields">${fld('f_min','시간(분) *',L?L.min:20)}${fld('f_speed','속도·레벨',L?L.speed:'','text','예: 6km/h')}${fld('f_dist','거리(km)',L&&L.dist?L.dist:'')}</div>`;
+  else if(sel.t==='time')f+=`<div class="fields">${fld('f_sets','세트 *',L?L.sets:3)}${fld('f_min','1세트 시간(분) *',L?L.min:1,'number','30초=0.5')}</div>`;
+  else f+=`<div class="fields">${fld('f_w','무게(kg)',L?L.w:20)}${fld('f_reps','횟수 *',L?L.reps:10)}${fld('f_sets','세트 *',L?L.sets:3)}${fld('f_min','시간(분)',L&&L.min?L.min:'','number','비우면 세트×2분')}</div>`;
+  f+=`<div class="lab">강도</div><div class="seg" id="seg">${LAB[sel.t].map((l,i)=>`<button data-i="${i}" class="${i===inten?'on':''}">${l}</button>`).join('')}</div>`;
+  f+=fld('f_memo','메모','','text','예: 자세 신경 씀, 무릎 살짝 불편');
+  f+=`<div class="preview" id="preview"></div><button class="btn main w100" id="btnAdd">＋ 기록 추가</button>`;
+  $('form').innerHTML=f; updatePreview();
+}
+function collect(){
+  const v=id=>{const el=$(id);return el?el.value.trim():'';};
+  const r={date:$('day').value||localToday(),part:sel.c,name:sel.custom?v('f_name'):sel.n,type:sel.t,
+    w:+v('f_w')||0,reps:+v('f_reps')||0,sets:+v('f_sets')||0,min:+v('f_min')||0,dist:+v('f_dist')||0,
+    speed:v('f_speed'),memo:v('f_memo'),inten:LAB[sel.t][inten]};
+  r.kcal=Math.round(sel.met[inten]*bw()*effMin(r)/60);
+  return r;
+}
+function updatePreview(){
+  const p=$('preview'); if(!p||!sel)return; const r=collect();
+  p.textContent=r.type==='strength'
+    ?`볼륨 ${(r.w*r.reps*r.sets).toLocaleString()}kg · 약 ${effMin(r)}분 · 약 ${r.kcal}kcal 소모(추정)`
+    :`약 ${effMin(r)}분 · 약 ${r.kcal}kcal 소모(추정)`;
+}
+function addRec(){
+  const r=collect();
+  if(!r.name)return toast('운동 이름을 입력하세요',true);
+  if(r.type==='cardio'&&!r.min)return toast('운동 시간을 입력하세요',true);
+  if(r.type==='strength'&&(!r.reps||!r.sets))return toast('횟수와 세트를 입력하세요',true);
+  if(r.type==='time'&&(!r.sets||!r.min))return toast('세트와 시간을 입력하세요',true);
+  r.id=uid(); r.at=nowStr();
+  S.records.push(r); sortRecords();
+  if(saveDB()){renderToday();renderHist();renderForm();toast('기록했어요 ✅');}
+}
+
+/* ===== 탭 1: 하루 요약 ===== */
+function showAi(boxId,text,emptyMsg,scoreId){
+  const box=$(boxId);
+  if(scoreId)$(scoreId).innerHTML='';
+  if(!text){box.innerHTML=`<p class="muted">${emptyMsg}</p>`;return;}
+  let t=text;
+  if(scoreId){
+    const m=t.match(/점수[^\d\n]{0,10}(\d{1,3})/);
+    if(m){const n=Math.min(100,+m[1]);const c=n>=80?'#2ec4b6':n>=60?'#ff6b35':'#e5484d';
+      $(scoreId).innerHTML=`<div class="score"><div class="ring" style="--p:${n};--c:${c}"><b>${n}</b></div><div class="muted sm">운동 점수<br>(100점 만점)</div></div>`;
+      t=t.replace(/^.*점수.*\n?/m,'');}
+  }
+  box.innerHTML=md(t);
+}
+function renderToday(){
+  const day=$('day').value; const recs=S.records.filter(r=>r.date===day);
+  $('dayTitle').textContent=(day===localToday()?'오늘':day)+' 한 운동';
+  const min=recs.reduce((s,r)=>s+effMin(r),0), kcal=recs.reduce((s,r)=>s+r.kcal,0);
+  const vol=recs.filter(r=>r.type==='strength').reduce((s,r)=>s+r.w*r.reps*r.sets,0);
+  const parts=[...new Set(recs.map(r=>r.part))];
+  $('tiles').innerHTML=tile('⏱️','운동 시간',Math.round(min)+'분')+tile('🔥','소모 칼로리(추정)',kcal+'kcal')+tile('🏋️','근력 볼륨',vol.toLocaleString()+'kg')+tile('🎯','운동 부위',parts.length?parts.join(' · '):'-');
+  $('list').innerHTML=recs.length?recs.map(r=>`<div class="item"><span class="tag">${esc(r.part)}</span><div class="grow"><b>${esc(r.name)}</b><small>${esc(summ(r))}${r.memo?' · '+esc(r.memo):''}</small></div><span class="kc">${r.kcal}kcal</span><button class="del" data-id="${esc(r.id)}" title="삭제">✕</button></div>`).join('')
+    :'<p class="muted empty">아직 기록이 없어요. 위에서 기구를 골라 추가하세요.</p>';
+  const a=S.ai.find(x=>x.date===day&&x.kind==='오늘 운동 분석');
+  showAi('dayAi',a&&a.text,'운동을 기록한 뒤 버튼을 누르면 AI가 점수·잘한 점·다음 운동을 알려줘요.','score');
+}
+
+/* ===== 탭 2: 기록·분석 ===== */
+function renderHist(){
+  const t=localToday(); const days=[...Array(14)].map((_,i)=>addDays(t,i-13));
+  const data=days.map(d=>{const rs=S.records.filter(r=>r.date===d);return{d,min:Math.round(rs.reduce((s,r)=>s+effMin(r),0)),kcal:rs.reduce((s,r)=>s+r.kcal,0)};});
+  const mx=Math.max(30,...data.map(x=>x.min));
+  $('chart').innerHTML=`<div class="bars">${data.map(x=>`<div class="bar" data-d="${x.d}" title="${x.d}: ${x.min}분 · ${x.kcal}kcal"><em>${x.min||''}</em><div class="col"><i style="height:${x.min/mx*100}%"></i></div><span>${+x.d.slice(8)}일</span></div>`).join('')}</div>
+  <p class="muted sm">운동한 날 <b>${data.filter(x=>x.min).length}일</b> / 14일 · 총 ${data.reduce((s,x)=>s+x.kcal,0).toLocaleString()}kcal · 막대를 누르면 그날 기록으로 이동해요.</p>`;
+  const cnt={};CATS.forEach(c=>cnt[c.k]=new Set());
+  S.records.filter(r=>r.date>=days[0]&&r.date<=t).forEach(r=>{(cnt[r.part]=cnt[r.part]||new Set()).add(r.date);});
+  const bm=Math.max(1,...Object.values(cnt).map(s=>s.size));
+  $('balance').innerHTML=Object.keys(cnt).map(k=>`<div class="hb"><b>${k}</b><div class="tr"><i style="width:${cnt[k].size/bm*100}%"></i></div><span>${cnt[k].size}일</span></div>`).join('')
+    +'<p class="muted sm">한 번도 안 한 부위가 있으면 다음 운동에 넣어 보세요.</p>';
+  $('aiList').innerHTML=S.ai.length?S.ai.map((a,i)=>`<details class="aiItem"><summary><span class="tag ${a.kind.includes('코칭')?'t2':''}">${esc(a.kind)}</span>${esc(a.date)}<button class="del" data-ai="${i}" title="삭제" style="margin-left:auto">✕</button></summary><div class="md">${md(a.text)}</div></details>`).join('')
+    :'<p class="muted">아직 AI 기록이 없어요.</p>';
+}
+
+/* ===== 탭 3: 내 정보 ===== */
+function metrics(p){
+  const h=+p.height,w=+p.weight,a=+p.age||30,d=+p.days||0; if(!h||!w)return null;
+  const bmi=w/Math.pow(h/100,2), bmr=10*w+6.25*h-5*a+(p.sex==='여'?-161:5); // Mifflin-St Jeor
+  const f=d>=6?1.725:d>=4?1.55:d>=2?1.375:1.2;
+  return{bmi:Math.round(bmi*10)/10,bmr:Math.round(bmr),tdee:Math.round(bmr*f)};
+}
+function bmiLabel(b){return b<18.5?'저체중':b<23?'정상':b<25?'비만 전단계':b<30?'1단계 비만':'2단계 이상 비만';}
+function wtSvg(){
+  const w=S.weights.slice(-20); if(w.length<2)return '<p class="muted sm">몸무게를 다른 날 2번 이상 저장하면 변화 그래프가 나와요.</p>';
+  const vals=w.map(x=>x.weight); let lo=Math.min(...vals),hi=Math.max(...vals); const tg=+S.profile.target;
+  if(tg){lo=Math.min(lo,tg);hi=Math.max(hi,tg);} lo-=1;hi+=1;
+  const W=460,H=150,P=30,X=i=>P+i*(W-2*P)/(w.length-1),Y=v=>H-P-(v-lo)/(hi-lo)*(H-2*P);
+  const showAll=w.length<=8;
+  return `<svg viewBox="0 0 ${W} ${H}" class="wt">${tg?`<line x1="${P}" x2="${W-P}" y1="${Y(tg)}" y2="${Y(tg)}" class="goal"/><text x="${W-P}" y="${Y(tg)-5}" text-anchor="end" class="gt">목표 ${tg}kg</text>`:''}
+  <polyline points="${w.map((x,i)=>X(i)+','+Y(x.weight)).join(' ')}" class="ln"/>
+  ${w.map((x,i)=>`<circle cx="${X(i)}" cy="${Y(x.weight)}" r="3.5"/>${showAll||i===0||i===w.length-1?`<text x="${X(i)}" y="${Y(x.weight)-9}" text-anchor="middle">${x.weight}</text>`:''}`).join('')}
+  <text x="${P}" y="${H-8}">${w[0].date.slice(5)}</text><text x="${W-P}" y="${H-8}" text-anchor="end">${w[w.length-1].date.slice(5)}</text></svg>`;
+}
+const PF=['sex','age','height','weight','goal','target','days','note'];
+function renderMe(){
+  const p=S.profile;
+  PF.forEach(k=>{const el=$('p_'+k);if(el&&p[k]!==undefined&&p[k]!=='')el.value=p[k];});
+  const m=metrics(p);
+  if(m){
+    const gap=+p.target?Math.round((+p.weight-+p.target)*10)/10:null;
+    $('meTiles').innerHTML=tile('📏','BMI',m.bmi,bmiLabel(m.bmi))+tile('🔋','기초대사량(추정)',m.bmr+'kcal','가만히 있어도 쓰는 양')
+      +tile('🔥','하루 소비 칼로리(추정)',m.tdee+'kcal','운동 일수 반영')+tile('🎯','목표까지',gap===null?'-':(gap>0?gap+'kg 감량':gap<0?(-gap)+'kg 증량':'달성! 🎉'));
+  } else $('meTiles').innerHTML='<p class="muted">키와 몸무게를 저장하면 지표가 나와요.</p>';
+  $('wtChart').innerHTML=wtSvg();
+  $('keyState').innerHTML=getKey()?'<span class="ok sm">✔ 저장됨</span>':'<span class="no sm">✖ 없음</span>';
+  const a=S.ai.find(x=>x.kind==='AI 목표 코칭');
+  showAi('coachAi',a&&a.text,'내 정보를 저장한 뒤 버튼을 누르면 목표 달성 팁·주간 루틴·운동 방법·식단을 알려줘요.');
+  if(a)$('coachAi').insertAdjacentHTML('afterbegin',`<p class="muted sm">📅 ${esc(a.date)} 코칭</p>`);
+}
+function saveMe(){
+  const p={};PF.forEach(k=>p[k]=$('p_'+k).value.trim());
+  if(!+p.height||!+p.weight)return toast('키와 몸무게를 입력하세요',true);
+  S.profile=p;
+  const h=+p.height,w=+p.weight,bmi=Math.round(w/Math.pow(h/100,2)*10)/10,t=localToday();
+  const last=S.weights[S.weights.length-1];
+  if(last&&last.date===t)Object.assign(last,{height:h,weight:w,bmi}); // 같은 날은 덮어쓰기
+  else S.weights.push({date:t,height:h,weight:w,bmi});
+  if(saveDB()){renderMe();renderForm();toast('저장했어요 ✅');}
+}
+
+/* ===== AI (제미나이) ===== */
+function profileText(p){
+  const m=metrics(p);
+  return [`성별 ${p.sex||'미입력'}, 나이 ${p.age||'미입력'}세, 키 ${p.height||'?'}cm, 몸무게 ${p.weight||'?'}kg`,
+    `목표: ${p.goal||'미입력'} / 목표 체중 ${p.target||'미입력'}kg / 주당 운동 가능 ${p.days||'?'}일`,
+    m?`BMI ${m.bmi}, 기초대사량(추정) ${m.bmr}kcal, 하루 소비 칼로리(추정) ${m.tdee}kcal`:'',
+    p.note?`특이사항: ${p.note}`:''].filter(Boolean).join('\n');
+}
+function recLine(r){
+  let s;
+  if(r.type==='cardio')s=`${r.name}: ${r.min}분, 강도 ${r.inten}${r.speed?', 속도/레벨 '+r.speed:''}${r.dist?', '+r.dist+'km':''}`;
+  else if(r.type==='time')s=`${r.name}: ${r.sets||1}세트 × ${r.min}분, 강도 ${r.inten}`;
+  else s=`${r.name}: ${r.w}kg × ${r.reps}회 × ${r.sets}세트 (볼륨 ${r.w*r.reps*r.sets}kg), 강도 ${r.inten}`;
+  return `- [${r.part}] ${s}, 약 ${r.kcal}kcal${r.memo?' / 메모: '+r.memo:''}`;
+}
+async function callGemini(prompt){
+  const key=getKey();
+  if(!key)throw new Error('제미나이 API 키가 없어요. [내 정보] 탭 아래에서 먼저 저장하세요.');
+  if(!navigator.onLine)throw new Error('인터넷 연결을 확인하세요.');
+  const errs=[]; let limited=false;
+  for(const m of MODELS){
+    let res;
+    try{
+      res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`,{
+        method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},
+        body:JSON.stringify({contents:[{role:'user',parts:[{text:prompt}]}],generationConfig:{temperature:0.6,maxOutputTokens:8192}})
+      });
+    }catch(e){errs.push(m+': 연결 실패');continue;}
+    if(res.ok){
+      const j=await res.json(); const c=j.candidates&&j.candidates[0];
+      const text=c&&c.content&&c.content.parts?c.content.parts.map(x=>x.text||'').join('').trim():'';
+      if(text)return text; errs.push(m+': 빈 응답'); continue;
+    }
+    const body=await res.text();
+    if(res.status===429)limited=true;
+    if((res.status===400||res.status===403)&&/API key|API_KEY/i.test(body))throw new Error('API 키가 올바르지 않아요. 새로 발급해 다시 저장하세요.');
+    errs.push(m+': '+res.status);
+  }
+  if(limited)throw new Error('무료 사용 한도에 걸렸어요. 1~2분 뒤 다시 눌러 주세요.');
+  throw new Error('AI 호출 실패 ('+errs.join(', ')+')');
+}
+function saveAi(date,kind,text){S.ai.unshift({date,kind,text,at:nowStr()});S.ai=S.ai.slice(0,60);saveDB();}
+
+async function analyze(){
+  if(!getKey())return toast('먼저 [내 정보] 탭에서 API 키를 저장하세요',true);
+  const date=$('day').value;
+  const recs=S.records.filter(r=>r.date===date);
+  if(!recs.length)return toast('이 날짜에 기록된 운동이 없어요',true);
+  const totMin=Math.round(recs.reduce((s,r)=>s+effMin(r),0)), kcal=recs.reduce((s,r)=>s+r.kcal,0);
+  const vol=recs.filter(r=>r.type==='strength').reduce((s,r)=>s+r.w*r.reps*r.sets,0);
+  const parts=[...new Set(recs.map(r=>r.part))];
+  const from=addDays(date,-7),to=addDays(date,-1),byDay={};
+  S.records.filter(r=>r.date>=from&&r.date<=to).forEach(r=>{(byDay[r.date]=byDay[r.date]||new Set()).add(r.part);});
+  const recent=Object.keys(byDay).sort().map(d=>`- ${d}: ${[...byDay[d]].join(', ')}`).join('\n');
+  const prompt=
+`너는 경력이 많은 헬스 트레이너이자 스포츠 영양 코치야. 아래 회원의 운동 기록을 분석해 줘.
+
+[회원 정보]
+${profileText(S.profile)}
+
+[${date} 운동 기록]
+${recs.map(recLine).join('\n')}
+
+[이날 합계] 운동 시간 약 ${totMin}분, 소모 칼로리(추정) ${kcal}kcal, 근력 총 볼륨 ${vol}kg, 운동 부위: ${parts.join(', ')}
+
+[직전 7일 운동 부위]
+${recent||'기록 없음'}
+
+[작성 규칙]
+- 한국어로, 중학생도 이해할 수 있는 쉬운 말로, 친근하지만 정확하게.
+- 기록에 없는 내용은 지어내지 말고, 숫자는 위 기록을 근거로 말할 것.
+- 특이사항(부상 등)이 있으면 반드시 고려할 것.
+- 휴대폰으로 읽으니 문장은 짧게.
+- 아래 형식을 그대로 지켜 마크다운으로 작성:
+
+## 오늘 운동 점수: (0~100 숫자)/100
+(한 줄 총평)
+## 잘한 점
+- 2~3개
+## 아쉬운 점·주의할 점
+- 2~3개 (부위 불균형, 강도, 휴식, 부상 위험 등)
+## 다음 운동 제안
+- 다음 운동에서 할 기구와 무게·횟수·세트 또는 시간을 구체적으로 3~4개
+## 식사·회복 팁
+- 목표에 맞춰 2~3개 (단백질 g, 물, 수면 등)`;
+  loading(true,'AI가 운동을 분석하는 중… (10~30초)');
+  try{const text=await callGemini(prompt);saveAi(date,'오늘 운동 분석',text);renderToday();renderHist();toast('분석 완료 🤖');}
+  catch(e){toast(e.message,true);}
+  finally{loading(false);}
+}
+
+async function coach(){
+  if(!getKey())return toast('먼저 아래에서 API 키를 저장하세요',true);
+  const p=S.profile;
+  if(!+p.height||!+p.weight)return toast('내 정보(키·몸무게)를 먼저 저장하세요',true);
+  const t=localToday(),from=addDays(t,-13);
+  const recs=S.records.filter(r=>r.date>=from&&r.date<=t);
+  const days=new Set(recs.map(r=>r.date)).size;
+  const totMin=Math.round(recs.reduce((s,r)=>s+effMin(r),0)), kcal=recs.reduce((s,r)=>s+r.kcal,0);
+  const pd={}; recs.forEach(r=>{(pd[r.part]=pd[r.part]||new Set()).add(r.date);});
+  const partTxt=Object.keys(pd).map(k=>`${k} ${pd[k].size}일`).join(', ')||'없음';
+  const names=[...new Set(recs.map(r=>r.name))].slice(0,20).join(', ')||'없음';
+  const wts=S.weights.slice(-6).map(x=>`${x.date} ${x.weight}kg`).join(' → ')||'없음';
+  const prompt=
+`너는 경력이 많은 헬스 트레이너이자 스포츠 영양사야. 아래 회원이 일반 헬스장에서 목표를 이루도록 코칭해 줘.
+
+[회원 정보]
+${profileText(p)}
+
+[최근 14일 운동 요약]
+운동한 날 ${days}일, 총 운동 시간 약 ${totMin}분, 소모 칼로리(추정) ${kcal}kcal
+부위별 운동한 날: ${partTxt}
+사용한 기구: ${names}
+
+[몸무게 변화] ${wts}
+
+[작성 규칙]
+- 한국어로, 중학생도 이해할 수 있는 쉬운 말로, 정확하고 현실적으로. 휴대폰으로 읽으니 문장은 짧게.
+- BMI는 한국 기준(18.5 미만 저체중, 18.5~22.9 정상, 23~24.9 비만 전단계, 25 이상 비만)으로 설명.
+- 체중 감량은 주 0.5~1kg 이내처럼 안전한 속도로 안내하고, 극단적인 식단은 권하지 말 것.
+- 위에 주어진 기초대사량·하루 소비 칼로리를 근거로 하루 섭취 칼로리와 단백질(g)을 숫자로 제시.
+- 운동은 일반 헬스장에 있는 기구 이름으로, 주당 운동 가능 일수에 맞춰 짤 것.
+- 특이사항(부상 등)이 있으면 피해야 할 운동을 꼭 알려 줄 것.
+- 아래 형식을 그대로 지켜 마크다운으로 작성:
+
+## 지금 내 상태
+- BMI 해석, 목표까지 남은 양, 현실적인 예상 기간
+## 목표 달성 핵심 팁
+- 5개
+## 추천 주간 운동 루틴
+| 요일 | 운동 부위 | 기구와 무게·세트·횟수(또는 시간) |
+(주당 운동 가능 일수만큼 행 작성, 쉬는 날은 생략)
+## 운동 방법 포인트
+- 위 루틴의 주요 기구 3~4개: 바른 자세와 흔한 실수
+## 식단 가이드
+- 하루 섭취 칼로리, 단백질·탄수화물·지방 대략 g
+- 아침·점심·저녁·간식 한국식 예시 식단
+## 주의할 점
+- 2~3개`;
+  loading(true,'AI가 코칭을 쓰는 중… (20~40초)');
+  try{const text=await callGemini(prompt);saveAi(t,'AI 목표 코칭',text);renderMe();renderHist();toast('코칭 완료 🎯');}
+  catch(e){toast(e.message,true);}
+  finally{loading(false);}
+}
+
+/* ===== 백업 ===== */
+function exportData(){
+  const blob=new Blob([JSON.stringify({app:'fitcoach',version:1,exportedAt:nowStr(),...S},null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`헬스코치_백업_${localToday()}.json`;
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  toast('백업 파일을 내려받았어요 ⬇️');
+}
+function importData(file){
+  const rd=new FileReader();
+  rd.onload=()=>{
+    try{
+      const d=JSON.parse(rd.result);
+      if(!d||!Array.isArray(d.records))throw new Error();
+      if(!confirm(`백업(${d.exportedAt||'날짜 모름'})으로 지금 기록을 바꿀까요?\n운동 ${d.records.length}개가 들어 있어요.`))return;
+      S={profile:d.profile||{},records:d.records,weights:d.weights||[],ai:d.ai||[]};
+      sortRecords(); if(saveDB()){renderAll();toast('백업을 불러왔어요 ✅');}
+    }catch(e){toast('백업 파일이 아니에요',true);}
+  };
+  rd.readAsText(file);
+}
+
+/* ===== 이벤트 ===== */
+function renderAll(){renderToday();renderForm();renderHist();renderMe();}
+function showTab(k){document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===k));document.querySelectorAll('.tab').forEach(s=>s.classList.toggle('on',s.id==='tab-'+k));window.scrollTo(0,0);}
+
+$('tabs').onclick=e=>{const b=e.target.closest('button');if(b)showTab(b.dataset.tab);};
+$('cats').onclick=e=>{const b=e.target.closest('.chip');if(!b)return;cat=b.dataset.c;renderCats();renderEquip();};
+$('equip').onclick=e=>{const b=e.target.closest('.eq');if(b)pick(b.dataset.n);};
+$('form').addEventListener('click',e=>{
+  const s=e.target.closest('#seg button');
+  if(s){inten=+s.dataset.i;document.querySelectorAll('#seg button').forEach(x=>x.classList.toggle('on',x===s));updatePreview();}
+  if(e.target.id==='btnAdd')addRec();
+});
+$('form').addEventListener('input',updatePreview);
+$('list').onclick=e=>{
+  const b=e.target.closest('.del');if(!b||!confirm('이 기록을 지울까요?'))return;
+  S.records=S.records.filter(r=>r.id!==b.dataset.id);
+  if(saveDB()){renderToday();renderHist();toast('삭제했어요');}
+};
+$('aiList').onclick=e=>{
+  const b=e.target.closest('.del');if(!b)return;e.preventDefault();
+  if(!confirm('이 AI 기록을 지울까요?'))return;
+  S.ai.splice(+b.dataset.ai,1); if(saveDB()){renderAll();toast('삭제했어요');}
+};
+$('chart').onclick=e=>{const b=e.target.closest('.bar');if(!b)return;$('day').value=b.dataset.d;renderToday();showTab('today');};
+$('day').onchange=()=>{if(!$('day').value)$('day').value=localToday();renderToday();};
+$('btnAnalyze').onclick=analyze;
+$('btnCoach').onclick=coach;
+$('btnSave').onclick=saveMe;
+$('btnKey').onclick=()=>{
+  const k=$('k_key').value.trim();
+  if(k.length<20)return toast('API 키를 정확히 붙여 넣으세요',true);
+  try{localStorage.setItem(API_KEY,k);}catch(e){return toast('키를 저장하지 못했어요',true);}
+  $('k_key').value='';renderMe();toast('API 키 저장 완료 🔑');
+};
+$('btnKeyDel').onclick=()=>{if(!confirm('저장된 API 키를 지울까요?'))return;localStorage.removeItem(API_KEY);renderMe();toast('키를 지웠어요');};
+$('btnExport').onclick=exportData;
+$('btnImport').onclick=()=>$('fileImport').click();
+$('fileImport').onchange=e=>{const f=e.target.files[0];if(f)importData(f);e.target.value='';};
+
+$('day').value=localToday();
+sortRecords(); renderCats(); renderEquip(); renderAll();
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
