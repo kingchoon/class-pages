@@ -147,6 +147,21 @@ details.fold[open]>summary{margin-bottom:12px}
 details.sub{background:#f7f8fc;border-radius:12px;padding:10px 12px;margin:8px 0}
 details.sub>summary{cursor:pointer;font-weight:700;font-size:14px}
 .romi{border-top:1px solid var(--line);padding:12px 0 2px}
+/* 운동 방법 영상 */
+.vbox{margin:8px 0;border-radius:12px;background:#f6f7fb;padding:10px 12px}
+.vbox .row{flex-wrap:wrap;gap:6px}
+.vbtn{display:inline-flex;align-items:center;gap:6px;border:0;border-radius:10px;padding:9px 14px;font:inherit;font-size:14px;font-weight:700;cursor:pointer;text-decoration:none;background:#ff0033;color:#fff}
+.vbtn.ghost{background:#fff;color:#c4002a;border:1.5px solid #ffb3c1}
+.vbtn.sm{padding:6px 10px;font-size:12.5px}
+.vframe{position:relative;width:100%;padding-top:56.25%;border-radius:10px;overflow:hidden;background:#000;margin-top:8px}
+.vframe iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.vpin{display:flex;gap:6px;margin-top:8px}.vpin input{font-size:14px;padding:8px 10px;min-width:0}.vpin .btn{white-space:nowrap;flex:none}
+.vchips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 4px}
+#vmodal{position:fixed;inset:0;background:rgba(15,20,35,.96);z-index:30;display:none;align-items:center;justify-content:center;padding:16px}
+#vmodal.on{display:flex}
+#vmodal .in{width:100%;max-width:720px}
+#vmodal .top2{display:flex;justify-content:space-between;align-items:center;color:#fff;margin-bottom:8px;font-weight:700;gap:8px}
+#vmodal .x{background:#fff;color:var(--ink);border:0;border-radius:10px;padding:8px 14px;font:inherit;font-weight:700;cursor:pointer}
 .romi p{margin:4px 0;font-size:13.5px;line-height:1.55}
 .romi .seg{margin:8px 0 6px}
 .pchk{display:flex;gap:8px;margin-top:6px}.pchk .btn{flex:1}
@@ -284,6 +299,7 @@ details.sub>summary{cursor:pointer;font-weight:700;font-size:14px}
 </main>
 
 <footer>칼로리·탄단지·추정 1RM은 공식으로 계산한 추정치예요. 관절 체크는 자가 점검이며 진단이 아니에요. AI 코칭은 참고용이며, 통증이나 질환이 있으면 전문가와 상의하세요.</footer>
+<div id="vmodal"><div class="in"><div class="top2"><span id="vtitle">운동 방법 영상</span><button class="x" id="vclose">닫기 ✕</button></div><div class="vframe" id="vmframe"></div><p class="sm" style="color:#cfd6e6;margin:8px 0 0">영상이 안 나오면 아래 버튼으로 유튜브에서 직접 보세요.</p><div class="row" style="margin-top:6px"><a class="vbtn sm" id="vyt" target="_blank" rel="noopener">▶ 유튜브에서 열기</a></div></div></div>
 <div id="toast"></div>
 <div id="loading"><div><div class="spin"></div><p id="loadMsg">불러오는 중…</p></div></div>
 
@@ -394,6 +410,7 @@ function normDB(d){
   o.badges=isObj(d.badges)?d.badges:{};                        // {first:'YYYY-MM-DD', …}
   o.aiCalc=isObj(d.aiCalc)?d.aiCalc:{};                        // {macro:{…}, sug:{운동이름:{date,…}}} AI 계산 결과
   if(!isObj(o.aiCalc.sug))o.aiCalc.sug={};
+  o.videos=isObj(d.videos)?d.videos:{};                        // {운동이름: 유튜브 영상 ID} 내가 고정한 영상
   return o;
 }
 function loadDB(){
@@ -704,11 +721,43 @@ function romWarn(name){
   return keys.filter(k=>last.res[k]==='fail'||last.res[k]==='pain').map(k=>{const R=ROM.find(x=>x.k===k);
     return `<div class="warn">🦴 관절 체크(${esc(last.date)}) '${esc(R.n.slice(2))}' ${last.res[k]==='pain'?'<b>통증 있음</b> — 이 동작은 멈추고 전문가와 상담하세요.':'불통과'} → 대신: ${esc(R.alt)}</div>`;}).join('');
 }
+/* ===== 운동 방법 영상 (유튜브) ===== */
+const ROM_Q={ankle:'무릎 벽 테스트 발목 가동성',shoulder:'벽 팔 올리기 어깨 가동성 테스트',squat:'맨몸 스쿼트 바른 자세',hams:'누워서 다리 들기 햄스트링 유연성 테스트',plank:'플랭크 바른 자세'};
+function ytSearch(q){return 'https://www.youtube.com/results?search_query='+encodeURIComponent(q);}
+function exQuery(name){return name.replace(/\(.*?\)/g,' ').trim()+' 자세 운동 방법';}
+function ytId(u){
+  u=String(u||'').trim(); if(/^[\w-]{11}$/.test(u))return u;
+  const m=u.match(/(?:youtu\.be\/|[?&]v=|\/shorts\/|\/embed\/|\/live\/)([\w-]{11})/); return m?m[1]:null;
+}
+function embedUrl(id){return `https://www.youtube-nocookie.com/embed/${id}?rel=0&playsinline=1`;}
+function openVideo(name){
+  const id=S.videos[name];
+  $('vtitle').textContent='▶ '+name;
+  $('vyt').href=id?`https://www.youtube.com/watch?v=${id}`:ytSearch(exQuery(name));
+  if(!id){window.open(ytSearch(exQuery(name)),'_blank','noopener');return;}
+  $('vmframe').innerHTML=`<iframe src="${embedUrl(id)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen title="${esc(name)} 운동 방법 영상"></iframe>`;
+  $('vmodal').classList.add('on');
+}
+function closeVideo(){$('vmodal').classList.remove('on');$('vmframe').innerHTML='';}
+function videoBox(name){
+  const id=S.videos[name];
+  if(id)return `<div class="vbox"><div class="row between"><b class="sm">📺 내가 고정한 자세 영상</b><span class="row"><a class="vbtn sm ghost" href="${ytSearch(exQuery(name))}" target="_blank" rel="noopener">다른 영상 찾기</a><button class="vbtn sm ghost" data-vdel="1">고정 해제</button></span></div>
+    <div class="vframe"><iframe src="${embedUrl(id)}" loading="lazy" allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen title="${esc(name)} 운동 방법 영상"></iframe></div></div>`;
+  return `<div class="vbox"><div class="row"><a class="vbtn" href="${ytSearch(exQuery(name))}" target="_blank" rel="noopener">▶ 자세 영상 보기 (유튜브)</a></div>
+    <p class="muted sm" style="margin:6px 0 0">마음에 드는 영상을 찾으면 <b>공유 → 링크 복사</b> 후 아래에 붙여 넣어 고정하세요. 다음부터 이 화면에서 바로 재생돼요.</p>
+    <div class="vpin"><input id="vurl" placeholder="유튜브 링크 붙여 넣기" inputmode="url"><button class="btn sm" data-vpin="1">📌 고정</button></div></div>`;
+}
+function vidChips(text){
+  const names=EQUIP.filter(e=>String(text||'').includes(e.n.replace(/\(.*?\)/,'').trim())).map(e=>e.n);
+  if(!names.length)return '';
+  return `<div class="lab" style="margin-top:12px">📺 여기 나온 운동 자세 영상</div><div class="vchips">${names.slice(0,10).map(n=>`<button class="vbtn sm ${S.videos[n]?'':'ghost'}" data-vid="${esc(n)}">▶ ${esc(n)}</button>`).join('')}</div>`;
+}
 function renderForm(){
   if(!sel){$('form').innerHTML='<p class="muted">위에서 기구를 먼저 고르세요.</p>';return;}
   const L=sel.custom?null:lastOf(sel.n);
   let f=`<div class="sel-name">${sel.custom?`<input id="f_name" placeholder="기구·운동 이름 입력">`:`<b>${esc(sel.n)}</b>`}<span class="tag">${sel.c}</span></div>`;
   if(!sel.custom)f+=romWarn(sel.n);
+  if(!sel.custom)f+=videoBox(sel.n);
   if(L)f+=`<p class="last">🕘 지난 기록(${L.date}): ${esc(summ(L))}</p>`;
   const dayV=$('day').value||localToday(), sg=suggest(sel,dayV);
   const ai=(!sel.custom&&sel.t!=='cardio')?aiSugOf(sel.n,dayV):null;
@@ -780,6 +829,7 @@ function renderToday(){
     :'<p class="muted empty">아직 기록이 없어요. 위에서 기구를 골라 추가하세요.</p>';
   const a=S.ai.find(x=>x.date===day&&x.kind==='오늘 운동 분석');
   showAi('dayAi',a&&a.text,'운동을 기록한 뒤 버튼을 누르면 AI가 점수·잘한 점·다음 운동을 알려줘요.','score');
+  if(a)$('dayAi').insertAdjacentHTML('beforeend',vidChips(a.text));
 }
 
 /* ===== 탭 2: 기록·분석 ===== */
@@ -886,7 +936,7 @@ function renderRom(){
   const last=S.rom[S.rom.length-1];
   if(!romDraft)romDraft=last?{...last.res}:{};
   let h=`<p class="note">자가 점검이에요. <b>진단이 아니에요.</b> 테스트 중 찌릿함·저림·날카로운 아픔이 있으면 결과와 관계없이 그 동작을 멈추고 의사·물리치료사와 상담하세요.</p>`;
-  h+=ROM.map(r=>`<div class="romi"><b>${r.n}</b><p>${esc(r.how)}</p><p class="muted">통과 기준: ${esc(r.pass)}</p>
+  h+=ROM.map(r=>`<div class="romi"><b>${r.n}</b><p>${esc(r.how)}</p><p><a class="vbtn sm ghost" href="${ytSearch(ROM_Q[r.k]||r.n)}" target="_blank" rel="noopener">▶ 테스트 방법 영상</a></p><p class="muted">통과 기준: ${esc(r.pass)}</p>
     <div class="seg" data-rk="${r.k}">${ROM_VAL.map(v=>`<button data-rv="${v[0]}" class="${v[2]} ${romDraft[r.k]===v[0]?'on':''}">${v[1]}</button>`).join('')}</div></div>`).join('');
   h+=`<button class="btn main w100" id="btnRom">💾 체크 결과 저장 (${Object.keys(romDraft).length}/5)</button>`;
   if(last){
@@ -916,7 +966,7 @@ function renderMe(){
   $('keyState').innerHTML=getKey()?'<span class="ok sm">✔ 저장됨</span>':'<span class="no sm">✖ 없음</span>';
   const a=S.ai.find(x=>x.kind==='AI 목표 코칭');
   showAi('coachAi',a&&a.text,'내 정보를 저장한 뒤 버튼을 누르면 목표 달성 팁·주간 루틴·운동 방법·식단을 알려줘요.');
-  if(a)$('coachAi').insertAdjacentHTML('afterbegin',`<p class="muted sm">📅 ${esc(a.date)} 코칭</p>`);
+  if(a){$('coachAi').insertAdjacentHTML('afterbegin',`<p class="muted sm">📅 ${esc(a.date)} 코칭</p>`);$('coachAi').insertAdjacentHTML('beforeend',vidChips(a.text));}
 }
 function saveMe(){
   const p={...S.profile};PF.forEach(k=>p[k]=$('p_'+k).value.trim());
@@ -1270,8 +1320,16 @@ $('form').addEventListener('click',e=>{
   if(e.target.id==='btnAdd')addRec();
   if(e.target.id==='btnSug')applySug();
   if(e.target.id==='btnAiSug')aiSuggest();
+  if(e.target.closest('[data-vpin]')){
+    const id=ytId($('vurl').value); if(!id)return toast('유튜브 링크를 정확히 붙여 넣으세요',true);
+    S.videos[sel.n]=id; if(saveDB()){renderForm();toast('영상을 고정했어요 📌');}
+  }
+  if(e.target.closest('[data-vdel]')){if(!confirm('고정한 영상을 해제할까요?'))return;delete S.videos[sel.n];if(saveDB())renderForm();}
 });
-$('form').addEventListener('input',updatePreview);
+$('form').addEventListener('input',e=>{if(e.target.id!=='vurl')updatePreview();});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-vid]');if(b){e.preventDefault();openVideo(b.dataset.vid);}});
+$('vclose').onclick=closeVideo;
+$('vmodal').onclick=e=>{if(e.target.id==='vmodal')closeVideo();};
 $('board').addEventListener('click',e=>{
   if(e.target.id==='btnRoad'){
     if(S.roadmap.start&&!confirm('로드맵을 오늘부터 다시 시작할까요?'))return;
