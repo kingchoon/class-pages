@@ -116,6 +116,10 @@ footer{text-align:center;color:var(--sub);font-size:12px;padding:10px 20px 30px}
 .sug{background:#eef4ff;border:1.5px solid #cfdcff;border-radius:12px;padding:10px 12px;margin:8px 0;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
 .sug b{color:#2846a8;font-size:15px}.sug small{display:block;color:var(--sub);font-size:12.5px;margin-top:2px;line-height:1.45}
 .sug .btn{padding:8px 14px;background:#2846a8;color:#fff}
+.sug .sbtn{display:flex;gap:6px;flex-wrap:wrap}
+.sug .btn.ghost{background:#fff;color:#2846a8;border:1.5px solid #2846a8}
+.sug.ai2{background:#fff3ec;border-color:#ffc9b0}.sug.ai2 b{color:#c24914}
+.sug .fixn{color:#b45309}
 .warn{background:#fff0f0;color:#b4232a;border-radius:10px;padding:8px 12px;font-size:13px;margin:6px 0;line-height:1.5}
 .info{background:#f1fbfa;color:#137a70;border-radius:10px;padding:8px 12px;font-size:13px;margin:6px 0;line-height:1.5}
 .pg{height:10px;background:#eef0f5;border-radius:999px;overflow:hidden;margin:6px 0 4px}
@@ -252,7 +256,7 @@ details.sub>summary{cursor:pointer;font-weight:700;font-size:14px}
       </div>
       <div>
         <div class="card"><h2>내 몸 지표</h2><div id="meTiles" class="tiles"></div><div id="wtChart"></div></div>
-        <div class="card"><h2>🍽️ 하루 탄단지 목표 <small class="muted sm">(자동 계산·추정)</small></h2><div id="macro"></div></div>
+        <div class="card"><h2>🍽️ 하루 탄단지 목표 <small class="muted sm">(공식 또는 AI 계산·추정)</small></h2><div id="macro"></div></div>
         <div class="card ai">
           <div class="row between wrapf"><h2>🎯 AI 목표 코칭</h2><button class="btn main" id="btnCoach">🤖 코칭 받기</button></div>
           <div id="coachAi" class="md"></div>
@@ -388,6 +392,8 @@ function normDB(d){
   o.rom=Array.isArray(d.rom)?d.rom.filter(x=>isObj(x)&&isObj(x.res)):[]; // [{date, res:{ankle:'pass'|'fail'|'pain',…}}]
   o.roadmap=isObj(d.roadmap)?d.roadmap:{};                     // {start:'YYYY-MM-DD'}
   o.badges=isObj(d.badges)?d.badges:{};                        // {first:'YYYY-MM-DD', …}
+  o.aiCalc=isObj(d.aiCalc)?d.aiCalc:{};                        // {macro:{…}, sug:{운동이름:{date,…}}} AI 계산 결과
+  if(!isObj(o.aiCalc.sug))o.aiCalc.sug={};
   return o;
 }
 function loadDB(){
@@ -511,7 +517,7 @@ function sugLabel(s){if(!s||s.first)return '';return s.label?s.label:s.min!==und
 
 /* ===== 탄단지 자동 계산 ===== */
 function goalOf(p){const g=p.goal||GOALS[0];return g===OLD_RECOMP?GOALS[0]:g;}
-function macros(p){
+function formulaMacros(p){
   const m=metrics(p); if(!m)return null;
   const g=goalOf(p), mul=GOAL_MUL[g]??0.90, pk=GOAL_PK[g]??1.8;
   const w=+p.weight,h2=Math.pow(+p.height/100,2),tg=+p.target;
@@ -526,6 +532,17 @@ function macros(p){
   const pc=x=>Math.round(x/kcal*100);
   return{...m,g,mul,pk,kcal,floored,ref,prot,fat,carb,wk,pP:pc(prot*4),fP:pc(fat*9),cP:pc(carb*4),
     weeks:(g==='체중 감량'&&tg&&tg<w&&wk>0)?Math.ceil((w-tg)/wk):null};
+}
+// 내 정보가 AI 계산 때와 같으면 AI 값을 쓰고, 바뀌었으면 공식값으로 돌아감
+function profSig(p){return[p.sex,p.age,p.height,p.weight,goalOf(p),p.target,p.days].join('|');}
+function macros(p){
+  const f=formulaMacros(p); if(!f)return null;
+  const a=S.aiCalc&&S.aiCalc.macro;
+  if(!a||a.sig!==profSig(p))return{...f,src:'formula',stale:!!a};
+  const kcal=a.kcal,prot=a.prot,fat=a.fat,carb=a.carb,w=+p.weight,tg=+p.target;
+  const wk=(f.tdee-kcal)*7/7700, pc=x=>Math.round(x/kcal*100);
+  return{...f,src:'ai',ai:a,formula:{kcal:f.kcal,prot:f.prot,fat:f.fat,carb:f.carb},kcal,prot,fat,carb,wk,floored:false,
+    pP:pc(prot*4),fP:pc(fat*9),cP:pc(carb*4),weeks:(f.g==='체중 감량'&&tg&&tg<w&&wk>0)?Math.ceil((w-tg)/wk):null};
 }
 
 /* ===== 회복·휴식 ===== */
@@ -693,9 +710,11 @@ function renderForm(){
   let f=`<div class="sel-name">${sel.custom?`<input id="f_name" placeholder="기구·운동 이름 입력">`:`<b>${esc(sel.n)}</b>`}<span class="tag">${sel.c}</span></div>`;
   if(!sel.custom)f+=romWarn(sel.n);
   if(L)f+=`<p class="last">🕘 지난 기록(${L.date}): ${esc(summ(L))}</p>`;
-  const sg=suggest(sel,$('day').value||localToday());
-  if(sg)f+=sg.first?`<div class="sug"><div><b>🎯 오늘 추천</b><small>${esc(sg.msg)}</small></div></div>`
-    :`<div class="sug"><div><b>🎯 오늘 추천: ${esc(sugLabel(sg))}</b><small>${esc(sg.msg)}</small></div><button class="btn sm" id="btnSug">추천값 넣기</button></div>`;
+  const dayV=$('day').value||localToday(), sg=suggest(sel,dayV);
+  const ai=(!sel.custom&&sel.t!=='cardio')?aiSugOf(sel.n,dayV):null;
+  if(ai)f+=`<div class="sug ai2"><div><b>🤖 AI 추천: ${esc(ai.label)}</b><small>${esc(ai.msg)}</small>${ai.fix&&ai.fix.length?`<small class="fixn">앱 안전 규칙으로 고침: ${esc(ai.fix.join(' · '))}</small>`:''}${sg&&!sg.first?`<small>📐 공식 추천: ${esc(sugLabel(sg))}</small>`:''}</div><div class="sbtn"><button class="btn sm" id="btnSug">추천값 넣기</button><button class="btn sm ghost" id="btnAiSug">🤖 다시</button></div></div>`;
+  else if(sg)f+=sg.first?`<div class="sug"><div><b>🎯 오늘 추천</b><small>${esc(sg.msg)}</small></div><div class="sbtn"><button class="btn sm ghost" id="btnAiSug">🤖 AI 추천</button></div></div>`
+    :`<div class="sug"><div><b>📐 공식 추천: ${esc(sugLabel(sg))}</b><small>${esc(sg.msg)}</small></div><div class="sbtn"><button class="btn sm" id="btnSug">추천값 넣기</button><button class="btn sm ghost" id="btnAiSug">🤖 AI 추천</button></div></div>`;
   if(sel.t==='cardio')f+=`<div class="fields">${fld('f_min','시간(분) *',L?L.min:20)}${fld('f_speed','속도·레벨',L?L.speed:'','text','예: 6km/h')}${fld('f_dist','거리(km)',L&&L.dist?L.dist:'')}</div>`;
   else if(sel.t==='time')f+=`<div class="fields">${fld('f_sets','세트 *',L?L.sets:3)}${fld('f_min','1세트 시간(분) *',L?L.min:1,'number','30초=0.5')}</div>`;
   else f+=`<div class="fields">${fld('f_w','무게(kg)',L?L.w:20)}${fld('f_reps','횟수 *',L?L.reps:10)}${fld('f_sets','세트 *',L?L.sets:3)}${fld('f_min','시간(분)',L&&L.min?L.min:'','number','비우면 세트×2분')}</div>`;
@@ -703,12 +722,12 @@ function renderForm(){
   if(sel.t!=='cardio')f+=`<p class="rir">여유 있음 = 3번 이상 더 할 수 있음 · 적당히 힘듦 = 1~2번 더 · 한계까지 = 더 못 함. 초보자는 '적당히 힘듦'까지면 충분해요.</p>`;
   f+=fld('f_memo','메모','','text','예: 자세 신경 씀, 무릎 살짝 불편');
   f+=`<div class="preview" id="preview"></div><button class="btn main w100" id="btnAdd">＋ 기록 추가</button>`;
-  $('form').innerHTML=f; $('form')._sug=sg; updatePreview();
+  $('form').innerHTML=f; $('form')._sug=ai||sg; updatePreview();
 }
 function applySug(){
   const s=$('form')._sug; if(!s||s.first)return;
   if(s.min!==undefined){if($('f_min'))$('f_min').value=s.min;if($('f_sets')&&s.sets)$('f_sets').value=s.sets;}
-  else{if($('f_w'))$('f_w').value=s.w;if($('f_reps'))$('f_reps').value=s.reps;}
+  else{if($('f_w'))$('f_w').value=s.w;if($('f_reps'))$('f_reps').value=s.reps;if($('f_sets')&&s.sets)$('f_sets').value=s.sets;}
   updatePreview(); toast('추천값을 넣었어요. 세트·강도는 직접 확인하세요');
 }
 function collect(){
@@ -827,18 +846,26 @@ function renderMacro(){
   const p=S.profile, mc=macros(p);
   if(!mc){$('macro').innerHTML='<p class="muted">키·몸무게·나이를 저장하면 하루 목표가 자동으로 나와요.</p>';return;}
   const t=localToday(), td=dailyOf(t), w=+p.weight, wkAbs=Math.abs(Math.round(mc.wk*100)/100);
-  let h=`<p class="sm" style="margin:0 0 4px">목표: <b>${esc(mc.g)}</b> → 하루 소비(추정) ${mc.tdee}kcal × ${mc.mul.toFixed(2)}</p>
+  const A=mc.src==='ai'?mc.ai:null;
+  let h=(A?`<p class="sm" style="margin:0 0 4px"><span class="tag t2">🤖 AI 계산 ${esc(A.date)}</span> 목표: <b>${esc(mc.g)}</b> · 하루 소비(추정) ${mc.tdee}kcal</p>`
+    :`<p class="sm" style="margin:0 0 4px"><span class="tag">📐 공식 계산</span> 목표: <b>${esc(mc.g)}</b> → 하루 소비(추정) ${mc.tdee}kcal × ${mc.mul.toFixed(2)}</p>`)+`
   <div class="row between" style="align-items:baseline"><span class="big">${mc.kcal.toLocaleString()}kcal</span><span class="muted sm">${mc.wk>0.005?`예상 주 −${wkAbs}kg`:mc.wk<-0.005?`예상 주 +${wkAbs}kg`:'체중 유지'}</span></div>
   ${mc.floored?`<div class="info">하한선 적용: 계산값이 너무 낮아 ${p.sex==='여'?'1,200':'1,500'}kcal·기초대사량 중 큰 값으로 올렸어요. 너무 적게 먹으면 근육이 빠져요.</div>`:''}
   <div class="kv"><div><small>🥩 단백질</small><b>${mc.prot}g</b><em>${mc.pP}%</em></div><div><small>🥑 지방</small><b>${mc.fat}g</b><em>${mc.fP}%</em></div><div><small>🍚 탄수화물</small><b>${mc.carb}g</b><em>${mc.cP}%</em></div></div>
-  <p class="sm" style="margin:4px 0;line-height:1.55">단백질 = 기준체중 ${mc.ref}kg × ${mc.pk}g (운동하는 사람 권장 범위 1.6~2.2g/kg)${mc.ref!==w?' · BMI 25 이상이라 목표/표준 체중으로 계산해 과다 계산을 막았어요':''}.<br>한 끼에 <b>${Math.round(mc.prot/4)}~${Math.round(mc.prot/3)}g</b>씩 3~4끼로 나눠 먹어요.</p>`;
+  <p class="sm" style="margin:4px 0;line-height:1.55">${A?`단백질 ${mc.prot}g = 체중 1kg당 약 ${(mc.prot/w).toFixed(1)}g (운동하는 사람 권장 범위 1.6~2.2g/kg)`:`단백질 = 기준체중 ${mc.ref}kg × ${mc.pk}g (운동하는 사람 권장 범위 1.6~2.2g/kg)${mc.ref!==w?' · BMI 25 이상이라 목표/표준 체중으로 계산해 과다 계산을 막았어요':''}`}.<br>한 끼에 <b>${Math.round(mc.prot/4)}~${Math.round(mc.prot/3)}g</b>씩 3~4끼로 나눠 먹어요.</p>`;
+  if(A){
+    h+=`<div class="info">🤖 ${esc(A.reason||'AI가 계산한 값이에요.')}</div>`;
+    if(A.fix&&A.fix.length)h+=`<div class="warn">앱 안전 규칙으로 고친 부분: ${esc(A.fix.join(' · '))}</div>`;
+    h+=`<p class="muted sm" style="margin:4px 0">📐 공식 계산값: ${mc.formula.kcal.toLocaleString()}kcal · 단백질 ${mc.formula.prot}g · 지방 ${mc.formula.fat}g · 탄수 ${mc.formula.carb}g</p>`;
+  }else if(mc.stale)h+=`<div class="info">내 정보가 바뀌어 지난 AI 계산 대신 공식값을 보여 줘요. 다시 계산해 보세요.</div>`;
+  h+=`<div class="row" style="margin:8px 0"><button class="btn w100" id="btnAiMacro">🤖 AI로 ${A?'다시 ':''}계산하기</button>${A?'<button class="btn w100" id="btnFormula">📐 공식값 쓰기</button>':''}</div>`;
   if(mc.weeks)h+=`<div class="info">목표 ${p.target}kg까지 약 <b>${mc.weeks}주</b> 예상(추정). 근육을 지키며 빠지는 현실적인 속도예요.</div>`;
   if(mc.wk/w*100>1)h+=`<div class="warn">예상 감량 속도가 체중의 주 1%를 넘어요. 근육이 빠질 수 있어 권하지 않아요.</div>`;
   const notes=[];
   notes.push(`국가 권장 단백질 0.91g/kg(2020 한국인 영양소 섭취기준)은 '건강 유지 최소선'이에요. 근육을 만들 땐 학회 권장(1.6~2.2g/kg)을 써서 국가 일반 기준과 달라요.`);
   if(mc.pP>20)notes.push('단백질 비율이 국가 일반 기준(10~20%)보다 높아요. 운동하는 사람 기준이라 그래요. 신장 질환이 있으면 의사와 상의하세요.');
   if(mc.cP<50)notes.push('탄수화물이 50% 아래예요(국가 일반 기준 50~65%). 짧은 감량 기간엔 흔하지만 운동 전후엔 밥·고구마 등을 챙겨요.');
-  notes.push('공식으로 계산한 추정치예요. 2주 동안 주 평균 체중을 보고 ±100~200kcal 조정하세요. 회식이 있는 주는 하루가 아니라 주 평균으로 봐요.');
+  notes.push((A?'AI가':'공식으로')+' 계산한 추정치예요. 2주 동안 주 평균 체중을 보고 ±100~200kcal 조정하세요. 회식이 있는 주는 하루가 아니라 주 평균으로 봐요.');
   h+=notes.map(n=>`<p class="note">${esc(n)}</p>`).join('');
   h+=`<div class="lab" style="margin-top:12px">오늘 단백질 ${mc.prot}g 채웠나요?</div><div class="pchk"><button class="btn ${td&&td.prot===true?'on':''}" data-prot="1">✅ 채웠어요</button><button class="btn off ${td&&td.prot===false?'on':''}" data-prot="0">❌ 못 채웠어요</button></div>`;
   const cf=Math.round(3*w), cfMax=Math.round(6*w);
@@ -912,7 +939,7 @@ function profileText(p){
 }
 function recompText(d){
   const p=S.profile, L=[], mc=macros(p);
-  if(mc)L.push(`하루 목표 섭취(앱 계산, 추정) ${mc.kcal}kcal${mc.floored?'(하한선 적용)':''} / 단백질 ${mc.prot}g(기준체중 ${mc.ref}kg × ${mc.pk}g) / 지방 ${mc.fat}g / 탄수화물 ${mc.carb}g / 예상 체중 변화 주 ${mc.wk>0?'−':'+'}${Math.abs(Math.round(mc.wk*100)/100)}kg`);
+  if(mc)L.push(`하루 목표 섭취(${mc.src==='ai'?'AI 계산':'앱 공식 계산'}, 추정) ${mc.kcal}kcal${mc.floored?'(하한선 적용)':''} / 단백질 ${mc.prot}g${mc.src==='ai'?'':`(기준체중 ${mc.ref}kg × ${mc.pk}g)`} / 지방 ${mc.fat}g / 탄수화물 ${mc.carb}g / 예상 체중 변화 주 ${mc.wk>0?'−':'+'}${Math.abs(Math.round(mc.wk*100)/100)}kg`);
   const rw=roadWeek(d);
   if(!rw)L.push('4주 로드맵: 시작 안 함');
   else if(rw.done)L.push('4주 로드맵: 완료(다음 단계: 부위별 주 10세트 전후로 이중 진행법 계속)');
@@ -945,7 +972,7 @@ function recLine(r){
   else s=`${r.name}: ${r.w}kg × ${r.reps}회 × ${r.sets}세트 (볼륨 ${r.w*r.reps*r.sets}kg), 강도 ${r.inten}`;
   return `- [${r.part}] ${s}, 약 ${r.kcal}kcal${r.memo?' / 메모: '+r.memo:''}`;
 }
-async function callGemini(prompt){
+async function callGemini(prompt,json=false){
   const key=getKey();
   if(!key)throw new Error('제미나이 API 키가 없어요. [내 정보] 탭 아래에서 먼저 저장하세요.');
   if(!navigator.onLine)throw new Error('인터넷 연결을 확인하세요.');
@@ -955,7 +982,7 @@ async function callGemini(prompt){
     try{
       res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`,{
         method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},
-        body:JSON.stringify({contents:[{role:'user',parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:8192}})
+        body:JSON.stringify({contents:[{role:'user',parts:[{text:prompt}]}],generationConfig:json?{maxOutputTokens:2048,responseMimeType:'application/json'}:{maxOutputTokens:8192}})
       });
     }catch(e){errs.push(m+': 연결 실패');continue;}
     if(res.ok){
@@ -971,6 +998,128 @@ async function callGemini(prompt){
   }
   if(limited)throw new Error('무료 사용 한도에 걸렸어요. 1~2분 뒤 다시 눌러 주세요.');
   throw new Error('AI 호출 실패 ('+errs.join(', ')+')');
+}
+/* ===== AI 계산 (탄단지 목표·오늘 무게 추천) ===== */
+function parseJSON(t){
+  t=String(t||'').replace(/```(json)?/gi,'');
+  const a=t.indexOf('{'),b=t.lastIndexOf('}');
+  if(a<0||b<a)throw new Error('AI 답을 읽지 못했어요. 다시 눌러 주세요.');
+  try{return JSON.parse(t.slice(a,b+1));}catch(e){throw new Error('AI 답을 읽지 못했어요. 다시 눌러 주세요.');}
+}
+function aiSugOf(name,day){const a=S.aiCalc.sug[name];return a&&a.date===day?a:null;}
+async function aiMacro(){
+  if(!getKey())return toast('먼저 아래에서 API 키를 저장하세요',true);
+  const p=S.profile, f=formulaMacros(p);
+  if(!f)return toast('내 정보(키·몸무게·나이)를 먼저 저장하세요',true);
+  const t=localToday(), from=addDays(t,-13), recs=S.records.filter(r=>inRange(r.date,from,t));
+  const days=new Set(recs.map(r=>r.date)).size, strDays=new Set(recs.filter(r=>r.type!=='cardio').map(r=>r.date)).size;
+  const kcal14=recs.reduce((s,r)=>s+r.kcal,0), wts=S.weights.slice(-8).map(x=>`${x.date} ${x.weight}kg`).join(' → ')||'없음';
+  const sa=sleepAvg(t), pd=S.daily.filter(x=>inRange(x.date,from,t)&&typeof x.prot==='boolean'), pOk=pd.filter(x=>x.prot).length;
+  const floor=Math.round(Math.max(f.bmr,p.sex==='여'?1200:1500)), ceil=f.tdee+500;
+  const prompt=`너는 스포츠 영양사야. 아래 회원의 하루 섭취 목표(칼로리·단백질·지방·탄수화물)를 직접 계산해 줘.
+
+[회원 정보]
+${profileText(p)}
+
+[참고: 앱 공식 계산값] 기초대사량(Mifflin-St Jeor) ${f.bmr}kcal, 활동 반영 하루 소비 ${f.tdee}kcal, 공식 목표 ${f.kcal}kcal / 단백질 ${f.prot}g / 지방 ${f.fat}g / 탄수화물 ${f.carb}g
+
+[최근 14일] 운동한 날 ${days}일(근력 ${strDays}일), 운동 소모(추정) 합계 ${kcal14}kcal
+[몸무게 기록] ${wts}
+[최근 7일 평균 수면] ${sa!==null?sa+'시간':'입력 없음'}
+[단백질 목표 달성 체크] ${pd.length?`${pd.length}일 중 ${pOk}일 달성`:'기록 없음'}
+
+[계산 규칙]
+- 공식값은 참고만 하고, 실제 운동량·몸무게 변화 추세·목표·특이사항을 보고 네가 판단해 정해. 몸무게 기록이 2주 이상이면 실제 변화 속도로 소비 칼로리를 보정해.
+- 리컴포지션은 약 10% 결손, 체중 감량은 주 체중의 0.5~1% 이내 감량 속도, 근육 증가는 약 5~10% 잉여, 체력 향상·건강 유지는 유지 칼로리.
+- 하루 칼로리는 ${floor}kcal 이상, ${ceil}kcal 이하.
+- 단백질은 체중 1kg당 1.6~2.2g(BMI 25 이상이면 목표/표준 체중 기준), 지방은 총칼로리의 20~35%, 나머지는 탄수화물.
+- 단백질×4 + 지방×9 + 탄수화물×4 가 칼로리와 맞아야 해(±3%).
+- 아래 JSON 하나만 출력하고 다른 글은 쓰지 마:
+{"kcal":정수,"protein_g":정수,"fat_g":정수,"carb_g":정수,"reason":"이렇게 정한 이유를 중학생도 이해할 쉬운 한국어 2~3문장으로"}`;
+  loading(true,'AI가 하루 목표를 계산하는 중…');
+  try{
+    const j=parseJSON(await callGemini(prompt,true)), fix=[], w=+p.weight;
+    let kcal=Math.round(+j.kcal), prot=Math.round(+j.protein_g), fat=Math.round(+j.fat_g);
+    if(![kcal,prot,fat].every(Number.isFinite)||kcal<=0||prot<=0||fat<=0)throw new Error('AI가 숫자를 제대로 주지 않았어요. 다시 눌러 주세요.');
+    // 앱 안전 규칙: AI 값이 범위를 벗어나면 고치고 무엇을 고쳤는지 보여 줌
+    if(kcal<floor){kcal=floor;fix.push(`칼로리가 하한선보다 낮아 ${kcal}kcal로 올림`);}
+    if(kcal>ceil){kcal=ceil;fix.push(`칼로리가 너무 높아 ${kcal}kcal로 내림`);}
+    const pMin=Math.round(f.ref*1.4), pMax=Math.round(w*2.4);
+    if(prot<pMin){prot=pMin;fix.push(`단백질을 ${pMin}g으로 올림`);}
+    if(prot>pMax){prot=pMax;fix.push(`단백질을 ${pMax}g으로 내림`);}
+    const fMin=Math.round(kcal*0.2/9), fMax=Math.round(kcal*0.35/9);
+    if(fat<fMin){fat=fMin;fix.push(`지방을 ${fMin}g으로 올림`);}
+    if(fat>fMax){fat=fMax;fix.push(`지방을 ${fMax}g으로 내림`);}
+    let carb=Math.round((kcal-prot*4-fat*9)/4);
+    if(Number.isFinite(+j.carb_g)&&Math.abs(carb-(+j.carb_g))>15)fix.push(`칼로리 합이 맞게 탄수화물을 ${carb}g으로 맞춤`);
+    if(carb<50){carb=50;kcal=prot*4+fat*9+carb*4;fix.push('탄수화물 최소 50g 보장');}
+    S.aiCalc.macro={date:t,sig:profSig(p),kcal,prot,fat,carb,reason:String(j.reason||'').slice(0,400),fix};
+    if(saveDB()){renderMacro();renderBoard();toast('AI 계산 완료 🤖');}
+  }catch(e){toast(e.message,true);}
+  finally{loading(false);}
+}
+async function aiSuggest(){
+  if(!sel||sel.custom||sel.t==='cardio')return;
+  if(!getKey())return toast('먼저 [내 정보] 탭에서 API 키를 저장하세요',true);
+  const e=sel, day=$('day').value||localToday(), isTime=e.t==='time';
+  const hist=sessions(e.n,e.t,day).slice(-6), L=hist[hist.length-1], fs=suggest(e,day);
+  const lastRom=S.rom[S.rom.length-1], ks=ROM_MAP[e.n]||[];
+  const romBad=lastRom?ROM.filter(r=>ks.includes(r.k)&&(lastRom.res[r.k]==='fail'||lastRom.res[r.k]==='pain')):[];
+  const romTxt=!lastRom?'아직 안 함':romBad.length?romBad.map(r=>`${r.n} ${lastRom.res[r.k]==='pain'?'통증 있음':'불통과'}`).join(', '):'이 운동과 관련된 문제 없음';
+  const sl=recentSleep(day), rec=recovery(day).find(x=>x.p===e.c);
+  const histTxt=hist.length?hist.map(r=>isTime?`- ${r.date}: ${r.sets}세트 × ${Math.round(r.min*60)}초, 강도 ${r.inten}${r.memo?' / 메모: '+r.memo:''}`
+    :`- ${r.date}: ${r.w}kg × ${r.reps}회 × ${r.sets}세트, 강도 ${r.inten}${r.memo?' / 메모: '+r.memo:''}`).join('\n'):'기록 없음(처음 하는 운동)';
+  const prompt=`너는 경력이 많은 헬스 트레이너야. 아래 회원이 오늘(${day}) '${e.n}'(${e.c}) 운동에서 쓸 ${isTime?'세트와 버티는 시간':'무게·횟수·세트'}를 직접 정해 줘.
+
+[회원 정보]
+${profileText(S.profile)}
+
+[이 운동의 지난 기록(오래된 순)]
+${histTxt}
+
+[오늘 상태] 어젯밤 수면 ${sl!==null?sl+'시간':'입력 없음'} / ${e.c} 부위 회복: ${rec?rec.txt+(rec.d!==null?`(${rec.d}일 전)`:''):'정보 없음'} / 관절 체크: ${romTxt}
+[참고: 앱 공식 추천] ${fs&&!fs.first?sugLabel(fs)+' — '+fs.msg:(fs?fs.msg:'없음')}
+
+[규칙]
+- 8~12회 이중 진행법(같은 무게로 횟수를 늘리고, 12회를 무리 없이 하면 무게를 올림)을 기본으로 하되, 기록 추세·메모(통증 등)·수면·회복을 보고 네가 판단해.
+- 지난 무게보다 10% 넘게 올리지 마. 통증 메모나 관절 체크 문제가 있거나 수면이 6시간 미만이면 올리지 말고 유지하거나 낮춰.
+- 처음 하는 운동이면 12회를 '여유 있음'으로 할 수 있는 가벼운 무게로.
+- 어시스트(보조) 기구는 보조 무게가 줄수록 어려워져. 맨몸 동작이면 무게는 0.
+- 목표 강도는 '적당히 힘듦'(1~3번 더 할 수 있는 정도).
+- 아래 JSON 하나만 출력하고 다른 글은 쓰지 마:
+${isTime?'{"sets":정수,"seconds_per_set":정수,"reason":"쉬운 한국어 1~2문장"}':'{"weight_kg":숫자(0.5kg 단위),"reps":정수,"sets":정수,"reason":"쉬운 한국어 1~2문장"}'}`;
+  loading(true,'AI가 오늘 무게·횟수를 정하는 중…');
+  try{
+    const j=parseJSON(await callGemini(prompt,true)), fix=[];
+    let out;
+    if(isTime){
+      let sets=Math.round(+j.sets)||3, sec=Math.round(+j.seconds_per_set);
+      if(!Number.isFinite(sec)||sec<=0)throw new Error('AI가 숫자를 제대로 주지 않았어요. 다시 눌러 주세요.');
+      sets=Math.min(5,Math.max(1,sets));
+      if(sec<10){sec=10;fix.push('최소 10초');}
+      if(sec>180){sec=180;fix.push('최대 180초');}
+      if(L){const ls=Math.round(L.min*60);if(sec>ls+20){sec=ls+20;fix.push(`지난번보다 20초 넘게 늘리지 않게 ${sec}초로`);}}
+      out={min:Math.round(sec/60*100)/100,sets,label:`${sec}초 × ${sets}세트`};
+    }else{
+      let w=r05(+j.weight_kg), reps=Math.round(+j.reps), sets=Math.round(+j.sets)||3;
+      if(!Number.isFinite(w)||!Number.isFinite(reps)||w<0||reps<=0)throw new Error('AI가 숫자를 제대로 주지 않았어요. 다시 눌러 주세요.');
+      if(reps<5){reps=5;fix.push('횟수 최소 5회');}
+      if(reps>15){reps=15;fix.push('횟수 최대 15회');}
+      sets=Math.min(5,Math.max(1,sets));
+      const assist=/어시스트/.test(e.n);
+      if(L&&L.w>0){
+        const hold=PAIN_RE.test(L.memo||'')||romBad.length>0||(sl!==null&&sl<6);
+        const harder=assist?w<L.w:w>L.w;
+        if(hold&&harder){w=L.w;fix.push('통증·관절·수면 문제로 증량 보류');}
+        else if(!assist){const max=Math.max(r05(L.w*1.1),L.w+stepOf(e.n,e.c,L.w));if(w>max){w=max;fix.push(`급증 방지로 ${w}kg까지만`);}}
+        else{const min=r05(L.w*0.85);if(w<min){w=min;fix.push(`보조 무게를 한 번에 너무 줄이지 않게 ${w}kg로`);}}
+      }else if(!L&&w>bw()*0.6){w=r05(bw()*0.3);fix.push('처음 무게가 너무 무거워 낮춤');}
+      out={w,reps,sets,label:`${w}kg × ${reps}회 × ${sets}세트`};
+    }
+    S.aiCalc.sug[e.n]={date:day,...out,msg:String(j.reason||'').slice(0,300),fix};
+    if(saveDB()){renderForm();toast('AI 추천 완료 🤖');}
+  }catch(err){toast(err.message,true);}
+  finally{loading(false);}
 }
 function saveAi(date,kind,text){S.ai.unshift({date,kind,text,at:nowStr()});S.ai=S.ai.slice(0,60);saveDB();}
 
@@ -1120,6 +1269,7 @@ $('form').addEventListener('click',e=>{
   if(s){inten=+s.dataset.i;document.querySelectorAll('#seg button').forEach(x=>x.classList.toggle('on',x===s));updatePreview();}
   if(e.target.id==='btnAdd')addRec();
   if(e.target.id==='btnSug')applySug();
+  if(e.target.id==='btnAiSug')aiSuggest();
 });
 $('form').addEventListener('input',updatePreview);
 $('board').addEventListener('click',e=>{
@@ -1134,6 +1284,8 @@ $('board').addEventListener('click',e=>{
   }
 });
 $('macro').addEventListener('click',e=>{
+  if(e.target.id==='btnAiMacro')return aiMacro();
+  if(e.target.id==='btnFormula'){if(!confirm('AI 계산을 지우고 공식값을 쓸까요?'))return;delete S.aiCalc.macro;if(saveDB()){renderMacro();renderBoard();toast('공식값으로 돌아갔어요');}return;}
   const b=e.target.closest('[data-prot]'); if(!b)return;
   setDaily(localToday(),{prot:b.dataset.prot==='1'}); if(saveDB()){renderMacro();renderBoard();checkBadges();renderHist();}
 });
