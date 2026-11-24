@@ -561,7 +561,7 @@ C는 10, 12, 14cm. 10cm는 ○지만 평균 12cm가 ✕라서 ‘미달성’.
   <div class="vplayer" id="vPlayer">
     <p class="eyebrow" style="position:absolute;left:80px;top:56px;color:#ffd23f">MISSION 01 · 시험 영상</p>
     <h2 class="title" style="position:absolute;left:80px;top:118px;font-size:60px">영상을 보며 <span style="color:#2be4f0">학습지 D-2</span>에 기록해요</h2>
-    <video preload="auto" playsinline muted src="trial1.mp4" poster=""></video>
+    <video preload="auto" playsinline muted src="trial1.mp4?v=2" poster=""></video>
     <div class="vside">
       <button class="vbtn on" type="button" data-v="sel" data-n="1">1회</button>
       <button class="vbtn" type="button" data-v="sel" data-n="2">2회</button>
@@ -571,7 +571,7 @@ C는 10, 12, 14cm. 10cm는 ○지만 평균 12cm가 ✕라서 ‘미달성’.
       <button class="vbtn ctl" type="button" data-v="restart">⟲ 처음부터</button>
     </div>
   </div>
-  <div class="notes">앞 슬라이드에서 단계 안내 후 넘어온다. 1회 → 2회 → 3회 순서로 재생. 각 영상(17.5초) = 제목 → 실제 속도 주행(스톱워치는 도착 후에도 계속 감) → 도착선 느린 화면(1/4) → 도착 지점 자 확대. 1회에서는 도착선 느린 화면에서 한 번 멈추고 “앞 끝이 도착선에 닿는 순간의 숫자”를, 자 화면에서 “가운데 0에서 벌어진 거리(방향 무관)”를 시범으로 읽어 준다. 2·3회는 멈추지 않고 학생 스스로 읽게 한다(읽은 값이 조금씩 다르면 정리 단계 발표에서 ‘측정 오차·신뢰성’으로 연결). 예시 정답: 2.80초·6cm / 2.85초·9cm / 2.90초·12cm. 버튼은 발표자 화면에서 눌러도 청중 화면이 같이 움직인다. 영상 위를 클릭하면 재생/멈춤.</div>
+  <div class="notes">앞 슬라이드에서 단계 안내 후 넘어온다. 1회 → 2회 → 3회 순서로 재생. 각 영상(약 21.7초) = 제목 → 실제 속도 주행(스톱워치는 도착 후에도 계속 감) → 도착선 느린 화면(1/8 — 스톱워치 숫자를 읽기 쉽게) → 도착 지점 자 확대. 1회에서는 도착선 느린 화면에서 한 번 멈추고 “앞 끝이 도착선에 닿는 순간의 숫자”를, 자 화면에서 “가운데 0에서 벌어진 거리(방향 무관)”를 시범으로 읽어 준다. 2·3회는 멈추지 않고 학생 스스로 읽게 한다(읽은 값이 조금씩 다르면 정리 단계 발표에서 ‘측정 오차·신뢰성’으로 연결). 예시 정답: 2.80초·6cm / 2.85초·9cm / 2.90초·12cm. 버튼은 발표자 화면에서 눌러도 청중 화면이 같이 움직인다. 영상 위를 클릭하면 재생/멈춤.</div>
   <div class="script">
 [전개 2 · 10~13분 · 영상 함께 보기]
 
@@ -1040,7 +1040,7 @@ C는 10, 12, 14cm. 10cm는 ○지만 평균 12cm가 ✕라서 ‘미달성’.
     if (!vpVid) return;
     try {
       if (m.act === 'sel') {
-        if (vpN !== m.n) { vpN = m.n; vpVid.src = 'trial' + m.n + '.mp4'; }
+        if (vpN !== m.n) { vpN = m.n; vpVid.src = 'trial' + m.n + '.mp4?v=2'; }
         vpVid.pause(); vpVid.currentTime = 0;
       } else if (m.act === 'play') {
         if (typeof m.time === 'number' && Math.abs(vpVid.currentTime - m.time) > 0.25) vpVid.currentTime = m.time;
